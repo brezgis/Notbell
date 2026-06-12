@@ -1,0 +1,6 @@
+{
+  "name": "notbell-isle",
+  "private": true,
+  "type": "module",
+  "description": "A tiny low-poly village-life island. No build step — serve the directory and play."
+}

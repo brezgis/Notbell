@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notbell Archipelago</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #9fdcf7;
+      font-family: ui-rounded, "Segoe UI", system-ui, sans-serif; }
+    canvas { display: block; }
+    .chip {
+      font-family: inherit;
+      background: rgba(255, 255, 255, 0.78);
+      border-radius: 999px;
+      padding: 8px 16px;
+      color: #3c5a3c;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      user-select: none;
+    }
+    #title { position: fixed; top: 14px; left: 14px; font-weight: 700; }
+    #help {
+      position: fixed; bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    #loading {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      font-size: 18px; color: #2c6b8f;
+    }
+
+    /* HUD (top right) */
+    #hud { position: fixed; top: 14px; right: 14px; display: flex; gap: 8px; }
+    #hud .chip { font-weight: 700; font-size: 14px; }
+    .dim { opacity: 0.55; font-weight: 500; }
+
+    /* interaction prompt */
+    #prompt {
+      position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%);
+      background: rgba(60, 50, 36, 0.82); color: #fff7e6;
+      border-radius: 999px; padding: 8px 18px; font-size: 14px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25); user-select: none;
+    }
+    #prompt b {
+      background: #ffd23e; color: #5a4516; border-radius: 6px;
+      padding: 1px 7px; margin-right: 7px; font-size: 13px;
+    }
+
+    /* dialogue box */
+    #dialog {
+      position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+      width: min(620px, 86vw);
+      background: #fffaf0; border: 3px solid #e8d5ae; border-radius: 22px;
+      padding: 20px 26px 16px; color: #5b4a32; font-size: 17px; line-height: 1.45;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18); cursor: pointer; user-select: none;
+      min-height: 58px;
+    }
+    #dialog-name {
+      position: absolute; top: -15px; left: 22px;
+      background: #f9a03f; color: #fff; font-weight: 700; font-size: 14px;
+      border-radius: 999px; padding: 4px 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    }
+    #dialog-more {
+      position: absolute; right: 18px; bottom: 8px; color: #c8a96d;
+      animation: bob 0.9s ease-in-out infinite;
+    }
+    @keyframes bob { 50% { transform: translateY(3px); } }
+
+    /* choice menu */
+    #choices {
+      position: fixed; bottom: 150px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; gap: 6px; width: min(360px, 80vw);
+    }
+    .choice {
+      font-family: inherit; font-size: 15px; text-align: left;
+      display: flex; justify-content: space-between; gap: 16px;
+      background: #fffaf0; border: 3px solid #e8d5ae; border-radius: 14px;
+      padding: 9px 16px; color: #5b4a32; cursor: pointer;
+    }
+    .choice.focused { border-color: #f9a03f; background: #fff3da; }
+    .choice.disabled { opacity: 0.45; cursor: default; }
+    .choice .hint { opacity: 0.6; }
+
+    /* toasts */
+    #toasts {
+      position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; gap: 8px; align-items: center;
+      pointer-events: none;
+    }
+    .toast {
+      background: rgba(255, 250, 240, 0.95); border: 2px solid #e8d5ae;
+      color: #5b4a32; border-radius: 999px; padding: 8px 20px; font-size: 14px;
+      opacity: 0; transform: translateY(-8px); transition: all 0.35s ease;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.14); max-width: 70vw;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast i { opacity: 0.65; font-size: 13px; }
+
+    /* pockets */
+    #pockets {
+      position: fixed; top: 60px; right: 14px; width: 270px;
+      background: #fffaf0; border: 3px solid #e8d5ae; border-radius: 18px;
+      padding: 14px 18px; color: #5b4a32; font-size: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 70vh; overflow-y: auto;
+    }
+    #pockets h3 { margin: 0 0 8px; font-size: 16px; }
+    #pockets .row { display: flex; justify-content: space-between; padding: 3px 0; }
+    #pockets .total { border-top: 2px solid #efe2c4; margin-top: 6px; padding-top: 7px; font-weight: 700; }
+    #pockets .closehint { text-align: center; margin-top: 8px; font-size: 12px; }
+
+    /* zone fade — dialogue floats above it, so ferry stories play in the dark */
+    #fade {
+      position: fixed; inset: 0; background: #000; opacity: 0;
+      pointer-events: none; transition: opacity 0.35s ease;
+      z-index: 5;
+    }
+    #fade.on { opacity: 1; pointer-events: all; }
+    #dialog, #choices, #toasts { z-index: 10; }
+    #pockets, #hud, #prompt { z-index: 4; }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="loading">🌱 growing the island…</div>
+  <div id="title" class="chip">🍃 Notbell Archipelago</div>
+  <div id="help" class="chip">WASD — walk · drag — camera · E — everything · H — hat · I — pockets · P — map · C — almanac · M — sound</div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The Notbell mark: the polished hook is real, the bell is a memory,
+       and a button hangs where the clapper was. That's the whole island. -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#fffaf0" stroke="#e8d5ae" stroke-width="3"/>
+  <!-- the hook (kept polished, in case) -->
+  <circle cx="32" cy="12" r="3.2" fill="none" stroke="#5b4a32" stroke-width="2.6"/>
+  <!-- the bell that isn't -->
+  <path d="M20 40 C20 25 24 17 32 17 C40 17 44 25 44 40 C46.2 41 47.5 42.4 47.5 44.2 L16.5 44.2 C16.5 42.4 17.8 41 20 40 Z"
+        fill="none" stroke="#8a6f4d" stroke-width="3"
+        stroke-dasharray="5.5 4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- the button that is -->
+  <circle cx="32" cy="50" r="5.6" fill="#f2cf5b" stroke="#c9a02c" stroke-width="1.6"/>
+  <circle cx="30.1" cy="48.4" r="0.95" fill="#8a6f4d"/>
+  <circle cx="33.9" cy="48.4" r="0.95" fill="#8a6f4d"/>
+  <circle cx="30.1" cy="51.8" r="0.95" fill="#8a6f4d"/>
+  <circle cx="33.9" cy="51.8" r="0.95" fill="#8a6f4d"/>
+</svg>
