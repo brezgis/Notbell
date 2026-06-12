@@ -130,6 +130,10 @@ style.textContent = `
   #fieldguide-map .info h3 { margin: 4px 0 8px; }
   #fieldguide-map .info .folk { margin-top: 10px; font-size: 12.5px; opacity: 0.75; }
   #critterpedia { width: min(640px, 90vw); max-height: 78vh; overflow-y: auto; }
+  @media (max-width: 700px) {
+    #fieldguide-map { flex-direction: column; max-width: 94vw; max-height: 84vh; overflow-y: auto; }
+    #fieldguide-map .info { width: auto; }
+  }
   #critterpedia h3 { margin: 10px 0 6px; border-bottom: 2px solid #efe2c4; padding-bottom: 3px; }
   #critterpedia .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 18px; }
   #critterpedia .row { display: flex; justify-content: space-between; padding: 2px 0; }
@@ -197,8 +201,10 @@ function renderMap(player) {
     mapCanvas = document.createElement('canvas');
     mapCanvas.width = w;
     mapCanvas.height = h;
-    mapCanvas.style.width = `${Math.round(w * 0.78)}px`;
-    mapCanvas.style.height = `${Math.round(h * 0.78)}px`;
+    // fixed size on desks, shrink-to-fit on phones (aspect rides along)
+    mapCanvas.style.width = `min(${Math.round(w * 0.78)}px, 86vw)`;
+    mapCanvas.style.height = 'auto';
+    mapCanvas.style.aspectRatio = `${w} / ${h}`;
     mapCanvas.addEventListener('click', (e) => {
       const rect = mapCanvas.getBoundingClientRect();
       const wx = ((e.clientX - rect.left) / rect.width) * (MAP.x1 - MAP.x0) + MAP.x0;
@@ -261,6 +267,7 @@ const SECTIONS = [
   ['bug', '🦋 Bugs'],
   ['fossil', '🦴 Fossils'],
   ['pool', '🦀 Tide Pool'],
+  ['meteor', '☄️ From the Sky'],
   ['art', '🖼️ Art Collection'],
 ];
 

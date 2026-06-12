@@ -81,8 +81,9 @@ function flagTexture() {
 }
 
 // ------------------------------------------------------------ rovers ----
+// (exported: the moon is where they go when they grow up)
 
-function buildRover(bodyColor = 0xdfe2e6) {
+export function buildRover(bodyColor = 0xdfe2e6) {
   const g = new THREE.Group();
   const body = box(0.55, 0.22, 0.75, bodyColor);
   body.position.y = 0.28;
@@ -513,10 +514,38 @@ export function createIsland6(player) {
       label: () => S.hasFlag('rocketPowered') ? 'check on the rocket' : 'inspect the rocket',
       use: async () => {
         if (S.hasFlag('rocketPowered')) {
-          ui.say([
-            'The heart chamber glows steady and warm, like a porch light that has decided to dream bigger.',
-            'A clipboard hangs from the gantry: “FUELING: scheduled. CHECKLISTS: extensive. LAUNCH: when the moon is ready for company.”',
-          ]);
+          const go = await ui.ask(
+            'The heart chamber glows steady. The gantry lamp is lit. The clipboard checklist is all ticks except the last line, which reads, simply: “GO?”',
+            [
+              { label: '🚀 Go', value: 'go' },
+              { label: 'Not yet', value: null },
+            ]);
+          if (!go) {
+            ui.say('The rocket hums on, unbothered. Patience is the oldest part of lighthouse keeping.');
+            return;
+          }
+          if (!S.hasFlag('moonHelmet')) {
+            S.setFlag('moonHelmet');
+            S.addItem('bubble_helmet');
+            jingle();
+            await ui.say([
+              'Dr. Hazel sprints from the facility holding something round and gleaming, goggles askew.',
+              '“WAIT. WAIT. Helmet! HELMET. It’s a fishbowl with delusions and three patents. Air for a whole afternoon, and your hat fits under it. We checked. We checked WITH HATS.”',
+            ], { speaker: 'Dr. Hazel', voice: 700 });
+            ui.toast('Got the <b>Bubble Helmet</b>! It fogs up when you grin. It will fog up a lot.', '🫧');
+          }
+          await ui.fadeSwap(async () => {
+            tone(60, { dur: 1.6, type: 'sawtooth', vol: 0.07 });
+            tone(48, { time: 0.8, dur: 2.2, type: 'sawtooth', vol: 0.08 });
+            await ui.say([
+              '“Notbell Control to rocket. Checklist page nine.” Doppler’s voice, extremely calm. Somewhere below, Pots bangs the pot.',
+              'The hum becomes a shake. The shake becomes a HAND, pressing you gently into the seat. Through the porthole: the pad, the yard, the flag — smaller, smaller, a postage stamp of a country.',
+              'The blue goes thin. The thin goes black. The Lightseed sings the whole way up — the same four notes the lighthouse used to keep — and the sea, for the first time in your life, is somewhere you are not.',
+              'And below the window, all of it at once: every island the volcano ever made, laid out on the water like buttons on a coat.',
+            ]);
+            await zones.go('moon');
+          });
+          ui.toast('Contact light. The dust accepts you politely.', '🌑');
           return;
         }
         const firstLook = !S.hasFlag('sawRocket');
@@ -1259,7 +1288,10 @@ export function createIsland6(player) {
         getPos: () => pinion.position,
         r: 2.4, zone: 'labs',
         label: 'talk to Miss Pinion',
-        use: () => ui.say(PINION_LINES[pinionIdx++ % PINION_LINES.length], { speaker: 'Miss Pinion', voice: 540 }),
+        use: () => {
+          S.setFlag('metPinion'); // the graduates up there will want to know
+          ui.say(PINION_LINES[pinionIdx++ % PINION_LINES.length], { speaker: 'Miss Pinion', voice: 540 });
+        },
       });
       labUpdates.push((dt, t, playerPos) => {
         const dx = playerPos.x - pinion.position.x, dz = playerPos.z - pinion.position.z;

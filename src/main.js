@@ -26,9 +26,11 @@ import { createBulko } from './bulko.js';
 import { createNorthline } from './northline.js';
 import { createIsland5 } from './island5.js';
 import { createIsland6 } from './island6.js';
+import { createMoon } from './moon.js';
 import { wireHatKey } from './hats.js';
 import { initFieldGuide, markVisited } from './fieldguide.js';
 import { createMultiplayer } from './multiplayer.js';
+import { initControls, isTouchDevice } from './controls.js';
 import { setMood } from './audio.js';
 import { HOLIDAY, isNight } from './calendar.js';
 import { currentWeather } from './almanac.js';
@@ -43,7 +45,9 @@ S.load(); // the island remembers
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
 // capped below native retina: visually near-identical, dramatically cheaper
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+// (phones get a slightly lower cap; their pixels are small and their
+// batteries have feelings)
+renderer.setPixelRatio(Math.min(devicePixelRatio, isTouchDevice() ? 1.25 : 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 document.body.appendChild(renderer.domElement);
@@ -87,20 +91,52 @@ function refreshCamOffset() {
 }
 refreshCamOffset();
 
+// one finger (or the mouse) orbits; two fingers pinch the distance
 let dragging = false;
+const touchPoints = new Map(); // pointerId -> {x, y}
+let pinchDist = 0;
+
+function setZoom(d) {
+  camDist = Math.min(30, Math.max(9, d));
+  refreshCamOffset();
+}
+
 renderer.domElement.addEventListener('pointerdown', (e) => {
-  if (e.button === 0) dragging = true;
+  touchPoints.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (touchPoints.size === 2) {
+    dragging = false;
+    const [a, b] = [...touchPoints.values()];
+    pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+  } else if (e.button === 0) {
+    dragging = true;
+  }
 });
-addEventListener('pointerup', () => { dragging = false; });
+const endPointer = (e) => {
+  touchPoints.delete(e.pointerId);
+  if (!touchPoints.size) dragging = false;
+};
+addEventListener('pointerup', endPointer);
+addEventListener('pointercancel', endPointer);
 addEventListener('pointermove', (e) => {
+  const p = touchPoints.get(e.pointerId);
+  if (p) {
+    p.x = e.clientX;
+    p.y = e.clientY;
+  }
+  if (touchPoints.size === 2) {
+    const [a, b] = [...touchPoints.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinchDist) setZoom(camDist - (d - pinchDist) * 0.05);
+    pinchDist = d;
+    return;
+  }
   if (!dragging) return;
   camYaw -= e.movementX * 0.005;
   camPitch = Math.min(1.3, Math.max(0.18, camPitch + e.movementY * 0.004));
   refreshCamOffset();
 });
 addEventListener('wheel', (e) => {
-  camDist = Math.min(30, Math.max(9, camDist + e.deltaY * 0.02));
-  refreshCamOffset();
+  setZoom(camDist + e.deltaY * 0.02);
 }, { passive: true });
 
 const player = createPlayer();
@@ -132,6 +168,7 @@ const ambient = createAmbient(animals.animals, scene);
 const oceanLife = createOceanLife();
 const bulko = createBulko(player); // before boats: the ferry needs the dock
 const island6 = createIsland6(player); // ditto — the Persistent calls at the Labs
+const moon = createMoon(player); // 384,000 km up and to the right
 const boats = createBoats(player);
 const island5 = createIsland5(player);
 const northline = createNorthline(player);
@@ -143,6 +180,7 @@ const digging = createDigging();
 const tidePools = createTidePools();
 wireHatKey(player.group);
 initFieldGuide(player);
+initControls(); // thumbsticks for the touch-blessed; a no-op for everyone else
 const multiplayer = createMultiplayer(player, scene);
 almanac.init({ scene, hemi, sun, playerGroup: player.group });
 
@@ -151,7 +189,7 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, northline.group, island6.group
+  island5.group, northline.group, island6.group, moon.group
 );
 
 camera.position.copy(player.group.position).add(camOffset);
@@ -252,7 +290,7 @@ renderer.setAnimationLoop(() => {
     // the open world only spends effort when you can see it
     ocean.update(t);
     sky.update(dt);
-    nature.update(dt, t);
+    nature.update(dt, t, playerPos);
     oceanLife.update(dt, t, playerPos);
     boats.update(dt, t, playerPos);
     volcano.update(dt, t);
@@ -266,6 +304,7 @@ renderer.setAnimationLoop(() => {
   }
   bulko.update(dt, t, playerPos);
   island6.update(dt, t, playerPos); // gates itself by zone (labs life is indoors too)
+  if (zone === 'moon') moon.update(dt, t, playerPos);
   if (zone === 'cave') cave.update(dt, t);
   ghost.update(dt, t, playerPos); // walls are a rumor
   buildings.update(dt, t, playerPos);
@@ -285,7 +324,7 @@ renderer.setAnimationLoop(() => {
     const MOODS = {
       cafe: 'cafe', cave: 'cave', church: 'church', museum: 'museum',
       shop: 'shop', grocery: 'shop', bulko: 'bulko', manor: 'manor',
-      manor_up: 'manor', cellar: 'cave',
+      manor_up: 'manor', cellar: 'cave', moon: 'night', labs: 'shop',
     };
     setMood(MOODS[zone] ?? (zone === 'island' || zone === 'sea'
       ? (HOLIDAY ? 'holiday' : currentWeather() !== 'clear' ? 'rain' : isNight() ? 'night' : 'day')
@@ -317,7 +356,7 @@ renderer.setAnimationLoop(() => {
 document.getElementById('loading')?.remove();
 
 // debug/testing hook (used by shots/shoot.js)
-window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals };
+window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing };
 
 // a small welcome the first time — and everyone gets to choose who they are
 (async () => {

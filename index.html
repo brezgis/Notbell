@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Notbell Archipelago</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #9fdcf7;
-      font-family: ui-rounded, "Segoe UI", system-ui, sans-serif; }
-    canvas { display: block; }
+      font-family: ui-rounded, "Segoe UI", system-ui, sans-serif;
+      touch-action: manipulation; overscroll-behavior: none; }
+    canvas { display: block; touch-action: none; }
     .chip {
       font-family: inherit;
       background: rgba(255, 255, 255, 0.78);
@@ -111,6 +112,51 @@
     #pockets .row { display: flex; justify-content: space-between; padding: 3px 0; }
     #pockets .total { border-top: 2px solid #efe2c4; margin-top: 6px; padding-top: 7px; font-weight: 700; }
     #pockets .closehint { text-align: center; margin-top: 8px; font-size: 12px; }
+
+    /* touch controls (only shown on coarse pointers; controls.js decides) */
+    #stick {
+      position: fixed; left: 22px; bottom: 26px; width: 116px; height: 116px;
+      border-radius: 50%; background: rgba(255, 250, 240, 0.28);
+      border: 2px solid rgba(255, 250, 240, 0.5);
+      touch-action: none; z-index: 6; user-select: none;
+    }
+    #stick-nub {
+      position: absolute; left: 50%; top: 50%; width: 52px; height: 52px;
+      border-radius: 50%; background: rgba(255, 250, 240, 0.85);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      transform: translate(-50%, -50%); pointer-events: none;
+    }
+    #btn-act {
+      position: fixed; right: 26px; bottom: 40px; width: 84px; height: 84px;
+      border-radius: 50%; border: none; font: 700 30px ui-rounded, system-ui;
+      background: #ffd23e; color: #5a4516;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3); touch-action: none;
+      z-index: 6; user-select: none;
+    }
+    #btn-act:active { transform: scale(0.94); }
+    #btn-run {
+      position: fixed; right: 126px; bottom: 30px; width: 56px; height: 56px;
+      border-radius: 50%; border: none; font-size: 24px;
+      background: rgba(255, 250, 240, 0.78);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.22); touch-action: none;
+      z-index: 6; user-select: none;
+    }
+    #btn-run.on { background: #ffd23e; }
+    #btn-row {
+      position: fixed; top: 60px; left: 14px; display: flex;
+      flex-direction: column; gap: 8px; z-index: 6;
+    }
+    .btn-mini {
+      width: 46px; height: 46px; border-radius: 50%; border: none;
+      font-size: 21px; background: rgba(255, 250, 240, 0.78);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18); touch-action: none;
+      user-select: none;
+    }
+    #stick, #btn-act, #btn-run, #btn-row { display: none; }
+    .touch #stick, .touch #btn-act, .touch #btn-run, .touch #btn-row { display: block; }
+    .touch #btn-row { display: flex; }
+    .touch #help { display: none; } /* thumbs don't need a keyboard legend */
+    .touch #title { display: none; } /* small screens earn their pixels */
 
     /* zone fade — dialogue floats above it, so ferry stories play in the dark */
     #fade {

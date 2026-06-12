@@ -1160,11 +1160,14 @@ async function pipSell() {
       { speaker: 'Pip', voice: VOICE.pip });
     return pipMenu();
   }
-  const choices = stock.map(({ id, n, item }) => ({
-    label: `${item.emoji} ${item.name} ×${n}`,
-    value: id,
-    hint: `${item.price * n}🔘`,
-  }));
+  const choices = stock.map(({ id, n, item }) => {
+    const f = S.marketFactor(id);
+    return {
+      label: `${item.emoji} ${item.name} ×${n}${f < 1 ? ' 📉' : ''}`,
+      value: id,
+      hint: `${Math.floor(item.price * f) * n}🔘`,
+    };
+  });
   choices.push({ label: 'Done selling', value: 'done' });
 
   const choice = await ui.ask('Let’s see what the island gave you!', choices,
@@ -1172,15 +1175,23 @@ async function pipSell() {
   if (choice === 'done') return pipMenu();
 
   const n = S.countItem(choice);
-  const total = ITEMS[choice].price * n;
+  const factor = S.marketFactor(choice);
+  const total = Math.floor(ITEMS[choice].price * factor) * n;
+  const wasGlutted = factor < 1;
   S.removeItem(choice, n);
   S.earn(total);
+  S.recordSale(choice, n);
   kaching();
   ui.toast(`Sold ${n} × <b>${ITEMS[choice].name}</b> for <b>${total}</b> buttons!`, '🔘');
   ui.updateHUD();
   if (choice === 'old_boot') {
     await ui.say('A boot! Single. Pre-loved. Aggressively waterproof in most places. I’ll take it.',
       { speaker: 'Pip', voice: VOICE.pip });
+  } else if (!wasGlutted && S.marketFactor(choice) < 1) {
+    await ui.say([
+      `Whoa whoa whoa. That is a LOT of ${ITEMS[choice].name}. The market is officially FLOODED.`,
+      'Half price on those ’til tomorrow. Supply! Demand! I don’t make the rules. (I make the rules.)',
+    ], { speaker: 'Pip', voice: VOICE.pip });
   }
   return pipSell();
 }

@@ -8,27 +8,27 @@
 export const ITEMS = {
   // -- fish -------------------------------------------------------------
   sea_bass: {
-    kind: 'fish', name: 'Sea Bass', emoji: '🐟', price: 80, weight: 26,
+    kind: 'fish', size: 'l', name: 'Sea Bass', emoji: '🐟', price: 45, weight: 26,
     blurb: 'No, wait — it’s at LEAST a B+.',
   },
   crumb_snapper: {
-    kind: 'fish', name: 'Crumb Snapper', emoji: '🐠', price: 60, weight: 24,
+    kind: 'fish', size: 's', name: 'Crumb Snapper', emoji: '🐠', price: 60, weight: 24,
     blurb: 'It snaps at crumbs. Honestly? Relatable.',
   },
   pebble_dab: {
-    kind: 'fish', name: 'Pebble Dab', emoji: '🐟', price: 90, weight: 18,
+    kind: 'fish', size: 'm', name: 'Pebble Dab', emoji: '🐟', price: 90, weight: 18,
     blurb: 'A flat little fish. It is doing its best.',
   },
   buttonfish: {
-    kind: 'fish', name: 'Buttonfish', emoji: '✨', price: 160, weight: 12,
+    kind: 'fish', size: 's', name: 'Buttonfish', emoji: '✨', price: 160, weight: 12,
     blurb: 'Scales like mother-of-pearl buttons. The economy, but alive.',
   },
   glimmer_trout: {
-    kind: 'fish', name: 'Glimmer Trout', emoji: '🌟', price: 280, weight: 8,
+    kind: 'fish', size: 'l', name: 'Glimmer Trout', emoji: '🌟', price: 280, weight: 8,
     blurb: 'Shines even out of the water. Show-off.',
   },
   moonbeam_eel: {
-    kind: 'fish', where: 'cave', name: 'Moonbeam Eel', emoji: '🌙', price: 450, weight: 20,
+    kind: 'fish', size: 'l', where: 'cave', name: 'Moonbeam Eel', emoji: '🌙', price: 450, weight: 20,
     blurb: 'It glows faintly, like it knows something you don’t. It lives where the light sleeps. It does.',
   },
   old_boot: {
@@ -36,29 +36,29 @@ export const ITEMS = {
     blurb: 'Somebody, somewhere, is hopping.',
   },
   tide_nibbler: {
-    kind: 'fish', name: 'Tide Nibbler', emoji: '🐟', price: 50, weight: 26,
+    kind: 'fish', size: 's', name: 'Tide Nibbler', emoji: '🐟', price: 50, weight: 26,
     blurb: 'It nibbles the tide. The tide has not noticed.',
   },
   sand_flounder: {
-    kind: 'fish', name: 'Sand Flounder', emoji: '🐟', price: 110, weight: 13,
+    kind: 'fish', size: 'm', name: 'Sand Flounder', emoji: '🐟', price: 110, weight: 13,
     blurb: 'Both eyes on the same side, so it can judge you twice.',
   },
   sunset_drum: {
-    kind: 'fish', name: 'Sunset Drum', emoji: '🥁', price: 200, weight: 7,
+    kind: 'fish', size: 'm', name: 'Sunset Drum', emoji: '🥁', price: 200, weight: 7,
     blurb: 'It hums at dusk. Nobody taught it. Everybody encourages it.',
   },
 
   // cave pond residents (the still pond keeps its own guest list)
   blind_cavefish: {
-    kind: 'fish', where: 'cave', name: 'Blind Cavefish', emoji: '🐠', price: 320, weight: 30,
+    kind: 'fish', size: 'm', where: 'cave', name: 'Blind Cavefish', emoji: '🐠', price: 320, weight: 30,
     blurb: 'It has never seen anything, and it is doing great.',
   },
   pale_crayfish: {
-    kind: 'fish', where: 'cave', name: 'Pale Crayfish', emoji: '🦞', price: 180, weight: 34,
+    kind: 'fish', size: 's', where: 'cave', name: 'Pale Crayfish', emoji: '🦞', price: 180, weight: 34,
     blurb: 'A little ghost with opinions and pincers.',
   },
   lantern_koi: {
-    kind: 'fish', where: 'cave', name: 'Lantern Koi', emoji: '🏮', price: 800, weight: 8,
+    kind: 'fish', size: 'l', where: 'cave', name: 'Lantern Koi', emoji: '🏮', price: 800, weight: 8,
     blurb: 'Glows like the old lamp. Luna would cry. Do not tell Luna. Tell Luna.',
   },
 
@@ -110,23 +110,23 @@ export const ITEMS = {
 
   // -- fossils --------------------------------------------------------------
   trilobutton: {
-    kind: 'fossil', name: 'Trilobutton', emoji: '🦴', price: 700,
+    kind: 'fossil', name: 'Trilobutton', emoji: '🦴', price: 420,
     blurb: 'An ancient sea bug, curled like a fastener. Fashion is a cycle.',
   },
   curlstone: {
-    kind: 'fossil', name: 'Curlstone', emoji: '🐚', price: 600,
+    kind: 'fossil', name: 'Curlstone', emoji: '🐚', price: 340,
     blurb: 'A spiral shell from a sea with no name yet.',
   },
   megalodont_tooth: {
-    kind: 'fossil', name: 'Megalodon’t Tooth', emoji: '🦷', price: 900,
+    kind: 'fossil', name: 'Megalodon’t Tooth', emoji: '🦷', price: 650,
     blurb: 'From a shark so big the ocean asked it to please not.',
   },
   fern_frond: {
-    kind: 'fossil', name: 'Fern Frond Fossil', emoji: '🌿', price: 550,
+    kind: 'fossil', name: 'Fern Frond Fossil', emoji: '🌿', price: 320,
     blurb: 'A perfect fern, pressed in stone. (No relation. Probably.)',
   },
   very_old_pebble: {
-    kind: 'fossil', name: 'Very Old Pebble', emoji: '🪨', price: 50,
+    kind: 'fossil', name: 'Very Old Pebble', emoji: '🪨', price: 30,
     blurb: 'It is a pebble. It is very old. Fern will want it anyway.',
   },
 
@@ -162,21 +162,21 @@ export const ITEMS = {
 
   // -- gear ------------------------------------------------------------------
   scuba_suit: {
-    kind: 'gear', name: 'Salvage Diver’s Suit', emoji: '🤿', price: 1200,
+    kind: 'gear', name: 'Salvage Diver’s Suit', emoji: '🤿', price: 1800,
     blurb: 'Canvas, brass, and a bell-shaped helmet. One of Tansy’s divers left it behind. It never found the bell. It found everything else.',
   },
 
   // -- garden & orchard -----------------------------------------------------
   sunfruit: {
-    kind: 'fruit', name: 'Sunfruit', emoji: '🍊', price: 35,
+    kind: 'fruit', name: 'Sunfruit', emoji: '🍊', price: 15,
     blurb: 'Warm even in the shade. The trees here are generous.',
   },
   orange: {
-    kind: 'fruit', name: 'Orange', emoji: '🍊', price: 45,
+    kind: 'fruit', name: 'Orange', emoji: '🍊', price: 20,
     blurb: 'Grove Isle citrus. The capybaras wear them as hats, which is also a review.',
   },
   peach: {
-    kind: 'fruit', name: 'Peach', emoji: '🍑', price: 55,
+    kind: 'fruit', name: 'Peach', emoji: '🍑', price: 25,
     blurb: 'Southern Grove Isle stone fruit. The sun did most of the work and admits it.',
   },
   carrot_seeds: { kind: 'seed', name: 'Carrot Seeds', emoji: '🌱', price: 30,
@@ -201,7 +201,7 @@ export const ITEMS = {
     blurb: 'It is always somebody’s birthday somewhere.' },
   flower_crown: { kind: 'hat', name: 'Flower Crown', emoji: '🌼', price: 260,
     blurb: 'The butterflies will assume you are management.' },
-  keepers_cap: { kind: 'hat', name: 'Keeper’s Cap', emoji: '⚓', price: 1200,
+  keepers_cap: { kind: 'hat', name: 'Keeper’s Cap', emoji: '⚓', price: 2600,
     blurb: 'The real thing. Fern verified it, cried, and says she didn’t.' },
   captains_cap: { kind: 'hat', name: 'Captain’s Cap', emoji: '⚓', price: 0,
     blurb: 'Property of Admiral Greenbean. Earned, sailor.' },
@@ -263,16 +263,58 @@ export const ITEMS = {
     kind: 'keepsake', name: 'Lightseed', emoji: '🌟', price: 0,
     blurb: 'A warm coal of the Old Light, dozing in your pocket. It guided a thousand boats home. It would like to try going the other way, once.',
   },
+  bubble_helmet: {
+    kind: 'keepsake', name: 'Bubble Helmet', emoji: '🫧', price: 0,
+    blurb: 'A fishbowl with delusions and three patents. Rated for one afternoon of air and all known hat sizes. Fogs up when you grin.',
+  },
+  gold_star: {
+    kind: 'keepsake', name: 'Gold Star Sticker', emoji: '⭐', price: 0,
+    blurb: 'From Miss Pinion’s sheet. On the moon this is currency. Everywhere, it is better than currency.',
+  },
+
+  // -- from the sky (the dust sea gives them up to a patient magnet) ---------
+  moon_rock: {
+    kind: 'meteor', name: 'Moon Rock', emoji: '🌑', price: 60,
+    blurb: 'Personally considered by a rover and judged excellent. Every rock on the moon has been personally considered.',
+  },
+  iron_meteorite: {
+    kind: 'meteor', name: 'Iron Meteorite', emoji: '☄️', price: 380,
+    blurb: 'Heavy, honest metal. It traveled four billion years to be fridge-magnet tested by a rover.',
+  },
+  stony_chondrite: {
+    kind: 'meteor', name: 'Chondrite', emoji: '🪨', price: 260,
+    blurb: 'A speckled pudding of the early solar system. The rovers call the speckles “sprinkles,” and the journals have given up correcting them.',
+  },
+  starglass: {
+    kind: 'meteor', name: 'Starglass Pallasite', emoji: '✨', price: 720,
+    blurb: 'Iron lace set with olivine windows. Hold it up to the light: tiny green dawns.',
+  },
+  moonpearl: {
+    kind: 'meteor', name: 'Moonpearl', emoji: '🪩', price: 520,
+    blurb: 'A perfectly round pebble of fused dust. The dust sea makes one a decade, when nobody is watching. Nobody was watching.',
+  },
+  meteoric_button: {
+    kind: 'meteor', name: 'Meteoric Button', emoji: '🔘', price: 1500,
+    blurb: 'A four-holed iron disc from BEFORE the island. Pip must never know about this. Tell Pip immediately.',
+  },
 };
+
+// what a patient magnet pulls out of the dust sea
+export const METEOR_TABLE = [
+  ['iron_meteorite', 30], ['stony_chondrite', 32], ['starglass', 12],
+  ['moonpearl', 18], ['meteoric_button', 8],
+];
 
 export const COFFEE_PRICE = 40;
 export const COFFEE_BOOST_SECS = 90;
 
-// Weighted fish draw per water ('sea' or 'cave').
-// Bottles are handled separately by fishing.js.
-export function rollFish(where = 'sea', randFn = Math.random) {
+// Weighted fish draw per water ('sea' or 'cave'), optionally filtered by
+// shadow size ('s'|'m'|'l'). Bottles are handled separately by fishing.js;
+// the boot has no size, because the boot finds YOU.
+export function rollFish(where = 'sea', size = null, randFn = Math.random) {
   const fish = Object.entries(ITEMS)
-    .filter(([, it]) => it.kind === 'fish' && (it.where ?? 'sea') === where);
+    .filter(([, it]) => it.kind === 'fish' && (it.where ?? 'sea') === where &&
+      (!size || it.size === size));
   const total = fish.reduce((s, [, it]) => s + it.weight, 0);
   let r = randFn() * total;
   for (const [id, it] of fish) {

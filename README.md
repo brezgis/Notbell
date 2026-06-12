@@ -158,16 +158,40 @@ rotunda, a fossil hall whose Mystery Skeleton assembles as you donate, a
 bug hall of approved habitats, and a floor-to-ceiling aquarium with a dark
 grotto for the cave species.
 
+**The Moon.** Yes. When the rocket has its heart, it asks one question
+(“GO?”), Dr. Hazel supplies the bubble helmet (your hat fits under it;
+they checked, with hats), and you ride the lighthouse light out of the
+sea's jurisdiction entirely. Up there: a sixth of the gravity and all of
+the quiet, craters named after feelings, and the settlement where the
+rovers go when they grow up — **if** they want. Old Sojo, who came up
+first and drew circles until the telescope could read STILL HERE. Beacon,
+who speaks lamp-blink (learned from a certain lighthouse, secondhand).
+Pebble's Best Rock Museum, one rock, rotated daily, democratically.
+Tracks, drawing ten-thousand-year spirals in the dust. Comet, who does
+the perimeter (the perimeter does not need doing — that's why it's
+perfect). Magnet will lend you a rod for the **dust sea**, where the sky
+has been depositing meteorites for four billion years: chondrites,
+starglass, moonpearls, and — tell Pip immediately — the Meteoric Button.
+The archipelago hangs overhead, blue and small enough to cup, and
+southeast of the big island something glints in the deep water. The
+rovers have charted it for forty years. It rings on the heavy tides.
+
 **Things to do**
 
-- 🎣 **Fish** anywhere the water meets the land — face the water, cast, wait
-  for the dip. Eleven sea fish, one boot, occasional mail — and the cave's
-  still pond keeps its own guest list (Blind Cavefish, Moonbeam Eel, the
-  Lantern Koi).
-- 🦋 **Catch bugs** — butterflies, dragonflies at the shore, ladybirds and
-  snails (bare-pawed), crickets in the grass, fireflies at night, a pale
-  Glimmerwing in the cave, plus the Buttonshell Beetle, which has four neat
-  holes in its shell that nobody will discuss.
+- 🎣 **Fish, for real now** — watch the water for fish **shadows** (small,
+  medium, large: the shadow is the fish class), land your cast next to
+  one, and let it nibble — nibbles LIE; strike only the real dip. The
+  shallows hold eleven sea fish, one persistent boot, occasional mail —
+  and the cave's still pond keeps its own guest list (Blind Cavefish,
+  Moonbeam Eel, the Lantern Koi).
+- 🦋 **Catch bugs, carefully** — they hear you coming now. Walk; running
+  scatters everything wary within earshot (snails, pointedly, do not
+  care). Butterflies, dragonflies at the shore, ladybirds and snails
+  (bare-pawed), crickets in the grass, fireflies at night, a pale
+  Glimmerwing in the cave, plus the Buttonshell Beetle, which has four
+  neat holes in its shell that nobody will discuss.
+- ☄️ **Magnet-fish the dust sea** (lunar) — cast at the breathing dimples,
+  wait for the CLUNK in your boots, haul before the dust changes its mind.
 - 🍊 **Pick sunfruit** from the orchard trees; it regrows. **Garden** for
   carrots, tomatoes, and pumpkins.
 - 🎵 **Request a song** from Chip, the cricket with the tiny guitar at the
@@ -181,6 +205,22 @@ grotto for the cave species.
   and something warm asleep at the very back. Speak softly.
 - 💬 **Talk to everyone** — seven named villagers with rotating dialogue
   (Howell is a wolf, thank you for asking), three shopkeepers with menus.
+
+**The economy, with consequences.** Pip keeps a daily ledger now: flood
+him with six of the same thing in one day and the price halves until
+tomorrow ("Supply! Demand! I don't make the rules. (I make the rules.)").
+Fruit is pocket money, common fossils pay honestly rather than absurdly,
+dig spots and orchards take their time coming back, and the serious
+purchases — the Keeper's Cap, the diver's suit — now cost like they mean
+something. Meteorites are the new top of the market, and they're a whole
+moon away.
+
+**On your phone.** Notbell plays on touch screens: a thumbstick, a big E
+button, a run latch, and quick buttons for map/pockets/almanac/hat/sound.
+One finger orbits the camera, two fingers pinch to zoom, and the chart
+folds itself to fit. (Under the hood the touch controls speak synthesized
+keyboard, so anything added to the game later inherits mobile support
+automatically. The committee is very pleased with this design.)
 
 Progress (buttons, pockets, tools, donations, story) saves to localStorage.
 

@@ -75,6 +75,12 @@ export function addBlocker(x, z, r) {
   blockers.push({ x, z, r });
 }
 
+// For whole other worlds (the moon) — bring your own ground and physics.
+// opts: { groundHeight(x,z), canWalk(x,z), lighting, spawn }
+export function registerWorld(name, opts) {
+  zones[name] = opts;
+}
+
 // opts: { floorY, bounds: {x0, z0, x1, z1}, blockers: [{x,z,r}],
 //         lighting, spawn: {x, z, rotY}, exit: {x, z, rotY} (island-side) }
 export function registerInterior(name, opts) {
@@ -122,6 +128,11 @@ function applyLighting(l) {
   hemi.groundColor.set(l.hemiGround);
   hemi.intensity = l.hemiIntensity;
   sun.intensity = l.sunIntensity;
+  // far-off worlds bring their own sun (and its shadow box follows the target)
+  if (l.sunPos) sun.position.set(...l.sunPos);
+  else sun.position.set(45, 70, 30);
+  if (l.sunTarget) sun.target.position.set(...l.sunTarget);
+  else sun.target.position.set(0, 0, 0);
 }
 
 let traveling = false;

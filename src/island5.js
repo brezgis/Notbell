@@ -94,7 +94,7 @@ export function createIsland5(player) {
         label: 'pick oranges',
         use: () => {
           ot.oranges.forEach((f) => { f.visible = false; });
-          ot.regrow = rand(100, 200);
+          ot.regrow = rand(360, 620);
           S.addItem('orange', 3);
           jingle();
           ui.toast('You picked 3 <b>Oranges</b>! <i>Capybara-approved.</i>', '🍊');
@@ -905,7 +905,7 @@ export function createIsland5(player) {
       label: 'pick oranges',
       use: () => {
         ot.oranges.forEach((f) => { f.visible = false; });
-        ot.regrow = rand(100, 200);
+        ot.regrow = rand(360, 620);
         S.addItem('orange', 3);
         jingle();
         ui.foundItem('orange');
@@ -1005,7 +1005,7 @@ export function createIsland5(player) {
         label: peachy ? 'pick peaches' : 'pick oranges',
         use: () => {
           ot.oranges.forEach((f) => { f.visible = false; });
-          ot.regrow = rand(100, 200);
+          ot.regrow = rand(360, 620);
           S.addItem(itemId, 3);
           jingle();
           ui.foundItem(itemId);

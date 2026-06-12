@@ -1,5 +1,7 @@
-// Fishing: face the water, press E to cast, wait for the dip, press E
-// again before the moment passes. Sometimes the sea sends a letter.
+// Fishing, the honest way: watch the water for a shadow, land your cast
+// near it, let it nibble (nibbles LIE), and strike the real bite. Shadow
+// size tells you the class of fish — small darts, medium drifts, large
+// moves like it owns the bay. Sometimes the sea still sends a letter.
 
 import * as THREE from 'three';
 import { terrainHeight, WATER_Y } from './terrain.js';
@@ -8,12 +10,14 @@ import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
 import { rollFish, BOTTLE_NOTES } from './catalog.js';
-import { plop, bite, splash, jingle, sadTrombone } from './audio.js';
+import { plop, bite, splash, jingle, sadTrombone, tone } from './audio.js';
 import { rand } from './utils.js';
 import { CAVE_POND } from './cave.js';
 import { isRaining } from './almanac.js';
 
-const BITE_WINDOW = 0.8; // seconds you have to react
+const BITE_WINDOW = 0.8;  // seconds you have to react to the real thing
+const CAST_REACH = 3.2;   // how close the bobber must land to a shadow
+const SIZES = [['s', 0.55, 40], ['m', 0.85, 40], ['l', 1.25, 20]];
 
 export function createFishing(player) {
   const group = new THREE.Group();
@@ -28,14 +32,100 @@ export function createFishing(player) {
   bobber.visible = false;
   group.add(bobber);
 
-  let state = 'idle'; // idle | waiting | bite
+  // ------------------------------------------------------- the shadows ----
+  // dark shapes under the surface; they draw on top of the water so the
+  // waves can't hide what you're being offered
+
+  function makeShadow() {
+    const m = new THREE.Mesh(new THREE.CircleGeometry(1, 9),
+      new THREE.MeshBasicMaterial({
+        color: 0x122b38, transparent: true, opacity: 0.55, depthWrite: false, depthTest: false,
+      }));
+    m.rotation.x = -Math.PI / 2;
+    m.renderOrder = 1;
+    m.scale.x = 1.4; // fish-shaped, approximately. it's a shadow. squint.
+    return m;
+  }
+
+  function rollSize(boost = 0) {
+    const total = SIZES.reduce((s, [, , w]) => s + w, 0);
+    let r = Math.random() * total;
+    for (const [id, scale, w] of SIZES) {
+      r -= w + (id === 'l' ? boost : 0);
+      if (r <= 0) return { id, scale };
+    }
+    return { id: 'm', scale: 0.85 };
+  }
+
+  const shadows = [];
+  for (let i = 0; i < 6; i++) {
+    const m = makeShadow();
+    m.visible = false;
+    group.add(m);
+    shadows.push({
+      m, where: i < 4 ? 'sea' : 'cave', size: null,
+      drift: { x: 0, z: 0 }, driftT: 0, gone: 0,
+    });
+  }
+
+  function waterAt(x, z, where) {
+    if (where === 'cave') {
+      return Math.hypot(x - CAVE_POND.x, z - CAVE_POND.z) < CAVE_POND.r - 0.6;
+    }
+    return terrainHeight(x, z) < WATER_Y - 0.25;
+  }
+
+  function respawnShadow(s, playerPos) {
+    const size = rollSize(isRaining() && s.where === 'sea' ? 8 : 0);
+    s.size = size;
+    s.m.scale.set(size.scale * 1.4, size.scale, 1);
+    for (let tries = 0; tries < 24; tries++) {
+      let x, z;
+      if (s.where === 'cave') {
+        const a = rand(0, Math.PI * 2);
+        const r = rand(1, CAVE_POND.r - 1.2);
+        x = CAVE_POND.x + Math.cos(a) * r;
+        z = CAVE_POND.z + Math.sin(a) * r;
+      } else {
+        // the shallow band off the beaches — which is, not coincidentally,
+        // exactly as far as anyone can cast
+        const a = rand(0, Math.PI * 2);
+        const r = rand(3.5, 14);
+        x = playerPos.x + Math.cos(a) * r;
+        z = playerPos.z + Math.sin(a) * r;
+        const h = terrainHeight(x, z);
+        if (h < WATER_Y - 2.2 || h > WATER_Y - 0.3) continue;
+      }
+      if (waterAt(x, z, s.where)) {
+        const y = (s.where === 'cave' ? CAVE_POND.surfaceY : WATER_Y) + 0.02;
+        s.m.position.set(x, y, z);
+        s.m.visible = true;
+        s.gone = 0;
+        return true;
+      }
+    }
+    s.m.visible = false;
+    s.gone = rand(2, 5); // try again shortly, somewhere wetter
+    return false;
+  }
+
+  function scareShadow(s) {
+    s.m.visible = false;
+    s.gone = rand(4, 9);
+  }
+
+  // ---------------------------------------------------------- the cast ----
+
+  let state = 'idle'; // idle | waiting | approach | nibbling | bite
   let timer = 0;
-  let where = 'sea';        // which water the line is in ('sea' | 'cave')
-  let surfaceY = WATER_Y;   // resting height of the bobber
-  let castFrom = new THREE.Vector3();
+  let nibblesLeft = 0;
+  let hooked = null;        // the shadow considering your bobber
+  let junkBite = false;     // nothing around, but the boot is patient
+  let where = 'sea';
+  let surfaceY = WATER_Y;
+  const castFrom = new THREE.Vector3();
   const castSpot = new THREE.Vector3();
 
-  // where the line would land: a few steps ahead of the player, if it's water
   function waterAhead() {
     const ry = player.group.rotation.y;
     const dx = Math.sin(ry), dz = Math.cos(ry);
@@ -56,11 +146,18 @@ export function createFishing(player) {
   function reset() {
     state = 'idle';
     bobber.visible = false;
+    hooked = null;
+    junkBite = false;
   }
 
   async function caught() {
     splash();
     const caughtWhere = where;
+    const size = junkBite ? null : hooked?.size?.id;
+    if (hooked) {
+      hooked.m.visible = false;
+      hooked.gone = rand(6, 12);
+    }
     reset();
     // sometimes the sea has mail (the pond keeps no correspondence)
     if (caughtWhere === 'sea' &&
@@ -74,7 +171,9 @@ export function createFishing(player) {
       await ui.say([`You fish up a barnacled bottle. Inside: “${note.title}.”`, note.text]);
       return;
     }
-    const id = rollFish(caughtWhere);
+    const id = junkBite
+      ? (Math.random() < 0.6 ? 'old_boot' : 'tide_nibbler')
+      : rollFish(caughtWhere, size);
     S.addItem(id);
     jingle();
     ui.foundItem(id);
@@ -102,25 +201,99 @@ export function createFishing(player) {
           bobber.position.copy(castSpot);
           bobber.visible = true;
           plop();
-          state = 'waiting';
-          // fish bite faster in the rain — everyone knows this, especially fish
-          timer = rand(2, 7) * (isRaining() && where === 'sea' ? 0.5 : 1);
-        } else if (state === 'waiting') {
-          // too eager — the water respects patience
-          reset();
-          ui.toast('You reeled in too soon. The water keeps its secrets.', '🌊');
+          // did the cast land near anyone interested?
+          hooked = null;
+          let best = CAST_REACH;
+          for (const s of shadows) {
+            if (!s.m.visible || s.where !== where) continue;
+            const d = Math.hypot(s.m.position.x - spot.x, s.m.position.z - spot.z);
+            if (d < best) {
+              best = d;
+              hooked = s;
+            }
+          }
+          if (hooked) {
+            state = 'approach';
+            timer = 6; // patience cap; shadows don't owe you anything
+          } else {
+            state = 'waiting';
+            timer = rand(5, 9);
+            junkBite = Math.random() < 0.3; // the boot circles eternally
+          }
         } else if (state === 'bite') {
           caught();
+        } else {
+          // striking at a nibble (or at nothing) — the water keeps its secrets
+          if (hooked) scareShadow(hooked);
+          reset();
+          ui.toast(state === 'nibbling'
+            ? 'That was a NIBBLE. The shadow saunters off, unimpressed.'
+            : 'You reeled in too soon. The water keeps its secrets.', '🌊');
         }
       },
     });
   }
 
+  function startNibbles() {
+    state = 'nibbling';
+    nibblesLeft = isRaining() && where === 'sea' ? Math.floor(rand(0, 2)) : Math.floor(rand(1, 4));
+    timer = rand(0.5, 1.1);
+  }
+
   function update(dt, t) {
+    // the shadows live their lives whether you're fishing or not
+    const zone = zones.current();
+    const playerPos = player.group.position;
+    for (const s of shadows) {
+      const inZone = (s.where === 'sea' && zone === 'island') || (s.where === 'cave' && zone === 'cave');
+      if (!inZone) continue;
+      if (!s.m.visible) {
+        s.gone -= dt;
+        if (s.gone <= 0) respawnShadow(s, playerPos);
+        continue;
+      }
+      // too far from the action? swim around to where the player is
+      if (s.where === 'sea' && s.m.position.distanceTo(playerPos) > 34) {
+        respawnShadow(s, playerPos);
+        continue;
+      }
+      if (s === hooked && (state === 'approach' || state === 'nibbling' || state === 'bite')) {
+        // closing in on the bobber
+        const dx = castSpot.x - s.m.position.x;
+        const dz = castSpot.z - s.m.position.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 0.45) {
+          s.m.position.x += (dx / d) * 1.1 * dt;
+          s.m.position.z += (dz / d) * 1.1 * dt;
+        } else if (state === 'approach') {
+          startNibbles();
+        }
+        continue;
+      }
+      // idle drifting
+      s.driftT -= dt;
+      if (s.driftT <= 0) {
+        s.driftT = rand(2, 5);
+        const a = rand(0, Math.PI * 2);
+        s.drift.x = Math.cos(a) * 0.4;
+        s.drift.z = Math.sin(a) * 0.4;
+      }
+      const nx = s.m.position.x + s.drift.x * dt;
+      const nz = s.m.position.z + s.drift.z * dt;
+      if (waterAt(nx, nz, s.where)) {
+        s.m.position.x = nx;
+        s.m.position.z = nz;
+      } else {
+        s.driftT = 0;
+      }
+      s.m.rotation.z = Math.atan2(s.drift.x, s.drift.z) + Math.PI / 2;
+    }
+
     if (state === 'idle') return;
 
     // walking away abandons the line
     if (castFrom.distanceTo(player.group.position) > 0.35) {
+      if (hooked) scareShadow(hooked);
       reset();
       return;
     }
@@ -129,15 +302,47 @@ export function createFishing(player) {
       bobber.position.y = surfaceY + 0.08 + Math.sin(t * 2.4) * 0.05;
       timer -= dt;
       if (timer <= 0) {
-        state = 'bite';
-        timer = BITE_WINDOW;
-        bobber.position.y = surfaceY - 0.18; // the dip
-        bite();
+        if (junkBite) {
+          state = 'bite';
+          timer = BITE_WINDOW;
+          bobber.position.y = surfaceY - 0.18;
+          bite();
+        } else {
+          reset();
+          ui.toast('Not even a nibble. Watch the water for shadows, and cast at one.', '🌊');
+        }
       }
-    } else if (state === 'bite') {
-      bobber.position.y = surfaceY - 0.18 + Math.sin(t * 18) * 0.06;
+    } else if (state === 'approach') {
+      bobber.position.y = surfaceY + 0.08 + Math.sin(t * 2.4) * 0.05;
       timer -= dt;
       if (timer <= 0) {
+        // it lost interest on the way over. shadows are like that.
+        if (hooked) scareShadow(hooked);
+        reset();
+        ui.toast('The shadow circled once and moved along. Picky.', '🐟');
+      }
+    } else if (state === 'nibbling') {
+      timer -= dt;
+      // little teasing taps: the bobber dips, but not DOWN-down
+      const tease = Math.max(0, Math.sin(t * 9)) * -0.07;
+      bobber.position.y = surfaceY + 0.06 + tease;
+      if (timer <= 0) {
+        if (nibblesLeft > 0) {
+          nibblesLeft -= 1;
+          timer = rand(0.5, 1.2);
+          tone(300, { dur: 0.04, vol: 0.04 }); // tik
+        } else {
+          state = 'bite';
+          timer = BITE_WINDOW;
+          bobber.position.y = surfaceY - 0.22; // the REAL dip
+          bite();
+        }
+      }
+    } else if (state === 'bite') {
+      bobber.position.y = surfaceY - 0.22 + Math.sin(t * 18) * 0.06;
+      timer -= dt;
+      if (timer <= 0) {
+        if (hooked) scareShadow(hooked);
         reset();
         sadTrombone();
         ui.toast('It slipped away… you can almost hear tiny laughter.', '💧');
@@ -145,5 +350,14 @@ export function createFishing(player) {
     }
   }
 
-  return { group, update };
+  // test/debug: where are the shadows right now?
+  function debugShadows(all = false) {
+    return shadows.filter((s) => all || s.m.visible)
+      .map((s) => ({
+        x: s.m.position.x, z: s.m.position.z, where: s.where,
+        size: s.size?.id, visible: s.m.visible, gone: +s.gone.toFixed(1),
+      }));
+  }
+
+  return { group, update, debugShadows };
 }

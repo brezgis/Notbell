@@ -304,7 +304,7 @@ export function scatterNature() {
           label: 'pick the sunfruit',
           use: () => {
             ft.fruits.forEach((f) => { f.visible = false; });
-            ft.regrow = rand(120, 240);
+            ft.regrow = rand(360, 620);
             S.addItem('sunfruit', 3);
             jingle();
             ui.toast('You picked 3 <b>Sunfruit</b>! <i>Warm even in the shade.</i>', '🍊');
@@ -411,6 +411,16 @@ export function scatterNature() {
     ]),
   });
 
+  // --------------------------------------------------- the wary list ----
+  // every catchable with somewhere better to be: approach slowly or watch
+  // it leave. walking is fine. running is a statement, and they hear it.
+  const skittish = [];
+  let spookToastT = 0;
+
+  function addSkittish(mesh, wary, spook, line) {
+    skittish.push({ mesh, wary, spook, line });
+  }
+
   // ----------------------------------------------------- butterflies ----
   const butterflies = [];
   for (let i = 0; i < 7 && flowerSpots.length; i++) {
@@ -436,7 +446,7 @@ export function scatterNature() {
           ui.say(pick(NO_NET_LINES));
           return;
         }
-        if (Math.random() < 0.75) {
+        if (Math.random() < 0.92) {
           b.visible = false;
           b.userData.respawn = rand(40, 90);
           const id = b.userData.species;
@@ -450,6 +460,10 @@ export function scatterNature() {
         }
       },
     });
+    addSkittish(b, 5.5, () => {
+      b.visible = false;
+      b.userData.respawn = rand(18, 36);
+    }, 'Butterflies scatter at your hurry.');
   }
 
   // --------------------------------------------------------- beetles ----
@@ -478,7 +492,7 @@ export function scatterNature() {
           ui.say('A Buttonshell Beetle! Four neat little holes in its shell. You need a net before it needs an alibi.');
           return;
         }
-        if (Math.random() < 0.65) {
+        if (Math.random() < 0.88) {
           beetle.visible = false;
           data.respawn = rand(60, 130);
           S.addItem('buttonshell_beetle');
@@ -492,6 +506,10 @@ export function scatterNature() {
         }
       },
     });
+    addSkittish(beetle, 4.5, () => {
+      beetle.visible = false;
+      data.respawn = rand(20, 40);
+    }, 'The beetle heard you coming. Beetles always hear you coming.');
   }
 
   // ------------------------------------------- small ground residents ----
@@ -500,7 +518,7 @@ export function scatterNature() {
   const perchers = [];
 
   function addPercher({ build, pool, itemId, y = 0, needNet = false, chance = 0.8,
-    labelTool, labelBare, missLine }) {
+    labelTool, labelBare, missLine, wary = 0 }) {
     if (!pool.length) return null;
     const mesh = build();
     const data = { mesh, respawn: 0, hopT: 99 };
@@ -538,6 +556,12 @@ export function scatterNature() {
         }
       },
     });
+    if (wary > 0) {
+      addSkittish(mesh, wary, () => {
+        mesh.visible = false;
+        data.respawn = rand(15, 30);
+      }, 'Something small made itself scarce.');
+    }
     return data;
   }
 
@@ -551,17 +575,19 @@ export function scatterNature() {
   });
   for (let i = 0; i < 2; i++) {
     addPercher({
-      build: makeLadybird, pool: flowerSpots, itemId: 'ladybird', y: 0.55, chance: 0.9,
+      build: makeLadybird, pool: flowerSpots, itemId: 'ladybird', y: 0.55, chance: 0.95,
       labelTool: 'offer the ladybird a paw', labelBare: 'offer the ladybird a paw',
+      wary: 3.5, // ladybirds startle; snails, pointedly, do not
     });
   }
   const crickets = [];
   for (let i = 0; i < 3; i++) {
     const c = addPercher({
       build: makeCricket, pool: grassSpots.length ? grassSpots : flowerSpots,
-      itemId: 'meadow_cricket', needNet: true, chance: 0.55,
+      itemId: 'meadow_cricket', needNet: true, chance: 0.75,
       labelTool: 'pounce with the net', labelBare: 'listen to the cricket',
       missLine: 'Chirp. Chirp. It is RIGHT THERE. You need a net — Pip sells one.',
+      wary: 4.5, // crickets feel your footsteps before you take them
     });
     if (c) {
       c.hopTimer = rand(2, 5);
@@ -591,7 +617,7 @@ export function scatterNature() {
           ui.say('It hovers, completely still, then isn’t where it was. A net might keep up. Might.');
           return;
         }
-        if (Math.random() < 0.6) {
+        if (Math.random() < 0.8) {
           d.visible = false;
           d.userData.respawn = rand(45, 100);
           S.addItem('dewdrop_dragonfly');
@@ -604,6 +630,10 @@ export function scatterNature() {
         }
       },
     });
+    addSkittish(d, 6, () => {
+      d.visible = false;
+      d.userData.respawn = rand(15, 30);
+    }, 'The dragonfly was gone before your second footstep landed.');
   }
 
   // -------------------------------------------------------- fireflies ----
@@ -632,7 +662,7 @@ export function scatterNature() {
           ui.say('It blinks at you, unhurried. Bring a net, and more importantly, bring gentleness.');
           return;
         }
-        if (Math.random() < 0.7) {
+        if (Math.random() < 0.85) {
           f.visible = false;
           f.userData.caughtUntil = rand(60, 120);
           S.addItem('lantern_firefly');
@@ -645,9 +675,47 @@ export function scatterNature() {
         }
       },
     });
+    addSkittish(f, 2.5, () => { // fireflies are nearly unbotherable. nearly.
+      f.userData.caughtUntil = rand(8, 16);
+      f.visible = false;
+    }, 'The firefly clocked out early on your account.');
   }
 
-  function update(dt, t) {
+  // hurrying is loud. the meadow takes attendance.
+  const prevPlayer = new THREE.Vector3();
+  let prevPlayerOk = false;
+
+  function spookCheck(dt, playerPos) {
+    if (!playerPos) return;
+    if (!prevPlayerOk) {
+      prevPlayer.copy(playerPos);
+      prevPlayerOk = true;
+      return;
+    }
+    const step = prevPlayer.distanceTo(playerPos);
+    const moved = { x: playerPos.x - prevPlayer.x, z: playerPos.z - prevPlayer.z };
+    prevPlayer.copy(playerPos);
+    if (step > 3) return; // a teleport is not a footstep
+    const speed = step / Math.max(dt, 1e-4);
+    spookToastT -= dt;
+    if (speed < 6.4) return; // walking (even caffeinated) is polite enough
+    for (const s of skittish) {
+      if (!s.mesh.visible) continue;
+      const dx = s.mesh.position.x - playerPos.x;
+      const dz = s.mesh.position.z - playerPos.z;
+      const d = Math.hypot(dx, dz);
+      if (d > s.wary) continue;
+      if (moved.x * dx + moved.z * dz <= 0) continue; // running away is fine
+      s.spook();
+      if (spookToastT <= 0) {
+        spookToastT = 4;
+        ui.toast(s.line, '💨');
+      }
+    }
+  }
+
+  function update(dt, t, playerPos) {
+    spookCheck(dt, playerPos);
     const night = isNight();
     for (const f of fireflies) {
       const u = f.userData;

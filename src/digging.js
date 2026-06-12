@@ -78,7 +78,7 @@ export function createDigging() {
         thud();
         spot.alive = false;
         spot.mark.visible = false;
-        spot.respawn = rand(60, 140);
+        spot.respawn = rand(240, 480); // the island makes fossils slower than you spend them
         const id = rollTable(FOSSIL_TABLE);
         S.addItem(id);
         jingle();

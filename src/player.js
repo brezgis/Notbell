@@ -41,6 +41,26 @@ function buildHelmet() {
   return h;
 }
 
+// the bubble helmet: a fishbowl with delusions and three patents.
+// your hat fits under it. they checked. they checked WITH HATS.
+function buildBubble() {
+  const b = new THREE.Group();
+  const glass = new THREE.Mesh(new THREE.IcosahedronGeometry(0.58, 1),
+    new THREE.MeshStandardMaterial({
+      color: 0xcfe8f2, transparent: true, opacity: 0.18,
+      roughness: 0.1, flatShading: true, side: THREE.DoubleSide, depthWrite: false,
+    }));
+  glass.position.y = 0.06;
+  b.add(glass);
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 6, 12),
+    new THREE.MeshStandardMaterial({ color: 0xc9962e, flatShading: true, roughness: 0.45 }));
+  collar.rotation.x = Math.PI / 2;
+  collar.position.y = -0.4;
+  collar.castShadow = true;
+  b.add(collar);
+  return b;
+}
+
 export function createPlayer() {
   const avatar = state.avatar || { kind: 'cat', body: 0xf0c98f };
   const group = buildAnimal(avatar.kind, { body: avatar.body });
@@ -68,6 +88,8 @@ export function createPlayer() {
   let walk = 0;
   let helmet = null;
   let helmetOn = false;
+  let bubble = null;
+  let bubbleOn = false;
   let wasSwimming = false;
 
   // ducks were born for this; everyone else needs the diver's suit
@@ -131,6 +153,7 @@ export function createPlayer() {
       group.rotation.y = turnToward(group.rotation.y, Math.atan2(x, z), dt, 14);
     }
 
+    const onMoon = zones.current() === 'moon';
     if (swimming) {
       group.position.y = WATER_Y - 0.28 + Math.sin(t * 2.1) * 0.05;
       walk += ((moving ? 0.4 : 0.15) - walk) * Math.min(1, dt * 6);
@@ -138,7 +161,22 @@ export function createPlayer() {
     } else {
       group.position.y = zones.groundHeight(group.position.x, group.position.z);
       walk += ((moving ? 1 : 0) - walk) * Math.min(1, dt * 10);
-      animateGait(group, t, walk, running || coffeeActive() ? 14 : 10);
+      if (onMoon) {
+        // a sixth of the gravity, six times the joy
+        group.position.y += Math.abs(Math.sin(t * 4.2)) * 0.24 * walk;
+        animateGait(group, t, walk, 7);
+      } else {
+        animateGait(group, t, walk, running || coffeeActive() ? 14 : 10);
+      }
+    }
+
+    // the bubble helmet is not optional. Dr. Hazel was very clear.
+    if (onMoon !== bubbleOn) {
+      bubbleOn = onMoon;
+      if (!bubble) bubble = buildBubble();
+      const head = group.userData.parts.head;
+      if (bubbleOn) head.add(bubble);
+      else bubble.parent?.remove(bubble);
     }
 
     if (swimming !== wasSwimming) {
@@ -180,6 +218,7 @@ export function createPlayer() {
     group.userData.parts = fresh.userData.parts;
     group.userData.hatMesh = null;
     helmetOn = false; // the old head took the helmet with it
+    bubbleOn = false; // and the bubble
     applyHat(group, state.wearing);
   }
 

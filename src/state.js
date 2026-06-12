@@ -20,6 +20,7 @@ export const state = {
   visited: { notbell: true }, // islands you've set foot on (the chart fills in)
   errand: null,       // active delivery: { from, to } (villager names)
   lastErrandAt: 0,    // when the last errand finished (epoch ms, for cooldown)
+  market: { day: '', sold: {} }, // Pip's daily ledger (gluts halve his offers)
   avatar: null,       // chosen species, e.g. { kind: 'cat', body: 0xf0c98f }
   name: null,         // what the islanders call you
   where: null,        // { zone, x, z, rotY, camYaw, camPitch, camDist }
@@ -61,12 +62,13 @@ export function load() {
         garden: { ...(data.garden || {}) },
         seen: { ...(data.seen || {}) },
         visited: { notbell: true, ...(data.visited || {}) },
+        market: { day: '', sold: {}, ...(data.market || {}) },
       });
     }
   } catch { /* corrupted save: start fresh */ }
 }
 
-const TRACKED = new Set(['fish', 'bug', 'fossil', 'pool', 'art']);
+const TRACKED = new Set(['fish', 'bug', 'fossil', 'pool', 'art', 'meteor']);
 
 export function addItem(id, n = 1) {
   state.inv[id] = (state.inv[id] || 0) + n;
@@ -141,6 +143,30 @@ export function donatables() {
     .filter(({ id, item }) => item &&
       ['fish', 'bug', 'fossil', 'pool', 'art'].includes(item.kind) &&
       !state.donations.includes(id));
+}
+
+// ---- Pip's market memory ---------------------------------------------
+// Flood him with the same catch and the price sags until tomorrow.
+// Pip sleeps. Pip forgets. Pip forgives. Pip restocks his enthusiasm.
+
+const GLUT_AT = 6; // sales of one item per day before the bottom falls out
+
+function todayKey() {
+  return new Date().toDateString();
+}
+
+export function soldToday(id) {
+  return state.market.day === todayKey() ? (state.market.sold[id] || 0) : 0;
+}
+
+export function marketFactor(id) {
+  return soldToday(id) >= GLUT_AT ? 0.5 : 1;
+}
+
+export function recordSale(id, n) {
+  if (state.market.day !== todayKey()) state.market = { day: todayKey(), sold: {} };
+  state.market.sold[id] = (state.market.sold[id] || 0) + n;
+  save();
 }
 
 // Coffee from The Lantern Room makes you zippy for a while (not saved —
