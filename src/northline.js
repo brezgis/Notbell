@@ -110,14 +110,14 @@ export function createNorthline(player) {
     }
   }
   for (const rOff of [-0.6, 0.6]) {
-    for (let i = 0; i < SEGS; i += 3) {
-      const s0 = i / SEGS, s1 = Math.min(1, (i + 3) / SEGS);
+    for (let i = 0; i < SEGS; i += 2) {
+      const s0 = i / SEGS, s1 = Math.min(1, (i + 2) / SEGS);
       const a = pointAt(s0), b = pointAt(s1);
       const ya = railHeight(s0), yb = railHeight(s1);
       const h = headingAt((s0 + s1) / 2);
       const px = Math.cos(h), pz = -Math.sin(h);
       const len = Math.hypot(b.x - a.x, b.z - a.z);
-      const railBar = box(0.12, 0.12, len + 0.2, 0x4a3f32);
+      const railBar = box(0.12, 0.12, len + 0.42, 0x4a3f32);
       railBar.position.set((a.x + b.x) / 2 + px * rOff, (ya + yb) / 2 + 0.08, (a.z + b.z) / 2 + pz * rOff);
       railBar.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
       railBar.rotation.x = Math.atan2(ya - yb, len);

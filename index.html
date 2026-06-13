@@ -113,35 +113,21 @@
     #pockets .total { border-top: 2px solid #efe2c4; margin-top: 6px; padding-top: 7px; font-weight: 700; }
     #pockets .closehint { text-align: center; margin-top: 8px; font-size: 12px; }
 
-    /* touch controls (only shown on coarse pointers; controls.js decides) */
+    /* touch controls (only on coarse pointers; controls.js decides).
+       the stick is invisible: the lower-left corner simply is the stick,
+       and a whisper of a nub appears under your thumb while steering */
     #stick {
-      position: fixed; left: 22px; bottom: 26px; width: 116px; height: 116px;
-      border-radius: 50%; background: rgba(255, 250, 240, 0.28);
-      border: 2px solid rgba(255, 250, 240, 0.5);
+      position: fixed; left: 8px; bottom: 10px; width: 148px; height: 148px;
+      border-radius: 50%; background: transparent; border: none;
       touch-action: none; z-index: 6; user-select: none;
     }
     #stick-nub {
       position: absolute; left: 50%; top: 50%; width: 52px; height: 52px;
-      border-radius: 50%; background: rgba(255, 250, 240, 0.85);
-      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      border-radius: 50%; background: rgba(255, 250, 240, 0);
       transform: translate(-50%, -50%); pointer-events: none;
+      transition: background 0.15s ease;
     }
-    #btn-act {
-      position: fixed; right: 26px; bottom: 40px; width: 84px; height: 84px;
-      border-radius: 50%; border: none; font: 700 30px ui-rounded, system-ui;
-      background: #ffd23e; color: #5a4516;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3); touch-action: none;
-      z-index: 6; user-select: none;
-    }
-    #btn-act:active { transform: scale(0.94); }
-    #btn-run {
-      position: fixed; right: 126px; bottom: 30px; width: 56px; height: 56px;
-      border-radius: 50%; border: none; font-size: 24px;
-      background: rgba(255, 250, 240, 0.78);
-      box-shadow: 0 3px 10px rgba(0,0,0,0.22); touch-action: none;
-      z-index: 6; user-select: none;
-    }
-    #btn-run.on { background: #ffd23e; }
+    #stick.live #stick-nub { background: rgba(255, 250, 240, 0.3); }
     #btn-row {
       position: fixed; top: 60px; left: 14px; display: flex;
       flex-direction: column; gap: 8px; z-index: 6;
@@ -152,11 +138,12 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.18); touch-action: none;
       user-select: none;
     }
-    #stick, #btn-act, #btn-run, #btn-row { display: none; }
-    .touch #stick, .touch #btn-act, .touch #btn-run, .touch #btn-row { display: block; }
+    #stick, #btn-row { display: none; }
+    .touch #stick { display: block; }
     .touch #btn-row { display: flex; }
     .touch #help { display: none; } /* thumbs don't need a keyboard legend */
     .touch #title { display: none; } /* small screens earn their pixels */
+    .touch .kbhint { display: none; } /* keyboard hints, ditto */
 
     /* zone fade — dialogue floats above it, so ferry stories play in the dark */
     #fade {

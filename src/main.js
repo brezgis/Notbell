@@ -31,6 +31,7 @@ import { wireHatKey } from './hats.js';
 import { initFieldGuide, markVisited } from './fieldguide.js';
 import { createMultiplayer } from './multiplayer.js';
 import { initControls, isTouchDevice } from './controls.js';
+import { initSettings } from './settings.js';
 import { setMood } from './audio.js';
 import { HOLIDAY, isNight } from './calendar.js';
 import { currentWeather } from './almanac.js';
@@ -181,6 +182,7 @@ const tidePools = createTidePools();
 wireHatKey(player.group);
 initFieldGuide(player);
 initControls(); // thumbsticks for the touch-blessed; a no-op for everyone else
+initSettings(); // the quiet panel behind the title chip
 const multiplayer = createMultiplayer(player, scene);
 almanac.init({ scene, hemi, sun, playerGroup: player.group });
 
@@ -200,6 +202,7 @@ ui.updateHUD();
 const occluders = [];
 scene.traverse((o) => {
   if (!o.isMesh || o.geometry?.type !== 'BoxGeometry') return;
+  if (o.material?.transparent || o.material?.opacity < 1) return;
   const g = o.geometry.parameters;
   if (g.height >= 2.2 && Math.max(g.width, g.depth) * g.height >= 12) {
     occluders.push(o);
@@ -231,7 +234,7 @@ function updateOcclusion() {
         };
       }
       m.material.transparent = true;
-      m.material.opacity = 0.18;
+      m.material.opacity = 0.28;
       m.material.depthWrite = false;
     }
   }

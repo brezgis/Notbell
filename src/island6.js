@@ -142,14 +142,14 @@ export function createIsland6(player) {
 
   addIslandInfo({
     key: 'labs',
-    name: 'Notbell Labs', x: -118, z: -58, r: 34, icon: '🚀',
+    name: 'Notbell Labs', x: -121, z: -58, r: 42, icon: '🚀',
     blurb: 'The far-west research isle. Frontier chemistry, one computer the size of a room, a rocket division, and a kindergarten of rovers (window: please wave). The chart ends before the island does. The Labs find this extremely funny.',
     folk: 'Director Strix · Ada, software · Dr. Hazel · Pots · Miss Pinion · the rovers · the Boring Department',
     mystery: '“Far west, past the moss isle, somebody is doing SCIENCE at the sky. On still nights you can hear it hum. I hear it FIRST.” —Howell, who is, once again, right',
   });
 
   // ===================================================== the facility ----
-  const fx = -122, fz = -62; // building center
+  const fx = -126, fz = -63; // building center
   const fy = Y.h;
   {
     const main = box(16, 5, 7, 0xe6e2d4);
@@ -192,14 +192,15 @@ export function createIsland6(player) {
   }
 
   // -------------------------------------------------- the roof catwalk ----
-  // stairs up the east side, a railed walk across the top, a telescope at
-  // the far end. "the catwalk is the best part of the facility" —management
+  // stairs up the WEST side (the causeway owns the east approach now),
+  // a railed walk across the top, a telescope at the far end.
+  // "the catwalk is the best part of the facility" —management
   const ROOF_Y = fy + 5.3;
-  const stairX0 = fx + 7.5;  // top of the stairs (roof's east edge)
-  const stairX1 = fx + 14.5; // bottom of the stairs (ground)
+  const stairX0 = fx - 7.2;  // top of the stairs (roof's west edge)
+  const stairX1 = fx - 14.2; // bottom of the stairs (ground, westward)
   zones.addCrossing({
     contains(x, z) {
-      return x >= stairX0 && x <= stairX1 && Math.abs(z - fz) < 1.0;
+      return x >= stairX1 && x <= stairX0 && Math.abs(z - fz) < 1.0;
     },
     height(x) {
       const t = (x - stairX0) / (stairX1 - stairX0);
@@ -208,13 +209,13 @@ export function createIsland6(player) {
   });
   zones.addCrossing({
     contains(x, z) {
-      return x >= fx - 7.2 && x <= stairX0 && Math.abs(z - fz) < 1.0;
+      return x >= stairX0 && x <= fx + 7.2 && Math.abs(z - fz) < 1.0;
     },
     height: () => ROOF_Y,
   });
   {
     // the stair: a long inclined slab with cleats, plus rails
-    const run = stairX1 - stairX0;
+    const run = stairX0 - stairX1; // climbs eastward, toward the roof
     const rise = ROOF_Y - fy;
     const slab = box(Math.hypot(run, rise) + 0.4, 0.16, 1.9, 0x9aa3ad);
     slab.position.set((stairX0 + stairX1) / 2, (ROOF_Y + fy) / 2 + 0.05, fz);
@@ -223,7 +224,7 @@ export function createIsland6(player) {
     for (let i = 0; i < 8; i++) {
       const t = (i + 0.5) / 8;
       const cleat = box(0.18, 0.07, 1.9, 0x6b7280);
-      cleat.position.set(stairX1 - t * run, fy + t * rise + 0.14, fz);
+      cleat.position.set(stairX1 + t * run, fy + t * rise + 0.14, fz);
       group.add(cleat);
     }
     // the catwalk deck and rails
@@ -249,11 +250,11 @@ export function createIsland6(player) {
     tube.position.y = 1.25;
     tube.rotation.x = -0.9; // up, and a little north
     scope.add(tube);
-    scope.position.set(fx - 6.4, ROOF_Y, fz);
+    scope.position.set(fx + 6.4, ROOF_Y, fz);
     scope.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(scope);
     register({
-      pos: new THREE.Vector3(fx - 6.4, 0, fz), r: 1.8,
+      pos: new THREE.Vector3(fx + 6.4, 0, fz), r: 1.8,
       label: 'peer through the telescope',
       use: () => ui.say(S.hasFlag('rocketPowered')
         ? ['The moon, enormous and patient. Someone has taped a note to the eyepiece: “SOON.”']
@@ -375,7 +376,7 @@ export function createIsland6(player) {
 
   // -------------------------------------------------------- the big ear ----
   {
-    const dx = Y.x + 6, dz = Y.z - 9;
+    const dx = Y.x - 2, dz = Y.z - 13; // north of the yard, clear of the eaves
     const dy = terrainHeight(dx, dz);
     const dish = new THREE.Group();
     const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 2.2, 7), mat(0x9aa3ad, 0.6));
@@ -662,8 +663,8 @@ export function createIsland6(player) {
   }
 
   // ------------------------------------------- the causeway from the north ----
-  // a long timber crossing from the North Isle, with the archipelago's first
-  // telephone line walking beside it. the Labs invented the island telephone.
+  // a long timber causeway from the North Isle, with the archipelago's first
+  // telephone line walking beside it.
   // there is one telephone. it calls the other end of this bridge.
   {
     const dirX = Y.x - ISLAND3.x, dirZ = Y.z - ISLAND3.z;
@@ -702,19 +703,43 @@ export function createIsland6(player) {
     const sx2 = -uz, sz2 = ux; // sideways
     for (let tt = tA; tt <= tB; tt += 1.1) {
       const h = deckH(tt);
-      const plank = box(2.6, 0.15, 1.05, Math.round(tt) % 5 === 2 ? 0x96703f : 0xa97c50);
+      const deckRot = Math.atan2(ux, uz);
+      const wood = Math.round(tt) % 5 === 2 ? 0x96703f : 0xa97c50;
+      const plank = box(3.15, 0.16, 1.05, wood);
       plank.position.set(ISLAND3.x + ux * tt, h, ISLAND3.z + uz * tt);
-      plank.rotation.y = Math.atan2(ux, uz);
+      plank.rotation.y = deckRot;
       plank.receiveShadow = true;
       group.add(plank);
+
+      for (const side of [-1, 1]) {
+        const beam = box(0.22, 0.2, 1.08, 0x6b4a2e);
+        beam.position.set(
+          ISLAND3.x + ux * tt + sx2 * side * 1.72,
+          h + 0.08,
+          ISLAND3.z + uz * tt + sz2 * side * 1.72);
+        beam.rotation.y = deckRot;
+        group.add(beam);
+      }
+
       if (Math.round(tt - tA) % 4 === 0) {
         for (const side of [-1, 1]) {
-          const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, h - WATER_Y + 1.2, 6), mat(0x6b4a2e));
+          const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, h - WATER_Y + 1.2, 6), mat(0x6b4a2e));
           pile.position.set(
-            ISLAND3.x + ux * tt + sx2 * side * 1.15,
+            ISLAND3.x + ux * tt + sx2 * side * 1.55,
             (h + WATER_Y - 1.2) / 2,
-            ISLAND3.z + uz * tt + sz2 * side * 1.15);
+            ISLAND3.z + uz * tt + sz2 * side * 1.55);
           group.add(pile);
+        }
+      }
+      if (Math.round(tt - tA) % 7 === 0) {
+        for (const side of [-1, 1]) {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 1.05, 6), mat(0x7a5230));
+          post.position.set(
+            ISLAND3.x + ux * tt + sx2 * side * 1.72,
+            h + 0.56,
+            ISLAND3.z + uz * tt + sz2 * side * 1.72);
+          post.castShadow = true;
+          group.add(post);
         }
       }
     }

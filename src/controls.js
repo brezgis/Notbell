@@ -46,6 +46,9 @@ export function initControls() {
   }
 
   // ------------------------------------------------------- the stick ----
+  // invisible on purpose: the lower-left corner simply IS the stick.
+  // a whisper of a nub appears under your thumb so you know it heard you.
+  // pull gently to walk; pull further to run.
   const stick = el('div', 'stick');
   const nub = el('div', 'stick-nub', stick);
 
@@ -53,6 +56,7 @@ export function initControls() {
   stick.addEventListener('pointerdown', (e) => {
     stickPointer = e.pointerId;
     stick.setPointerCapture(e.pointerId);
+    stick.classList.add('live');
     moveStick(e);
     e.preventDefault();
   });
@@ -62,8 +66,9 @@ export function initControls() {
   const endStick = (e) => {
     if (e.pointerId !== stickPointer) return;
     stickPointer = null;
+    stick.classList.remove('live');
     nub.style.transform = 'translate(-50%, -50%)';
-    setHeld([...held].filter((c) => c === 'ShiftLeft')); // run survives restick
+    setHeld([]);
   };
   stick.addEventListener('pointerup', endStick);
   stick.addEventListener('pointercancel', endStick);
@@ -81,23 +86,21 @@ export function initControls() {
       if (dy > 0.38) dirs.push('KeyS');
       if (dx < -0.38) dirs.push('KeyA');
       if (dx > 0.38) dirs.push('KeyD');
+      if (len > 0.8) dirs.push('ShiftLeft'); // a committed pull is a run
     }
-    if (held.has('ShiftLeft')) dirs.push('ShiftLeft');
     setHeld(dirs);
   }
 
-  // ------------------------------------------------------ the buttons ----
-  function holdButton(node, code) {
-    node.addEventListener('pointerdown', (e) => {
-      node.setPointerCapture(e.pointerId);
-      press(code);
-      e.preventDefault();
-    });
-    const up = () => release(code);
-    node.addEventListener('pointerup', up);
-    node.addEventListener('pointercancel', up);
-  }
+  // -------------------------------------------------- tap to interact ----
+  // no E button: a tap on the world does whatever the prompt offers (talk,
+  // enter, reel in, pick up). the browser already suppresses click after a
+  // drag, so camera drags stay camera drags — exactly the semantics we want.
+  document.querySelector('canvas')?.addEventListener('click', () => {
+    key('KeyE', 'keydown');
+    key('KeyE', 'keyup');
+  });
 
+  // ------------------------------------------------------ the buttons ----
   function tapButton(node, code) {
     node.addEventListener('pointerdown', (e) => {
       key(code, 'keydown');
@@ -106,26 +109,10 @@ export function initControls() {
     });
   }
 
-  const act = el('button', 'btn-act');
-  act.textContent = 'E';
-  holdButton(act, 'KeyE');
-
-  const run = el('button', 'btn-run');
-  run.textContent = '💨';
-  // run is a latch: tap to toggle, because thumbs only come in pairs
-  let running = false;
-  run.addEventListener('pointerdown', (e) => {
-    running = !running;
-    run.classList.toggle('on', running);
-    if (running) press('ShiftLeft');
-    else release('ShiftLeft');
-    e.preventDefault();
-  });
-
   const row = el('div', 'btn-row');
   for (const [label, code, title] of [
     ['🗺️', 'KeyP', 'map'], ['🎒', 'KeyI', 'pockets'],
-    ['📖', 'KeyC', 'almanac'], ['🎩', 'KeyH', 'hat'], ['🔔', 'KeyM', 'sound'],
+    ['📖', 'KeyC', 'almanac'], ['🎩', 'KeyH', 'hat'],
   ]) {
     const b = document.createElement('button');
     b.className = 'btn-mini';
@@ -134,4 +121,14 @@ export function initControls() {
     row.appendChild(b);
     tapButton(b, code);
   }
+  // settings isn't a key; it gets a real event
+  const gear = document.createElement('button');
+  gear.className = 'btn-mini';
+  gear.textContent = '⚙️';
+  gear.title = 'settings';
+  row.appendChild(gear);
+  gear.addEventListener('pointerdown', (e) => {
+    dispatchEvent(new CustomEvent('notbell-settings'));
+    e.preventDefault();
+  });
 }

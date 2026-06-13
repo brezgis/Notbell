@@ -635,7 +635,9 @@ function rangeOf(spec) {
   if (spec.range === 'north') return { x: ISLAND3.x, z: ISLAND3.z, R: ISLAND3.r - 2 };
   if (spec.range === 'cave') return { x: SITES.cave.x, z: SITES.cave.z, R: 11 };
   if (spec.range === 'grove') return { x: ISLAND5.x, z: ISLAND5.z + 10, R: ISLAND5.r + 12 };
-  if (spec.range === 'everywhere') return { x: 20, z: -40, R: 140 }; // all shores welcome
+  // Crumb claims every shore, but a sailor of naps stays near his bunk —
+  // you'll usually find him in MouseBoat waters, off the north isle
+  if (spec.range === 'everywhere') return { x: ISLAND3.x + 5, z: ISLAND3.z + 5, R: 55 };
   return { x: 0, z: 0, R: ISLAND_RADIUS };
 }
 

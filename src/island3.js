@@ -584,7 +584,11 @@ export function createIsland3() {
 
   // ----------------------------------------------------- the MouseBoat ----
   {
-    // a mooring on whichever shore faces away from the arch
+    // a mooring on whichever shore faces away from the arch — and clear of
+    // the Labs causeway, which has right of way on account of being a bridge
+    const cwLen = Math.hypot(SITES.labsYard.x - ISLAND3.x, SITES.labsYard.z - ISLAND3.z);
+    const cwx = (SITES.labsYard.x - ISLAND3.x) / cwLen;
+    const cwz = (SITES.labsYard.z - ISLAND3.z) / cwLen;
     let mx = ISLAND3.x, mz = ISLAND3.z + ISLAND3.r;
     outer:
     for (let a = 0; a < Math.PI * 2; a += 0.2) {
@@ -592,6 +596,7 @@ export function createIsland3() {
         const x = ISLAND3.x + Math.cos(a) * r, z = ISLAND3.z + Math.sin(a) * r;
         const toOrigin = (x * -ISLAND3.x + z * -ISLAND3.z); // arch side check
         if (toOrigin > 0) continue;
+        if (Math.cos(a) * cwx + Math.sin(a) * cwz > 0.35) continue; // causeway side
         const h = terrainHeight(x, z);
         if (h > -0.05 || h < -0.45) continue;
         if (terrainHeight(x * 1.06, z * 1.06) > WATER_Y - 0.3) continue;

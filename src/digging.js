@@ -12,6 +12,17 @@ import { rand } from './utils.js';
 
 const ACTIVE_SPOTS = 4;
 
+// the island surfaces three or four fossils per real day, depending on
+// its mood, which is deterministic, which is very like the island
+function digBudget() {
+  const d = new Date();
+  let h = 2166136261;
+  for (const c of `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`) {
+    h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  }
+  return 3 + ((h >>> 0) % 2);
+}
+
 function makeStarMark() {
   const g = new THREE.Group();
   const dirt = new THREE.Mesh(
@@ -38,6 +49,14 @@ export function createDigging() {
   const spots = [];
 
   function placeSpot(spot) {
+    // today's allowance: what's been dug plus what's already showing
+    const alive = spots.filter((s) => s !== spot && s.alive).length;
+    if (S.dailyCount('digs') + alive >= digBudget()) {
+      spot.alive = false;
+      spot.mark.visible = false;
+      spot.respawn = 60; // check back; midnight restocks the past
+      return;
+    }
     for (let tries = 0; tries < 50; tries++) {
       const a = rand(0, Math.PI * 2);
       const r = Math.sqrt(rand(0, 1)) * (ISLAND_RADIUS - 4);
@@ -79,6 +98,7 @@ export function createDigging() {
         spot.alive = false;
         spot.mark.visible = false;
         spot.respawn = rand(240, 480); // the island makes fossils slower than you spend them
+        S.bumpDaily('digs');
         const id = rollTable(FOSSIL_TABLE);
         S.addItem(id);
         jingle();
@@ -87,6 +107,8 @@ export function createDigging() {
         if (!S.hasFlag('firstFossil')) {
           S.setFlag('firstFossil');
           ui.say('Fern at the museum would LOVE this. Probably. She loves most things older than her, which is a short list.');
+        } else if (S.dailyCount('digs') >= digBudget()) {
+          ui.toast('That’s every fossil the island felt like surfacing today. Tomorrow: more past.', '🪏');
         }
       },
     });

@@ -21,8 +21,11 @@ export const state = {
   errand: null,       // active delivery: { from, to } (villager names)
   lastErrandAt: 0,    // when the last errand finished (epoch ms, for cooldown)
   market: { day: '', sold: {} }, // Pip's daily ledger (gluts halve his offers)
+  digs: { day: '', n: 0 },       // fossils surfaced today (the island rations)
+  errands: { day: '', n: 0 },    // parcels accepted today (friendship, paced)
   avatar: null,       // chosen species, e.g. { kind: 'cat', body: 0xf0c98f }
   name: null,         // what the islanders call you
+  tz: 0,              // clock nudge in hours (0 = trust the device)
   where: null,        // { zone, x, z, rotY, camYaw, camPitch, camDist }
 };
 
@@ -63,6 +66,8 @@ export function load() {
         seen: { ...(data.seen || {}) },
         visited: { notbell: true, ...(data.visited || {}) },
         market: { day: '', sold: {}, ...(data.market || {}) },
+        digs: { day: '', n: 0, ...(data.digs || {}) },
+        errands: { day: '', n: 0, ...(data.errands || {}) },
       });
     }
   } catch { /* corrupted save: start fresh */ }
@@ -166,6 +171,17 @@ export function marketFactor(id) {
 export function recordSale(id, n) {
   if (state.market.day !== todayKey()) state.market = { day: todayKey(), sold: {} };
   state.market.sold[id] = (state.market.sold[id] || 0) + n;
+  save();
+}
+
+// generic once-a-day counters (digs, errands — anything the island rations)
+export function dailyCount(rec) {
+  return state[rec]?.day === todayKey() ? state[rec].n : 0;
+}
+
+export function bumpDaily(rec) {
+  if (state[rec]?.day !== todayKey()) state[rec] = { day: todayKey(), n: 0 };
+  state[rec].n += 1;
   save();
 }
 

@@ -414,11 +414,11 @@ export function scatterNature() {
   // --------------------------------------------------- the wary list ----
   // every catchable with somewhere better to be: approach slowly or watch
   // it leave. walking is fine. running is a statement, and they hear it.
+  // (they leave without comment. the leaving IS the comment.)
   const skittish = [];
-  let spookToastT = 0;
 
-  function addSkittish(mesh, wary, spook, line) {
-    skittish.push({ mesh, wary, spook, line });
+  function addSkittish(mesh, wary, spook) {
+    skittish.push({ mesh, wary, spook });
   }
 
   // ----------------------------------------------------- butterflies ----
@@ -463,7 +463,7 @@ export function scatterNature() {
     addSkittish(b, 5.5, () => {
       b.visible = false;
       b.userData.respawn = rand(18, 36);
-    }, 'Butterflies scatter at your hurry.');
+    });
   }
 
   // --------------------------------------------------------- beetles ----
@@ -509,7 +509,7 @@ export function scatterNature() {
     addSkittish(beetle, 4.5, () => {
       beetle.visible = false;
       data.respawn = rand(20, 40);
-    }, 'The beetle heard you coming. Beetles always hear you coming.');
+    });
   }
 
   // ------------------------------------------- small ground residents ----
@@ -560,7 +560,7 @@ export function scatterNature() {
       addSkittish(mesh, wary, () => {
         mesh.visible = false;
         data.respawn = rand(15, 30);
-      }, 'Something small made itself scarce.');
+      });
     }
     return data;
   }
@@ -633,7 +633,7 @@ export function scatterNature() {
     addSkittish(d, 6, () => {
       d.visible = false;
       d.userData.respawn = rand(15, 30);
-    }, 'The dragonfly was gone before your second footstep landed.');
+    });
   }
 
   // -------------------------------------------------------- fireflies ----
@@ -678,7 +678,7 @@ export function scatterNature() {
     addSkittish(f, 2.5, () => { // fireflies are nearly unbotherable. nearly.
       f.userData.caughtUntil = rand(8, 16);
       f.visible = false;
-    }, 'The firefly clocked out early on your account.');
+    });
   }
 
   // hurrying is loud. the meadow takes attendance.
@@ -697,7 +697,6 @@ export function scatterNature() {
     prevPlayer.copy(playerPos);
     if (step > 3) return; // a teleport is not a footstep
     const speed = step / Math.max(dt, 1e-4);
-    spookToastT -= dt;
     if (speed < 6.4) return; // walking (even caffeinated) is polite enough
     for (const s of skittish) {
       if (!s.mesh.visible) continue;
@@ -707,10 +706,6 @@ export function scatterNature() {
       if (d > s.wary) continue;
       if (moved.x * dx + moved.z * dz <= 0) continue; // running away is fine
       s.spook();
-      if (spookToastT <= 0) {
-        spookToastT = 4;
-        ui.toast(s.line, '💨');
-      }
     }
   }
 

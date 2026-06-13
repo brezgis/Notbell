@@ -238,7 +238,7 @@ export function updateHUD() {
   hud.innerHTML =
     `<span class="chip">🔘 ${state.buttons}</span>` +
     (tools ? `<span class="chip">${tools}</span>` : '') +
-    `<span class="chip dim">I — pockets</span>`;
+    `<span class="chip dim kbhint">I — pockets</span>`; // hidden on touch
 }
 
 // -------------------------------------------------------------- pockets ----
@@ -262,11 +262,15 @@ function renderPockets() {
     .join('');
   const donated = state.donations.length;
   pockets.innerHTML =
+    `<div class="fg-close pockets-close">✕</div>` +
     `<h3>🎒 ${state.name ? state.name + '’s ' : ''}Pockets</h3>` +
     (rows || `<div class="row dim">Empty. The island is full of things…</div>`) +
     `<div class="row total"><span>Buttons</span><span>🔘 ${state.buttons}</span></div>` +
     (donated ? `<div class="row dim"><span>Museum pieces donated</span><span>${donated}</span></div>` : '') +
     `<div class="closehint dim">I or Esc to close</div>`;
+  pockets.querySelector('.pockets-close').addEventListener('click', () => {
+    pockets.style.display = 'none';
+  });
 }
 
 // ----------------------------------------------------------------- fade ----

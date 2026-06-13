@@ -270,7 +270,7 @@ export function createMoon(player) {
             'Falling is just arriving, on a schedule. The rocket does it like a kept promise.',
             'The black goes thin. The thin goes blue. Somewhere on the way down, the sea starts again — you hear it through the hull, and you didn’t know until just now that you had missed it.',
           ]);
-          await zones.go('island', { x: -127, z: -71.5, rotY: Math.PI });
+          await zones.go('island', { x: -134, z: -73, rotY: Math.PI });
         });
         ui.toast('Home. The gulls already have opinions about the scorch marks.', '🌊');
       },
@@ -302,7 +302,7 @@ export function createMoon(player) {
 
   function adultRover(opts = {}) {
     const r = buildRover(opts.body ?? 0xcfd2d8);
-    r.scale.setScalar(opts.scale ?? 1.45);
+    r.scale.setScalar(Math.max(opts.scale ?? 2.05, 2));
     return r;
   }
 

@@ -33,7 +33,12 @@ function textPanel(lines, w, h, bg, fg, fontPx) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   lines.forEach(([text, y, px], i) => {
-    ctx.font = `800 ${px ?? fontPx}px ui-rounded, "Segoe UI", system-ui, sans-serif`;
+    let size = px ?? fontPx;
+    do {
+      ctx.font = `800 ${size}px ui-rounded, "Segoe UI", system-ui, sans-serif`;
+      if (ctx.measureText(text).width <= w * 0.9 || size <= 11) break;
+      size -= 2;
+    } while (true);
     ctx.fillText(text, w / 2, y);
     void i;
   });
@@ -83,8 +88,8 @@ export function createBulko(player) {
     const backDoors = box(3.6, 3.0, 0.3, 0x3a4a5c);
     backDoors.position.set(2, 1.5, -5.05);
     ext.add(backDoors);
-    const backSign = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.4),
-      textPanel([['BULKO  ·  STAFF ENTRANCE', 64, 44]], 512, 128, '#c2452c', '#fffaf0'));
+    const backSign = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 1.35),
+      textPanel([['BULKO  ·  STAFF ENTRANCE', 64, 38]], 640, 128, '#c2452c', '#fffaf0'));
     backSign.position.set(0, 5.2, -5.11);
     backSign.rotation.y = Math.PI;
     ext.add(backSign);

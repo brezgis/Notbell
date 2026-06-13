@@ -24,9 +24,12 @@ export function holidayOf(d = new Date()) {
 export const SEASON = seasonOf();
 export const HOLIDAY = holidayOf();
 
+// settings.js may nudge the island's clock via window.__notbellTz (hours) —
+// a global on purpose: this file keeps zero imports, and must stay that way
 export function hourNow() {
   const d = new Date();
-  return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+  const shift = (typeof window !== 'undefined' && window.__notbellTz) || 0;
+  return (d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600 + shift + 24) % 24;
 }
 
 // 0 at deep night → 1 at high noon, smooth. The sun keeps real hours.

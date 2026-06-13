@@ -31,7 +31,8 @@ export const ISLAND4 = { x: 8, z: 96, r: 22 };
 
 // the far west: Notbell Labs. the island is bigger than the chart, which
 // stops at the chart's edge. the island does not. the Labs love this fact.
-export const ISLAND6 = { x: -138, z: -58, r: 30 };
+// (room to grow westward; the Labs have plans. the Labs always have plans.)
+export const ISLAND6 = { x: -150, z: -58, r: 38 };
 
 const TERRACE = 2.4; // height of each AC-style terrace step
 
@@ -228,8 +229,8 @@ const bigbox = { x: ISLAND4.x, z: ISLAND4.z, r: 17, h: 0.8 };
 
 // Notbell Labs: a flat campus for the facility, a flat apron for the rocket.
 // science prefers level ground; the paperwork alone demands it.
-const labsYard = { x: -120, z: -58, r: 13, h: 1.6 };
-const labsPad = { x: -127, z: -75, r: 8.5, h: 1.6 };
+const labsYard = { x: -124, z: -58, r: 14, h: 1.6 };
+const labsPad = { x: -134, z: -78, r: 10, h: 1.6 };
 
 // Grove Isle's three clearings: the manor court, the springs, the orchard
 const manor = scanAround(ISLAND5.x, ISLAND5.z, (x, z) => {

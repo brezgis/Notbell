@@ -4,7 +4,7 @@
 // bell used to hang.
 
 import * as THREE from 'three';
-import { SITES, terrainHeight, WATER_Y, ISLAND2, ISLAND3, ISLAND5, VOLCANO } from './terrain.js';
+import { SITES, terrainHeight, WATER_Y, ISLAND2, ISLAND3, ISLAND5, ISLAND6, VOLCANO } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
@@ -339,7 +339,7 @@ export function createBoats(player) {
     labs: {
       label: '🚀 Notbell Labs',
       land: { x: LABS_DOCK.x, z: LABS_DOCK.z, rotY: LABS_DOCK.rotY },
-      sea: seaOff(LABS_DOCK.x, LABS_DOCK.z, -138, -58),
+      sea: seaOff(LABS_DOCK.x, LABS_DOCK.z, ISLAND6.x, ISLAND6.z),
     },
   };
 

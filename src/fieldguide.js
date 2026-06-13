@@ -57,7 +57,10 @@ const ISLAND_INFO = [
 
 // registered by island5.js when its corner of the world loads
 export function addIslandInfo(info) {
-  ISLAND_INFO.push(info);
+  const existing = ISLAND_INFO.findIndex((isle) => isle.key && isle.key === info.key);
+  if (existing >= 0) ISLAND_INFO[existing] = info;
+  else ISLAND_INFO.push(info);
+  chartDrawn = false;
 }
 
 // ------------------------------------------------------- charting ----
@@ -139,6 +142,11 @@ style.textContent = `
   #critterpedia .row { display: flex; justify-content: space-between; padding: 2px 0; }
   #critterpedia .unseen { opacity: 0.42; }
   .fg-hint { text-align: center; opacity: 0.55; font-size: 12px; margin-top: 8px; }
+  .fg-close {
+    position: absolute; top: 8px; right: 12px; font-size: 20px; line-height: 1;
+    padding: 6px 10px; cursor: pointer; opacity: 0.55; user-select: none;
+  }
+  .fg-close:active { opacity: 1; }
 `;
 document.head.appendChild(style);
 
@@ -218,6 +226,11 @@ function renderMap(player) {
     });
   }
   mapModal.innerHTML = '';
+  const closeMap = document.createElement('div');
+  closeMap.className = 'fg-close';
+  closeMap.textContent = '✕';
+  closeMap.addEventListener('click', () => { mapModal.style.display = 'none'; });
+  mapModal.appendChild(closeMap);
   mapModal.appendChild(mapCanvas);
   const info = document.createElement('div');
   info.className = 'info';
@@ -291,7 +304,10 @@ function renderPedia() {
     html += '</div>';
   }
   html += '<div class="fg-hint">🏛️ = donated to the museum · C or Esc to close</div>';
-  pedia.innerHTML = html;
+  pedia.innerHTML = '<div class="fg-close">✕</div>' + html;
+  pedia.querySelector('.fg-close').addEventListener('click', () => {
+    pedia.style.display = 'none';
+  });
 }
 
 // ---------------------------------------------------------------- keys ----

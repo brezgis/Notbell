@@ -45,8 +45,8 @@ function lerpKeys(a, b, t, out) {
 
 // --------------------------------------------------------------- weather ----
 
-let weather = 'clear'; // clear | rain | snow
-let weatherTimer = 0;
+let weather = 'clear'; // clear | rain | snow | fog
+let weatherCheckT = 0;
 let precip = null;     // the particle field
 let precipVel = [];
 
@@ -54,29 +54,62 @@ export function isRaining() {
   return weather === 'rain';
 }
 
+export function isFoggy() {
+  return weather === 'fog';
+}
+
 export function currentWeather() {
   return weather;
 }
 
 // for tests and for anyone who simply wants it to rain right now
+// (overrides the day's schedule for ten real minutes, then nature resumes)
+let forcedUntil = 0;
+
 export function forceWeather(w) {
   weather = w;
-  weatherTimer = rand(20 * 60, 40 * 60);
+  forcedUntil = performance.now() + 10 * 60 * 1000;
   buildPrecip();
 }
 
-function rollWeather(first = false) {
+// ---- the day's weather, decided at dawn, deterministically -------------
+// every calendar day has a plan: all sun, all wet, a wet morning, a wet
+// evening, a foggy morning, or — Howell's favorite — a foggy night.
+
+function dayHash() {
+  const d = new Date();
+  let h = 2166136261;
+  for (const c of `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`) {
+    h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  }
+  return ((h >>> 0) % 1000) / 1000;
+}
+
+function scheduledWeather() {
   const wet = SEASON === 'winter' ? 'snow' : 'rain';
-  const next = Math.random() < (SEASON === 'winter' ? 0.45 : 0.35) ? wet : 'clear';
-  weatherTimer = rand(20 * 60, 40 * 60);
+  const r = dayHash();
+  const d = new Date();
+  const h = d.getHours() + d.getMinutes() / 60;
+  if (r < 0.40) return 'clear';                       // a sunny day
+  if (r < 0.55) return wet;                           // a properly wet day
+  if (r < 0.70) return h < 12 ? wet : 'clear';        // wet morning
+  if (r < 0.82) return h >= 16 ? wet : 'clear';       // wet evening
+  if (r < 0.92) return h < 10.5 ? 'fog' : 'clear';    // foggy morning
+  return h >= 19 || h < 7 ? 'fog' : 'clear';          // a foggy night
+}
+
+function syncWeather(first = false) {
+  if (performance.now() < forcedUntil) return;
+  const next = scheduledWeather();
   if (next === weather) return;
   weather = next;
   buildPrecip();
   if (!first) {
     ui.toast(weather === 'rain' ? 'Rain rolls in off the sea.'
       : weather === 'snow' ? 'Snow begins, politely.'
+      : weather === 'fog' ? 'Fog walks in off the sea, slow and certain.'
       : 'The clouds wander off to bother some other island.',
-    weather === 'rain' ? '🌧️' : weather === 'snow' ? '❄️' : '☀️');
+    weather === 'rain' ? '🌧️' : weather === 'snow' ? '❄️' : weather === 'fog' ? '🌫️' : '☀️');
   }
 }
 
@@ -87,7 +120,7 @@ function buildPrecip() {
     precip.material.dispose();
     precip = null;
   }
-  if (weather === 'clear') return;
+  if (weather === 'clear' || weather === 'fog') return; // fog has no particles, only opinions
   const snow = weather === 'snow';
   const N = snow ? 350 : 500;
   const pts = new Float32Array(N * 3);
@@ -115,14 +148,17 @@ function buildPrecip() {
 
 export function init(refs) {
   ({ scene, hemi, sun, playerGroup } = refs);
-  rollWeather(true);
+  syncWeather(true);
 }
 
 const mixed = {};
 
 export function update(dt) {
-  weatherTimer -= dt;
-  if (weatherTimer <= 0) rollWeather();
+  weatherCheckT -= dt;
+  if (weatherCheckT <= 0) {
+    weatherCheckT = 10; // the schedule doesn't change often; neither should we
+    syncWeather();
+  }
 
   const onIsland = zones.current() === 'island' || zones.current() === 'sea';
 
@@ -152,8 +188,14 @@ export function update(dt) {
   if (f > 0.35) lerpKeys(KEY.golden, KEY.noon, (f - 0.35) / 0.65, mixed);
   else lerpKeys(KEY.night, KEY.golden, f / 0.35, mixed);
 
-  // wet weather mutes everything toward gray
-  if (weather !== 'clear') {
+  // wet weather mutes everything toward gray; fog swallows the world whole
+  if (weather === 'fog') {
+    mixed.bg = cA.set(mixed.bg).lerp(cB.set(0xb6bfc2), 0.8).getHex();
+    mixed.sunI *= 0.3;
+    mixed.hemiI *= 0.95;
+    mixed.fogNear = 8;
+    mixed.fogFar = Math.min(mixed.fogFar * 0.25, 55);
+  } else if (weather !== 'clear') {
     mixed.bg = cA.set(mixed.bg).lerp(cB.set(0x9aa6ad), 0.45).getHex();
     mixed.sunI *= 0.5;
     mixed.hemiI *= 0.8;

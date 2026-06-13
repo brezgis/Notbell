@@ -343,9 +343,10 @@ export function nameVillagers(animals) {
             { speaker: id.name, voice: id.voice });
           return;
         }
-        // maybe there's a parcel that needs legs
+        // maybe there's a parcel that needs legs (two a day; friendship paces itself)
         const friend = FRIEND_OF[id.name];
         if (!S.state.errand && friend && ERRAND_ASKS[id.name] &&
+            S.dailyCount('errands') < 2 &&
             Date.now() - (S.state.lastErrandAt || 0) > 240000 && Math.random() < 0.3) {
           const yes = await ui.ask(ERRAND_ASKS[id.name], [
             { label: '🎁 Of course', value: 'yes' },
@@ -353,6 +354,7 @@ export function nameVillagers(animals) {
           ], { speaker: id.name, voice: id.voice });
           if (yes) {
             S.state.errand = { from: id.name, to: friend };
+            S.bumpDaily('errands');
             S.addItem('parcel');
             jingle();
             ui.toast(`Got <b>A Small Parcel</b> for <b>${friend}</b>! They’ll be around — somewhere.`, '🎁');

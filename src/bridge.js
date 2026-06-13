@@ -83,10 +83,11 @@ export function createBridge(player, animals = []) {
 
   // planks, railings, pilings
   const nPlanks = Math.ceil(LEN / 1.1);
+  const plankDepth = LEN / nPlanks + 0.16;
   for (let i = 0; i <= nPlanks; i++) {
     const t = i / nPlanks;
     const p = pointAt(t);
-    const plank = box(DECK_HALF_W * 2 + 0.3, 0.18, 1.0, i % 7 === 3 ? 0x96703f : 0xa97c50);
+    const plank = box(DECK_HALF_W * 2 + 0.3, 0.18, plankDepth, i % 7 === 3 ? 0x96703f : 0xa97c50);
     plank.position.set(p.x, deckY(t), p.z);
     plank.rotation.y = Math.atan2(along.x, along.z);
     plank.receiveShadow = true;
@@ -114,7 +115,7 @@ export function createBridge(player, animals = []) {
       const p0 = pointAt(t0, side * DECK_HALF_W);
       const p1 = pointAt(t1, side * DECK_HALF_W);
       const len = Math.hypot(p1.x - p0.x, p1.z - p0.z);
-      const rail = box(0.1, 0.1, len + 0.15, 0x96703f);
+      const rail = box(0.1, 0.1, len + 0.35, 0x96703f);
       rail.position.set((p0.x + p1.x) / 2, (deckY(t0) + deckY(t1)) / 2 + 1.05, (p0.z + p1.z) / 2);
       rail.rotation.y = Math.atan2(p1.x - p0.x, p1.z - p0.z);
       rail.rotation.x = Math.atan2(deckY(t0) - deckY(t1), len);
@@ -140,7 +141,7 @@ export function createBridge(player, animals = []) {
       const p0 = pointAt(t0, RAIL_OFFSET + rOff);
       const p1 = pointAt(t1, RAIL_OFFSET + rOff);
       const len = Math.hypot(p1.x - p0.x, p1.z - p0.z);
-      const railBar = box(0.12, 0.12, len + 0.15, 0x55483a);
+      const railBar = box(0.12, 0.12, len + 0.42, 0x55483a);
       railBar.position.set((p0.x + p1.x) / 2, (railY(t0) + railY(t1)) / 2, (p0.z + p1.z) / 2);
       railBar.rotation.y = Math.atan2(p1.x - p0.x, p1.z - p0.z);
       railBar.rotation.x = Math.atan2(railY(t0) - railY(t1), len);
