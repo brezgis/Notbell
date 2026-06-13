@@ -3,6 +3,10 @@ import { rand } from './utils.js';
 import { dayFactor } from './calendar.js';
 import * as zones from './zones.js';
 
+// during the rocket launch, force the stars out regardless of the clock
+let launchNight = 0;
+export function setLaunchNight(k) { launchNight = Math.max(0, Math.min(1, k)); }
+
 // Puffy low-poly clouds that drift across the island and cast soft
 // wandering shadows — plus stars that come out when the real sun goes down.
 export function createSky() {
@@ -50,7 +54,7 @@ export function createSky() {
       if (c.position.x > 160) c.position.x = -160;
     }
     const f = dayFactor();
-    const nightness = 1 - Math.min(1, f / 0.25);
+    const nightness = Math.max(launchNight, 1 - Math.min(1, f / 0.25));
     starMat.opacity = nightness * 0.9;
     // stars belong to the island's sky — interiors and the cave keep their own
     stars.visible = nightness > 0.02 &&

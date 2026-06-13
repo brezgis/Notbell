@@ -15,7 +15,8 @@ import { jingle, tone, doorChime, sip } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { addIslandInfo } from './fieldguide.js';
 import { HOLIDAY } from './calendar.js';
-import { currentWeather } from './almanac.js';
+import { currentWeather, setSpaceFade } from './almanac.js';
+import { setLaunchNight } from './sky.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -417,7 +418,8 @@ export function createIsland6(player) {
   }
 
   // ------------------------------------------------------ the launch pad ----
-  let rocketGlow;
+  let rocketGlow, rocket, launch = null;
+  const smoke = []; // faceted exhaust puffs at liftoff
   {
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(6.2, 6.6, 0.25, 18), mat(0x8a857a, 0.95));
     ring.position.set(P.x, P.h + 0.05, P.z);
@@ -428,7 +430,7 @@ export function createIsland6(player) {
     group.add(scorch);
 
     // the rocket: white, red, and certain
-    const rocket = new THREE.Group();
+    rocket = new THREE.Group();
     const bodyR = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.15, 5.6, 10), mat(0xf2efe4, 0.7));
     bodyR.position.y = 3.4;
     rocket.add(bodyR);
@@ -512,6 +514,7 @@ export function createIsland6(player) {
 
     register({
       pos: new THREE.Vector3(P.x, 0, P.z + 2.6), r: 2.8,
+      enabled: () => !launch, // no re-triggering once you've lit the candle
       label: () => S.hasFlag('rocketPowered') ? 'check on the rocket' : 'inspect the rocket',
       use: async () => {
         if (S.hasFlag('rocketPowered')) {
@@ -535,18 +538,7 @@ export function createIsland6(player) {
             ], { speaker: 'Dr. Hazel', voice: 700 });
             ui.toast('Got the <b>Bubble Helmet</b>! It fogs up when you grin. It will fog up a lot.', '🫧');
           }
-          await ui.fadeSwap(async () => {
-            tone(60, { dur: 1.6, type: 'sawtooth', vol: 0.07 });
-            tone(48, { time: 0.8, dur: 2.2, type: 'sawtooth', vol: 0.08 });
-            await ui.say([
-              '“Notbell Control to rocket. Checklist page nine.” Doppler’s voice, extremely calm. Somewhere below, Pots bangs the pot.',
-              'The hum becomes a shake. The shake becomes a HAND, pressing you gently into the seat. Through the porthole: the pad, the yard, the flag — smaller, smaller, a postage stamp of a country.',
-              'The blue goes thin. The thin goes black. The Lightseed sings the whole way up — the same four notes the lighthouse used to keep — and the sea, for the first time in your life, is somewhere you are not.',
-              'And below the window, all of it at once: every island the volcano ever made, laid out on the water like buttons on a coat.',
-            ]);
-            await zones.go('moon');
-          });
-          ui.toast('Contact light. The dust accepts you politely.', '🌑');
+          liftoff(); // the rocket climbs (you're inside); narration + cut-to-moon play out in update()
           return;
         }
         const firstLook = !S.hasFlag('sawRocket');
@@ -1525,8 +1517,98 @@ export function createIsland6(player) {
     });
   }
 
+  // ----------------------------------------------------- the launch ride ----
+  // Tugboat-style: you ride the rocket up (player hidden — you're sealed inside),
+  // the camera trails the climb as the island shrinks below, the existing
+  // narration plays mid-ascent, then a fade cuts to the starry moon.
+  const LAUNCH_NARRATION = [
+    '“Notbell Control to rocket. Checklist page nine.” Doppler’s voice, extremely calm. Somewhere below, Pots bangs the pot.',
+    'The hum becomes a shake. The shake becomes a HAND, pressing you gently into the seat. Through the porthole: the pad, the yard, the flag — smaller, smaller, a postage stamp of a country.',
+    'The blue goes thin. The thin goes black. The Lightseed sings the whole way up — the same four notes the lighthouse used to keep — and the sea, for the first time in your life, is somewhere you are not.',
+    'And below the window, all of it at once: every island the volcano ever made, laid out on the water like buttons on a coat.',
+  ];
+  function puffSmoke(n = 6) {
+    for (let i = 0; i < n; i++) {
+      const p = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.4, 0.95), 0),
+        new THREE.MeshStandardMaterial({ color: 0xd8d3c8, flatShading: true, roughness: 1, transparent: true, opacity: 0.85 }));
+      const a = rand(0, Math.PI * 2), rad = rand(0.4, 2.6);
+      p.position.set(P.x + Math.cos(a) * rad, P.h + 0.4 + rand(0, 0.6), P.z + Math.sin(a) * rad);
+      p.userData.vel = { x: Math.cos(a) * rand(0.5, 1.5), y: rand(0.4, 1.0), z: Math.sin(a) * rand(0.5, 1.5) };
+      group.add(p);
+      smoke.push(p);
+    }
+  }
+  function ageSmoke(dt) {
+    for (let i = smoke.length - 1; i >= 0; i--) {
+      const p = smoke[i];
+      p.position.x += p.userData.vel.x * dt;
+      p.position.y += p.userData.vel.y * dt;
+      p.position.z += p.userData.vel.z * dt;
+      p.scale.multiplyScalar(1 + dt * 0.8); // billow out
+      p.material.opacity -= dt * 0.5;        // ~1.7s life
+      if (p.material.opacity <= 0) {
+        group.remove(p);
+        p.geometry.dispose();
+        p.material.dispose();
+        smoke.splice(i, 1);
+      }
+    }
+  }
+  function liftoff() {
+    tone(60, { dur: 1.6, type: 'sawtooth', vol: 0.07 });
+    tone(48, { time: 0.8, dur: 2.2, type: 'sawtooth', vol: 0.08 });
+    player.riding = true;          // the rocket flies; you sit tight (player.js honors riding)
+    player.group.visible = false;  // sealed inside — we watch the rocket itself rise
+    puffSmoke(8);
+    launch = { t: 0, vy: 0, fired: false, phase: 'rise' };
+  }
+  function emitExhaust() {
+    // the volcano's smoke, inverted: emitted at the engine, trailing DOWN as we climb
+    const p = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.35, 0.8), 0),
+      new THREE.MeshStandardMaterial({ color: 0xd8d2cc, flatShading: true, roughness: 1, transparent: true, opacity: 0.75 }));
+    p.position.set(rocket.position.x + rand(-0.3, 0.3), rocket.position.y + 0.3, rocket.position.z + rand(-0.3, 0.3));
+    p.userData.vel = { x: rand(-0.6, 0.6), y: rand(-2.5, -1.0), z: rand(-0.6, 0.6) };
+    group.add(p);
+    smoke.push(p);
+  }
+  function advanceLaunch(dt, t) {
+    const L = launch;
+    if (L.phase === 'gone') return; // mid-fade; hold until zones.go lands us on the moon
+    L.t += dt;
+    L.vy = Math.min(L.vy + 9 * dt, 24);
+    if (rocket.position.y > P.h + 85) L.vy *= 0.95; // ease into a hover near the top of the sky
+    rocket.position.y += L.vy * dt;
+    rocket.position.x = P.x + Math.sin(t * 46) * 0.06 * Math.max(0, 1 - L.t * 0.6); // ignition shimmy, fades
+    player.group.position.set(rocket.position.x, rocket.position.y + 3, rocket.position.z); // camera trails this
+    if (L.t < 1.1 && Math.sin(t * 28) > 0.9) puffSmoke(2); // kicked-up ground cloud at liftoff
+    if (L.vy > 4) { // continuous exhaust plume while climbing
+      L.emitT = (L.emitT || 0) - dt;
+      while (L.emitT <= 0) { emitExhaust(); L.emitT += 0.06; }
+    }
+    // climb out of the sky → starry space (begins ~+28, full near apex ~+74)
+    const k = Math.max(0, Math.min(1, (rocket.position.y - P.h - 28) / 46));
+    setSpaceFade(k);
+    setLaunchNight(k);
+    if (!L.fired && L.t > 1.3) { L.fired = true; ui.say(LAUNCH_NARRATION); }
+    if (L.fired && !ui.isBusy() && rocket.position.y > P.h + 72) {
+      L.phase = 'gone';
+      ui.fadeSwap(async () => {
+        await zones.go('moon');
+        rocket.position.set(P.x, P.h, P.z); // reset the pad for next time
+        player.group.visible = true;
+        player.riding = false;
+        setSpaceFade(0);
+        setLaunchNight(0);
+        launch = null;
+      });
+      ui.toast('Contact light. The dust accepts you politely.', '🌑');
+    }
+  }
+
   // ============================================================ update ----
   function update(dt, t, playerPos) {
+    if (smoke.length) ageSmoke(dt);                // liftoff puffs linger, then clear
+    if (launch) { advanceLaunch(dt, t); return; }  // during the launch, nothing else matters
     const zone = zones.current();
     if (zone === 'island') {
       // only spend effort when the labs are anywhere near the frame

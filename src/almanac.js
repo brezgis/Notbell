@@ -62,6 +62,12 @@ export function currentWeather() {
   return weather;
 }
 
+// during the rocket launch, the island sky fades toward starry black space
+let spaceFade = 0;
+export function setSpaceFade(k) {
+  spaceFade = Math.max(0, Math.min(1, k));
+}
+
 // for tests and for anyone who simply wants it to rain right now
 // (overrides the day's schedule for ten real minutes, then nature resumes)
 let forcedUntil = 0;
@@ -212,6 +218,16 @@ export function update(dt) {
   hemi.intensity = mixed.hemiI;
   sun.color.set(mixed.sunC);
   sun.intensity = mixed.sunI;
+
+  // the rocket climbs out of the sky: lerp the whole vault toward starry space
+  if (spaceFade > 0) {
+    const sb = cA.set(mixed.bg).lerp(cB.set(0x05070f), spaceFade).getHex();
+    scene.background.set(sb);
+    scene.fog.color.set(sb);
+    scene.fog.far = mixed.fogFar + (560 - mixed.fogFar) * spaceFade; // open up so the dark + stars read
+    hemi.intensity = mixed.hemiI * (1 - 0.55 * spaceFade);
+    sun.intensity = mixed.sunI * (1 - 0.45 * spaceFade);
+  }
 
   // the sun (or moon) arcs east → west, and its shadow window follows the
   // player so both islands stay lit correctly
