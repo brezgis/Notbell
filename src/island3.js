@@ -30,14 +30,112 @@ const IN = {
   clinic: { x: 300, z: 1140 },
 };
 
-const BOOKS3 = [
-  '“Moss: A Love Story (Unabridged, 9 vols.)”',
-  '“The Sea Also Listens,” by a Friend of the Listeners.',
-  '“Boats I Have Whistled At,” by Capt. E. Brine.',
-  '“Edible Mushrooms of the North Isle” (heavily annotated: “NO.” “ALSO NO.” “fine.”)',
-  '“Practical Ghostkeeping.” Someone has written “thank you” in the margin in very cold ink.',
-  '“The Lightkeeper’s Logbook, Years 1–34.” The final page is missing.',
+// The Quiet Stacks hold real volumes from the wider world shelved cheek-by-jowl
+// with the island's own. Each of the four stacks is anchored to one shelf; you
+// draw a single book at random from whichever you're standing at, so the same
+// passage never turns up at two positions. Verse uses " / " line breaks (the
+// dialogue box collapses real newlines, and white-space:pre-wrap would change
+// every other dialogue). The real excerpts are public domain, quoted verbatim.
+const STACKS3 = [
+  // — salt water —
+  [
+    {
+      title: '“Moby-Dick,” by Herman Melville.',
+      note: 'Salt-swollen, and read well past the library’s rules.',
+      passage: 'Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.',
+      voice: 430,
+    },
+    {
+      title: '“The Sea Also Listens,” by a Friend of the Listeners.',
+      passage: 'First lesson: the sea does not answer. Second lesson: that is not the same as not listening. We ring no bell here — we keep the quiet a bell would leave behind.',
+      voice: 470,
+    },
+    {
+      title: '“Moonlit Night,” by Du Fu.',
+      note: 'Translated by Florence Ayscough & Amy Lowell, 1921.',
+      passage: [
+        'To-night—the moon at Fu Chou. / In the centre of the Women’s Apartments / There is only one to look at it. / I am far away, but I love my little son, my daughter. / They cannot understand and think of Ch’ang An.',
+        'The sweet-smelling mist makes the cloud head-dress damp, / The jade arm must be chilly / In this clear, glorious shining. / When shall I lean on the lonely screen? / When shall we both be shone upon, and the scars of tears be dry?',
+      ],
+      voice: 520,
+    },
+    {
+      title: '“Boats I Have Whistled At,” by Capt. E. Brine.',
+      note: 'Signed, smudged, and faintly damp.',
+      passage: 'A boat will go where you point it and sulk the whole way, or go where it pleases and let you call that seamanship. I have whistled at four hundred boats. Two whistled back. I do not discuss the second one.',
+      voice: 360,
+    },
+  ],
+  // — quiet rooms —
+  [
+    {
+      title: '“Jane Eyre,” by Charlotte Brontë.',
+      note: 'A faded ribbon marks a page very near the end.',
+      passage: 'Reader, I married him. A quiet wedding we had: he and I, the parson and clerk, were alone present.',
+      voice: 560,
+    },
+    {
+      title: '“Spring Quiet,” by Christina Rossetti.',
+      passage: 'Here the sun shineth / Most shadily; / Here is heard an echo / Of the far sea, / Though far off it be.',
+      voice: 600,
+    },
+    {
+      title: '“Moss: A Love Story (Unabridged, 9 vols.).”',
+      passage: 'Volume Six. He had not moved. Neither had she. Between them the patient green crept one heroic inch across the stone — and the narrator assures us, with feeling, that this is the most that has ever happened to anyone.',
+      voice: 580,
+    },
+  ],
+  // — the sky, and other large ideas —
+  [
+    {
+      title: '“War and Peace,” by Leo Tolstoy.',
+      note: 'Heavier than the shelf it came from.',
+      passage: 'It seemed to Pierre that this comet fully responded to what was passing in his own softened and uplifted soul, now blossoming into a new life.',
+      voice: 500,
+    },
+    {
+      title: '“Hope is the thing with feathers,” by Emily Dickinson.',
+      passage: [
+        'Hope is the thing with feathers / That perches in the soul, / And sings the tune without the words, / And never stops at all,',
+        'And sweetest in the gale is heard; / And sore must be the storm / That could abash the little bird / That kept so many warm.',
+      ],
+      voice: 640,
+    },
+    {
+      title: '“Practical Ghostkeeping.”',
+      note: 'Someone has written “thank you” in the margin, in very cold ink.',
+      passage: 'Chapter One: You Cannot Tidy A Ghost, But You May Leave Things Findable. Chapter Two: A Polished Hook Is A Kindness. Chapter Three: If The Brass Is Already Shining, Do Not Ask Who.',
+      voice: 420,
+    },
+  ],
+  // — the island’s own —
+  [
+    {
+      title: '“Les Misérables,” by Victor Hugo.',
+      note: 'Translated by Isabel F. Hapgood, 1887.',
+      passage: '“The beautiful is as useful as the useful.” He added after a pause, “More so, perhaps.”',
+      voice: 480,
+    },
+    {
+      title: '“I Am a Cat,” by Natsume Sōseki.',
+      note: 'Translated by Kan-ichi Andō, 1906.',
+      passage: 'I am a cat; but as yet I have no name. Where I was born is entirely unknown to me. But this still dimly lives in my memory. I was mewing in a gloomy damp place, where I got the first sight of a creature called man.',
+      voice: 600,
+    },
+    {
+      title: '“Edible Mushrooms of the North Isle,” heavily annotated.',
+      passage: 'Entry 9, the speckled cap: the author recommends it sautéed. The margin replies, in a firmer hand: “NO.” Entry 10: “ALSO NO.” Entry 11, at last: “fine. but only this one. and only Fern knows why.”',
+      voice: 520,
+    },
+    {
+      title: '“The Lightkeeper’s Logbook, Years 1–34,” by Old Tansy.',
+      note: 'The final page is missing.',
+      passage: 'Year 22, a fog with no manners. Rang the bell from dusk until the boats were all counted home. A good bell does half a lighthouse’s work, and never once asks for the credit. — T.',
+      voice: 540,
+    },
+  ],
 ];
+const ALL_BOOKS3 = STACKS3.flat(); // Vesper lends from the whole library
 
 const VESPER_LORE = [
   'Records? Mm. I keep the island’s memory in paper, the way Fern keeps it in stone and the cave keeps it in light.',
@@ -262,9 +360,11 @@ export function createIsland3() {
       wall.position.set(x, y, z);
       group.add(wall);
     }
-    // stacks: tall shelves with rows of colorful spines
+    // stacks: tall shelves with rows of colorful spines — one anchored book
+    // collection (STACKS3) per shelf; press E at a shelf to read a random one
     const spineColors = [0xc25b4e, 0x5b8bc9, 0x6fae5c, 0xd9a440, 0x8a5a8a];
-    for (const sx of [-6.2, -2.2, 1.8, 5.8]) {
+    const SHELF_X = [-6.2, -2.2, 1.8, 5.8];
+    SHELF_X.forEach((sx, i) => {
       const shelf = box(3.2, 3.6, 0.9, 0x6b4a2e);
       shelf.position.set(B.x + sx, 1.8, B.z - 5.2);
       group.add(shelf);
@@ -275,7 +375,17 @@ export function createIsland3() {
           group.add(spine);
         }
       }
-    }
+      register({
+        pos: new THREE.Vector3(B.x + sx, 0, B.z - 4.6), r: 2.2, zone: 'library',
+        label: 'read a book',
+        use: async () => {
+          const book = pick(STACKS3[i]);
+          const body = Array.isArray(book.passage) ? book.passage : [book.passage];
+          await ui.say([book.note ? `${book.title} ${book.note}` : book.title, ...body],
+            { voice: book.voice ?? 480 });
+        },
+      });
+    });
     const ladder = new THREE.Group();
     for (const lx of [-0.3, 0.3]) {
       const rail = box(0.08, 3.4, 0.08, 0x8a6f4d);
@@ -352,9 +462,9 @@ export function createIsland3() {
           { label: 'Leave', value: null },
         ], { speaker: 'Vesper', voice: 540 });
         if (choice === 'borrow') {
-          const title = pick(BOOKS3);
+          const book = pick(ALL_BOOKS3);
           jingle();
-          ui.toast(`You borrow ${title} Due date: whenever.`, '📖');
+          ui.toast(`You borrow ${book.title} Due date: whenever.`, '📖');
           await ui.say('Spine uncracked, corners unfolded, returned before the moss notices. The usual terms.',
             { speaker: 'Vesper', voice: 540 });
         } else if (choice === 'lore') {
