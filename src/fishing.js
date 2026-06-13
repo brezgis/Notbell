@@ -4,7 +4,7 @@
 // moves like it owns the bay. Sometimes the sea still sends a letter.
 
 import * as THREE from 'three';
-import { terrainHeight, WATER_Y } from './terrain.js';
+import { terrainHeight, WATER_Y, ISLAND2 } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
@@ -18,6 +18,44 @@ import { isRaining } from './almanac.js';
 const BITE_WINDOW = 0.8;  // seconds you have to react to the real thing
 const CAST_REACH = 3.2;   // how close the bobber must land to a shadow
 const SIZES = [['s', 0.55, 40], ['m', 0.85, 40], ['l', 1.25, 20]];
+const FAR_BRIDGE_RAIL_OFFSET = 6;
+const FAR_BRIDGE_DECK_HALF_W = 1.85;
+const FAR_BRIDGE_RAIL_HALF_W = 1.15;
+const FAR_BRIDGE_SHADOW_CLEARANCE = 1.5;
+
+const farBridge = (() => {
+  const dist = Math.hypot(ISLAND2.x, ISLAND2.z);
+  const dir = { x: ISLAND2.x / dist, z: ISLAND2.z / dist };
+
+  function findShore(fromT, step) {
+    let t = fromT;
+    for (let i = 0; i < 400; i++) {
+      if (terrainHeight(dir.x * (t + step), dir.z * (t + step)) < 0.15) break;
+      t += step;
+    }
+    return t;
+  }
+
+  const tA = findShore(24, 0.5);
+  const tB = findShore(dist - 14, -0.5);
+  const a = { x: dir.x * tA, z: dir.z * tA };
+  const b = { x: dir.x * tB, z: dir.z * tB };
+  const len = Math.hypot(b.x - a.x, b.z - a.z);
+  const along = { x: (b.x - a.x) / len, z: (b.z - a.z) / len };
+  const perp = { x: -along.z, z: along.x };
+  return { a, len, along, perp };
+})();
+
+function inFarBridgeFootprint(x, z) {
+  const dx = x - farBridge.a.x, dz = z - farBridge.a.z;
+  const t = (dx * farBridge.along.x + dz * farBridge.along.z) / farBridge.len;
+  const endClearance = FAR_BRIDGE_SHADOW_CLEARANCE / farBridge.len;
+  if (t < -endClearance || t > 1 + endClearance) return false;
+
+  const off = dx * farBridge.perp.x + dz * farBridge.perp.z;
+  return Math.abs(off) < FAR_BRIDGE_DECK_HALF_W + FAR_BRIDGE_SHADOW_CLEARANCE ||
+    Math.abs(off - FAR_BRIDGE_RAIL_OFFSET) < FAR_BRIDGE_RAIL_HALF_W + FAR_BRIDGE_SHADOW_CLEARANCE;
+}
 
 export function createFishing(player) {
   const group = new THREE.Group();
@@ -39,7 +77,7 @@ export function createFishing(player) {
   function makeShadow() {
     const m = new THREE.Mesh(new THREE.CircleGeometry(1, 9),
       new THREE.MeshBasicMaterial({
-        color: 0x122b38, transparent: true, opacity: 0.55, depthWrite: false, depthTest: false,
+        color: 0x122b38, transparent: true, opacity: 0.55, depthWrite: false, depthTest: true,
       }));
     m.rotation.x = -Math.PI / 2;
     m.renderOrder = 1;
@@ -72,7 +110,7 @@ export function createFishing(player) {
     if (where === 'cave') {
       return Math.hypot(x - CAVE_POND.x, z - CAVE_POND.z) < CAVE_POND.r - 0.6;
     }
-    return terrainHeight(x, z) < WATER_Y - 0.25;
+    return terrainHeight(x, z) < WATER_Y - 0.25 && !inFarBridgeFootprint(x, z);
   }
 
   function respawnShadow(s, playerPos) {
