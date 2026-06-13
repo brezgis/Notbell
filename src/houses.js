@@ -172,9 +172,12 @@ function makeCottage({ wall, roof, door }, scale = 1) {
 
 // Houses near a slope get honest wooden stilts under their low corners,
 // instead of hovering — island carpentry at its finest.
-function addStilts(group, x, z, baseH, half, rotY) {
+const COTTAGE_BODY_HALF_W = 4.6 / 2;
+const COTTAGE_BODY_HALF_D = 4.0 / 2;
+
+function addStilts(group, x, z, baseH, halfW, halfD, rotY) {
   const cs = Math.cos(rotY), sn = Math.sin(rotY);
-  for (const [cx, cz] of [[half, half], [half, -half], [-half, half], [-half, -half]]) {
+  for (const [cx, cz] of [[halfW, halfD], [halfW, -halfD], [-halfW, halfD], [-halfW, -halfD]]) {
     const wx = x + cx * cs + cz * sn;
     const wz = z - cx * sn + cz * cs;
     const ground = terrainHeight(wx, wz);
@@ -449,7 +452,7 @@ export function createHouses(animals, obstacles = []) {
   const hy = terrainHeight(home.x, home.z);
   cottage.position.set(home.x, hy, home.z - 1.5);
   group.add(cottage);
-  addStilts(group, home.x, home.z - 1.5, hy, 2.5, 0);
+  addStilts(group, home.x, home.z - 1.5, hy, COTTAGE_BODY_HALF_W * 1.15, COTTAGE_BODY_HALF_D * 1.15, 0);
   zones.addBlocker(home.x, home.z - 1.5, 3.4);
 
   // window boxes, because it is YOUR house
@@ -724,7 +727,7 @@ export function createHouses(animals, obstacles = []) {
     // face the house roughly toward its villager's patch
     house.rotation.y = Math.atan2(a.g.position.x - spot.x, a.g.position.z - spot.z);
     group.add(house);
-    addStilts(group, spot.x, spot.z, spot.h, 1.9, house.rotation.y);
+    addStilts(group, spot.x, spot.z, spot.h, COTTAGE_BODY_HALF_W * 0.8, COTTAGE_BODY_HALF_D * 0.8, house.rotation.y);
     zones.addBlocker(spot.x, spot.z, 2.6);
 
     const doorWorld = new THREE.Vector3(
