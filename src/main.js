@@ -201,8 +201,13 @@ ui.updateHUD();
 // turns politely translucent (and recovers the instant it isn't)
 const occluders = [];
 scene.traverse((o) => {
-  if (!o.isMesh || o.geometry?.type !== 'BoxGeometry') return;
+  if (!o.isMesh) return;
   if (o.material?.transparent || o.material?.opacity < 1) return;
+  if (o.userData.occlude === true) {
+    occluders.push(o);
+    return;
+  }
+  if (o.geometry?.type !== 'BoxGeometry') return;
   const g = o.geometry.parameters;
   if (g.height >= 2.2 && Math.max(g.width, g.depth) * g.height >= 12) {
     occluders.push(o);

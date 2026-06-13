@@ -490,6 +490,7 @@ export function createIsland3() {
     const cy = terrainHeight(clinSpot.x, clinSpot.z);
     const ext = new THREE.Group();
     const walls = box(5.6, 3.0, 5.0, 0xf0ece4);
+    walls.userData.occlude = true;
     walls.position.y = 1.5;
     ext.add(walls);
     const roof = new THREE.Mesh(new THREE.ConeGeometry(4.6, 2.0, 4), mat(0x5b8bc9));

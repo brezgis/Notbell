@@ -54,6 +54,7 @@ function makeWindow(r = 0.45) {
 function makeShopExterior() {
   const g = new THREE.Group();
   const walls = box(7, 3.4, 6, 0xe8b84b);
+  walls.userData.occlude = true;
   walls.position.y = 1.7;
   g.add(walls);
   const roof = new THREE.Mesh(new THREE.ConeGeometry(5.6, 2.6, 4), mat(0x4f8f6a));

@@ -154,6 +154,7 @@ export function createIsland6(player) {
   const fy = Y.h;
   {
     const main = box(16, 5, 7, 0xe6e2d4);
+    main.userData.occlude = true;
     main.position.set(fx, fy + 2.5, fz);
     main.receiveShadow = true;
     group.add(main);
