@@ -166,6 +166,7 @@ function buildRoom(base, w, d, floorColor, wallColor) {
   const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.4, d), mat(floorColor));
   floor.position.set(base.x, -0.2, base.z);
   floor.receiveShadow = true;
+  floor.castShadow = true;
   g.add(floor);
   const wallH = 4.6;
   const back = new THREE.Mesh(new THREE.BoxGeometry(w, wallH, 0.4), mat(wallColor));

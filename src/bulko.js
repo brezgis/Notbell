@@ -265,7 +265,7 @@ export function createBulko(player) {
     for (let i = 0; i < 4; i++) {
       const bar = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 0.5),
         new THREE.MeshBasicMaterial({ color: 0xf4f8ff }));
-      bar.position.set(B.x - 9 + i * 6, 6.5, B.z - 4);
+      bar.position.set(B.x - 9 + i * 6, 7.5, B.z - 4);
       group.add(bar);
     }
 
@@ -288,15 +288,28 @@ export function createBulko(player) {
       group.add(upright, upright2);
     }
 
+    register({
+      pos: new THREE.Vector3(B.x, 0, B.z - 4.6), r: 5, zone: 'bulko',
+      label: 'browse the bulk shelves',
+      use: () => ui.say(pick([
+        'A five-gallon, shelf-stable bucket of macaroni and cheese. The lid reads “FAMILY SIZE.” It does not specify how large a family, nor whether they are meant to eat it or live in it. You respect the ambiguity.',
+        'One hundred and forty-four rolls of paper towel, shrink-wrapped into a single cube the size of a refrigerator. You could not lift it. You doubt anyone could. It may be load-bearing.',
+        'A jar of pickles requiring both arms and a plan. Forty-eight of them. The brine alone could refloat a small boat. You think, briefly, of Captain Brine. You decide not to mention it to him.',
+        'A flat of sixty cans of beans. Only beans. The label is a photograph of the beans. Somewhere, a person is overjoyed by this. You hope, sincerely, to meet them.',
+        'A two-kilogram tub labeled “ASSORTED OPTIMISM (GUMMY).” Best before: a date not yet invented. Net weight: more than you have ever personally felt.',
+        'The shelves climb up into the fog. Whatever sits on the very top has been there since before the bell went down, and it is fine. It is all fine. It is BULKO.',
+      ])),
+    });
+
     // the parmesan: wheels of it, stacked like the treasure it is
     for (let i = 0; i < 6; i++) {
       const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.5, 12), mat(0xe8c95c, 0.6));
-      wheel.position.set(B.x - 13 + (i % 2) * 2.1, 0.45 + Math.floor(i / 2) * 0.55, B.z + 2);
+      wheel.position.set(B.x - 9 + (i % 2) * 2.1, 0.45 + Math.floor(i / 2) * 0.55, B.z + 3.3);
       wheel.castShadow = true;
       group.add(wheel);
     }
     register({
-      pos: new THREE.Vector3(B.x - 12, 0, B.z + 3.8), r: 2.6, zone: 'bulko',
+      pos: new THREE.Vector3(B.x - 8, 0, B.z + 4.9), r: 2.6, zone: 'bulko',
       label: 'consider the parmesan wheels',
       use: async () => {
         const choice = await ui.ask('Wheels of parmesan, stacked to shoulder height. Each one is the size of a well-fed dog.', [
@@ -313,18 +326,232 @@ export function createBulko(player) {
       },
     });
 
-    // the wall of TVs
+    // ------------------------------------------------ the milk cooler entrance ----
+    // A WIDE Costco-style cold-room entrance: steel frame, strip curtains, a dark
+    // cold beyond. Set into the WEST wall, directly across the floor from the
+    // lobster tank (now on the east). E enters the 'milkroom' zone (big dairy hall).
+    {
+      const dx = B.x - 17, dz = B.z + 3, hw = 3.6; // west wall, toward the south end
+      const beyond = box(0.1, 3.4, hw * 2, 0x162430); // the cold dark through the strips
+      beyond.position.set(dx + 0.05, 1.9, dz);
+      group.add(beyond);
+      const lintel = box(0.6, 0.6, hw * 2 + 0.9, 0x8d949c);
+      lintel.position.set(dx, 3.7, dz);
+      group.add(lintel);
+      for (const s of [-1, 1]) {
+        const post = box(0.6, 3.7, 0.6, 0x8d949c);
+        post.position.set(dx, 1.85, dz + s * (hw + 0.35));
+        group.add(post);
+      }
+      // strip curtains, the kind you nose through with a cart
+      for (let i = 0; i <= 10; i++) {
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 3.1, 0.5),
+          new THREE.MeshStandardMaterial({ color: 0xcfe8f0, transparent: true, opacity: 0.34, roughness: 0.1, flatShading: true }));
+        strip.position.set(dx + 0.3, 1.7, dz - hw + 0.35 + i * ((hw * 2 - 0.7) / 10));
+        group.add(strip);
+      }
+      // cold breath spilling into the aisle
+      const leak = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, hw * 2),
+        new THREE.MeshBasicMaterial({ color: 0xbfe6f2, transparent: true, opacity: 0.12, depthWrite: false }));
+      leak.position.set(dx + 1.1, 0.3, dz);
+      group.add(leak);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 1.0),
+        textPanel([['❄  THE MILK COOLER  ❄', 64, 40]], 768, 128, '#2f5a6e', '#eaf6fb'));
+      sign.position.set(dx + 0.35, 4.5, dz);
+      sign.rotation.y = Math.PI / 2; // faces east, into the store
+      group.add(sign);
+      register({
+        pos: new THREE.Vector3(dx + 2.5, 0, dz), r: 3, zone: 'bulko',
+        label: 'enter the milk cooler',
+        use: async () => {
+          await zones.go('milkroom');
+          if (!S.hasFlag('sawMilkroom')) {
+            S.setFlag('sawMilkroom');
+            ui.say('The strip curtains part with a cold sigh. Beyond: a dairy hall the size of a small weather system, and three cows who have clearly been talking about you.');
+          }
+        },
+      });
+    }
+
+    // ====================== the milk cooler — a huge, roofless dairy hall ----
+    {
+      const MC = { x: 440, z: 1220 }; // far east of BULKO, beyond its fog
+      const cfloor = box(22, 0.4, 16, 0xdfeaf0);
+      cfloor.position.set(MC.x, -0.2, MC.z);
+      cfloor.receiveShadow = true;
+      group.add(cfloor);
+      for (const [w, d, x, z] of [
+        [22, 0.4, MC.x, MC.z - 8], [0.4, 16, MC.x - 11, MC.z], [0.4, 16, MC.x + 11, MC.z],
+      ]) {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 5.5, d), mat(0xbcd0d8));
+        wall.position.set(x, 2.75, z);
+        group.add(wall);
+      }
+      // no roof — the fixed camera looks straight in, dollhouse-style
+      // cold air, pooled and blue
+      const chill = new THREE.Mesh(new THREE.BoxGeometry(21.6, 5, 15.6),
+        new THREE.MeshBasicMaterial({ color: 0xbfe6f2, transparent: true, opacity: 0.09, depthWrite: false }));
+      chill.position.set(MC.x, 2.5, MC.z);
+      group.add(chill);
+      const bigSign = new THREE.Mesh(new THREE.PlaneGeometry(8, 1.4),
+        textPanel([['❄  THE MILK COOLER  ❄', 64, 44]], 768, 140, '#2f5a6e', '#eaf6fb'));
+      bigSign.position.set(MC.x, 4.2, MC.z - 7.78);
+      group.add(bigSign);
+      // the carton wall (north), long
+      const tops = [0x6b4a2e, 0xe89ab0, 0xd9c08f];
+      for (let i = 0; i < 56; i++) {
+        const col = i % 14, row = Math.floor(i / 14);
+        const cxn = MC.x - 6.5 + col * 1.0, cyn = 0.95 + row * 0.74, czn = MC.z - 7.4;
+        const carton = box(0.6, 0.66, 0.6, 0xfbf7ef);
+        carton.position.set(cxn, cyn, czn);
+        group.add(carton);
+        const top = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.28, 4), mat(tops[(i + row) % 3], 0.7));
+        top.rotation.y = Math.PI / 4;
+        top.position.set(cxn, cyn + 0.47, czn);
+        group.add(top);
+      }
+      // dairy island cases full of cartons (the Costco aisle)
+      const dairyCase = (cx, cz) => {
+        const base = box(5.2, 1.0, 2.6, 0xaebfc8);
+        base.position.set(cx, 0.5, cz);
+        group.add(base);
+        const rim = box(5.4, 0.18, 2.8, 0x8da0aa);
+        rim.position.set(cx, 1.05, cz);
+        group.add(rim);
+        for (let i = 0; i < 14; i++) {
+          const ccx = cx - 2.1 + (i % 7) * 0.7, ccz = cz - 0.55 + Math.floor(i / 7) * 1.05;
+          const carton = box(0.5, 0.7, 0.5, 0xfbf7ef);
+          carton.position.set(ccx, 1.45, ccz);
+          group.add(carton);
+          const ctop = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.26, 4), mat(tops[i % 3], 0.7));
+          ctop.rotation.y = Math.PI / 4;
+          ctop.position.set(ccx, 1.88, ccz);
+          group.add(ctop);
+        }
+      };
+      dairyCase(MC.x - 5, MC.z - 2);
+      dairyCase(MC.x + 5, MC.z - 2);
+
+      // the cows, spread across the hall
+      const makeCow = (body, x, z, ry) => {
+        const c = buildAnimal('cow', { body, head: body });
+        c.scale.setScalar(0.95);
+        c.position.set(x, 0, z);
+        c.rotation.y = ry;
+        c.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+        group.add(c);
+        return c;
+      };
+      const cocoa = makeCow(0x6b4a2e, MC.x - 7, MC.z + 2.6, 0.4);
+      const sundae = makeCow(0xe6a6bc, MC.x + 7, MC.z + 2.6, -0.4);
+      const barley = makeCow(0xece3d0, MC.x, MC.z + 4.6, 0);
+      { // Barley's beret, naturally
+        const beret = new THREE.Group();
+        const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.37, 0.12, 10), mat(0x2f3a4a, 0.6));
+        beret.add(disc);
+        const nub = new THREE.Mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(0x2f3a4a, 0.6));
+        nub.position.y = 0.11;
+        beret.add(nub);
+        beret.position.set(0.05, 1.66, 0.5);
+        beret.rotation.z = 0.25;
+        barley.add(beret);
+      }
+      updates.push((dt, t) => {
+        if (zones.current() !== 'milkroom') return;
+        [cocoa, sundae, barley].forEach((c, i) => {
+          const p = c.userData.parts;
+          if (p?.body) p.body.position.y = p.bodyY + Math.sin(t * 1.1 + i * 1.7) * 0.018;
+          if (p?.head) p.head.position.y = p.headY + Math.sin(t * 1.1 + i * 1.7 + 0.6) * 0.02;
+        });
+      });
+
+      const COW_LINES = {
+        Cocoa: [
+          '“Some say chocolate milk is a dessert. I say it is a hug you can pour.”',
+          '“I keep it cold. The cold keeps it honest.”',
+          '“Barley says oat is the future. I say the past tasted better. We don’t argue. We’re cows.”',
+        ],
+        Sundae: [
+          '“Pink is a great deal of pressure. I carry it well, I think.”',
+          '“Everyone wants strawberry in summer. In winter I finally get to think.”',
+          '“Cocoa is rich, Barley is complicated. I’m only sweet. Someone has to be.”',
+        ],
+        Barley: [
+          '“The beret came with the personality. Or the personality with the beret. The order is unclear and, frankly, beneath us.”',
+          '“Oat: for those who find regular cold a touch mainstream.”',
+          '“I don’t produce it, exactly. I curate it.”',
+        ],
+      };
+      const COW_MEET = {
+        Cocoa: ['A big brown cow regards you with enormous, gentle calm.',
+          '“Chocolate milk isn’t a flavor. It’s a feeling. The feeling is being eight, and it being summer, and nothing being due.”'],
+        Sundae: ['A pink cow blinks at you, slow and dreamy.',
+          '“I’m strawberry. I don’t make the rules. I barely make the strawberry.”'],
+        Barley: ['A cream-colored cow in a small beret considers you over the top of it.',
+          '“Mine’s oat. It’s not milk — it’s a beverage. There is a difference. I won’t explain it.”',
+          '“I was plant-based before the tank had lobsters.”'],
+      };
+      const cowReg = (cow, name, voice) => register({
+        getPos: () => cow.position, r: 2.6, zone: 'milkroom', label: `talk to ${name}`,
+        use: () => {
+          const flag = `met${name}`;
+          if (!S.hasFlag(flag)) { S.setFlag(flag); ui.say(COW_MEET[name], { speaker: name, voice }); return; }
+          ui.say(pick(COW_LINES[name]), { speaker: name, voice });
+        },
+      });
+      cowReg(cocoa, 'Cocoa', 250);
+      cowReg(sundae, 'Sundae', 300);
+      cowReg(barley, 'Barley', 270);
+
+      register({
+        pos: new THREE.Vector3(MC.x, 0, MC.z - 5.5), r: 2.4, zone: 'milkroom',
+        label: 'browse the milk wall',
+        use: () => ui.say(pick([
+          'Cartons to the ceiling, gable-topped, beaded with cold. Top to bottom: chocolate, strawberry, oat, and one labeled simply “?”.',
+          'A small sign: “TAKE A CARTON. LEAVE A CARTON. THE COOLER ABIDES.” You take nothing. The cooler abides regardless.',
+        ])),
+      });
+      register({
+        pos: new THREE.Vector3(MC.x, 0, MC.z + 7), r: 2.4, zone: 'milkroom',
+        label: 'step back into BULKO',
+        use: () => zones.go('bulko', { x: B.x - 14, z: B.z + 3, rotY: -Math.PI / 2 }),
+      });
+      zones.registerInterior('milkroom', {
+        floorY: 0,
+        bounds: { x0: MC.x - 10.5, x1: MC.x + 10.5, z0: MC.z - 7.6, z1: MC.z + 7.6 },
+        blockers: [
+          { x: MC.x - 5, z: MC.z - 2, r: 2.5 }, { x: MC.x + 5, z: MC.z - 2, r: 2.5 },
+        ],
+        spawn: { x: MC.x, z: MC.z + 6.5, rotY: 0 },
+        lighting: {
+          bg: 0x1a2832, fog: 0x1a2832, fogNear: 22, fogFar: 64,
+          hemiSky: 0xdaf0fb, hemiGround: 0x4a5a64, hemiIntensity: 1.25,
+          sunIntensity: 0,
+        },
+      });
+    }
+
+    // the wall of TVs — in the lounge now, behind the couches, on a stand with
+    // a solid backing board (the screens are just lit panels)
+    const tvBase = box(8.8, 1.0, 1.3, 0xe8743a); // shelf orange
+    tvBase.position.set(B.x + 2.4, 0.5, B.z + 1.5);
+    group.add(tvBase);
+    const tvBack = box(8.8, 3.2, 0.2, 0xc2c6ca); // the solid rectangle behind the screens (light grey)
+    tvBack.position.set(B.x + 2.4, 2.7, B.z + 1.3);
+    group.add(tvBack);
     for (let i = 0; i < 8; i++) {
+      const tx = B.x + 2.4 + ((i % 4) - 1.5) * 2.1;
+      const ty = 2.0 + Math.floor(i / 4) * 1.5;
       const tv = box(1.9, 1.2, 0.18, 0x16140f);
-      tv.position.set(B.x + 8 + (i % 4) * 2.1, 2 + Math.floor(i / 4) * 1.5, B.z - 10.7);
+      tv.position.set(tx, ty, B.z + 1.42);
       group.add(tv);
       const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.0),
         new THREE.MeshBasicMaterial({ color: 0x9fdcf7 }));
-      screen.position.set(B.x + 8 + (i % 4) * 2.1, 2 + Math.floor(i / 4) * 1.5, B.z - 10.6);
+      screen.position.set(tx, ty, B.z + 1.52);
       group.add(screen);
     }
     register({
-      pos: new THREE.Vector3(B.x + 11, 0, B.z - 8.5), r: 3, zone: 'bulko',
+      pos: new THREE.Vector3(B.x + 2.4, 0, B.z + 3.8), r: 3, zone: 'bulko',
       label: 'watch the wall of TVs',
       use: () => ui.say('All the screens show the same gentle footage of the sea. All except one, which is just a window. Nobody can tell which, including the staff, including the window.'),
     });
@@ -360,17 +587,73 @@ export function createBulko(player) {
     const counter = box(4, 1.1, 1.2, 0xc2452c);
     counter.position.set(B.x + 12, 0.55, B.z + 6.5);
     group.add(counter);
-    const menuBoard = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.2),
-      textPanel([['HOT DOG + FIZZ  ·  1.5ᵇ', 64, 40]], 512, 128, '#3a3a3a', '#fffaf0'));
-    menuBoard.position.set(B.x + 12, 3, B.z + 7.04);
-    menuBoard.rotation.y = Math.PI;
+    // the menu board: a solid board on two posts, text facing the customer
+    for (const s of [-1, 1]) {
+      const menuPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.9, 6), mat(0x55483a));
+      menuPost.position.set(B.x + 12 + s * 2.0, 2.45, B.z + 5.9); // attached to the counter's back edge
+      menuPost.castShadow = true;
+      group.add(menuPost);
+    }
+    const menuMat = textPanel([['HOT DOG + FIZZ  ·  1.5ᵇ', 80, 42]], 512, 160, '#2a2a2a', '#fffaf0');
+    menuMat.side = THREE.DoubleSide;
+    const menuBoard = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 1.5), menuMat);
+    menuBoard.position.set(B.x + 12, 3.6, B.z + 5.95);
     group.add(menuBoard);
+
+    // the staff: a frog vendor. makeFrog — same idea as makeCow up in the milk
+    // room: build the body, recolor, scale, place. (modeled on the North Isle's
+    // very poisonous frog, grown large and gone green-and-yellow.)
+    const makeFrog = (body, legColor, x, z, s = 1) => {
+      const f = new THREE.Group();
+      const fb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.13, 0), mat(body, 0.5));
+      fb.scale.set(1, 0.78, 1.2); fb.position.y = 0.1;
+      f.add(fb);
+      for (const sx of [-1, 1]) {
+        const eye = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat(0x222222, 0.3));
+        eye.position.set(sx * 0.07, 0.22, 0.08);
+        const leg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat(legColor, 0.5));
+        leg.scale.set(1, 0.6, 1.6); leg.position.set(sx * 0.13, 0.04, -0.04);
+        f.add(eye, leg);
+      }
+      f.scale.setScalar(s);
+      f.position.set(x, 0, z);
+      f.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+      group.add(f);
+      return f;
+    };
+    // a stool so he can see, and be seen, over his counter (like Pip's)
+    const frogStool = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.85, 8), mat(0x6b4a2e));
+    frogStool.position.set(B.x + 12, 0.42, B.z + 5.4);
+    frogStool.castShadow = true;
+    group.add(frogStool);
+    const frog = makeFrog(0x6ab04a, 0xf0d840, B.x + 12, B.z + 5.4, 6);
+    { // the paper hat — a little origami boat (the paper_boat item) — on his head
+      const hatHull = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.07, 4), mat(0xfffaf0, 0.7));
+      hatHull.rotation.y = Math.PI / 4; hatHull.scale.set(1.5, 1, 0.7);
+      hatHull.position.set(0, 0.28, 0.02);
+      const hatSail = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.06, 4), mat(0xfffaf0, 0.7));
+      hatSail.position.set(0, 0.34, 0.02);
+      hatHull.castShadow = true; hatSail.castShadow = true;
+      frog.add(hatHull, hatSail);
+    }
+    updates.push((dt, t) => {
+      if (zones.current() !== 'bulko') return;
+      frog.position.y = 0.6 + Math.abs(Math.sin(t * 1.4)) * 0.1; // a patient little bob, up on his stool
+    });
+    // the frog IS the hot dog stand — order from him (the half-button is his doing)
     register({
-      pos: new THREE.Vector3(B.x + 12, 0, B.z + 5.6), r: 2.8, zone: 'bulko',
-      label: 'order the hot dog combo',
+      getPos: () => frog.position, r: 2.8, zone: 'bulko',
+      label: 'order from Mortimer',
       use: async () => {
+        if (!S.hasFlag('metFrog')) {
+          S.setFlag('metFrog');
+          await ui.say([
+            'A large green-and-yellow frog in a small paper hat regards you with the calm of one who has flipped a great many hot dogs and judged none of them.',
+            '“Mortimer,” he says, by way of introduction. “Hot dog?” He is, somehow, already making one. He does not blink. The roller turns; the fizz fizzes; all is well.',
+          ], { speaker: 'Mortimer', voice: 320 });
+        }
         if (S.state.buttons < 2) {
-          ui.say('You need two whole buttons. The cashier looks genuinely sorry. The hot dog rotates on, patient as the tide.');
+          ui.say('Mortimer looks genuinely sorry. You are two buttons short, and he is far too dignified to spot you the difference. The hot dog rotates on, patient as the tide.', { speaker: 'Mortimer', voice: 320 });
           return;
         }
         S.spend(2);
@@ -383,50 +666,55 @@ export function createBulko(player) {
           S.addItem('half_button');
           jingle();
           await ui.say([
-            'It costs exactly one and a half buttons. You pay two. You receive, in change, half a button.',
-            'It is legal tender nowhere. You will treasure it forever.',
-          ]);
+            'It costs exactly one and a half buttons. You pay two. Mortimer returns, in change, half a button — handed over with the gravity of a man passing along a deed.',
+            'It is legal tender nowhere. You will treasure it forever. He knew you would.',
+          ], { speaker: 'Mortimer', voice: 320 });
           ui.toast('You got <b>Half a Button</b>! And a hot dog. <i>Warm and quick for 60s!</i>', '🌭');
         } else {
-          ui.toast('Hot dog, fizz, half a button back. The system is eternal. <i>Warm and quick for 60s!</i>', '🌭');
+          ui.toast('Hot dog, fizz, half a button back. Mortimer nods once. The system is eternal. <i>Warm and quick for 60s!</i>', '🌭');
         }
         if (!S.hasFlag('hotdogLore')) {
           S.setFlag('hotdogLore');
-          ui.say('A plaque by the till: “THIS PRICE HAS NOT CHANGED SINCE THE SEA HAD A BELL. IT NEVER WILL.” You feel, briefly, like crying at a food court.');
+          await ui.say('A plaque by the till, which Mortimer polished this morning: “THIS PRICE HAS NOT CHANGED SINCE THE SEA HAD A BELL. IT NEVER WILL.” You feel, briefly, like crying at a food court.', { speaker: 'Mortimer', voice: 320 });
         }
       },
     });
 
     // THE TANK. fully furnished. not for sale. stop asking.
+    // a group, so it parks as one — the west cold corner, south of the cooler
+    // door and just past the parmesan, with room to walk between the two.
+    const tankG = new THREE.Group();
+    tankG.position.set(B.x - 8, 0, B.z - 3);
+    group.add(tankG);
     const tank = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 2.6),
       new THREE.MeshStandardMaterial({ color: 0x3fb0e8, transparent: true, opacity: 0.4, roughness: 0.15 }));
-    tank.position.set(B.x - 12, 1.9, B.z - 1);
-    group.add(tank);
+    tank.position.set(0, 1.9, 0);
+    tankG.add(tank);
     const tankBase = box(5.4, 0.5, 3, 0x55483a);
-    tankBase.position.set(B.x - 12, 0.25, B.z - 1);
-    group.add(tankBase);
+    tankBase.position.set(0, 0.25, 0);
+    tankG.add(tankBase);
     // the furnishings
     const tinyCouch = box(0.9, 0.35, 0.4, 0xc25b4e);
-    tinyCouch.position.set(B.x - 13.2, 0.85, B.z - 1);
+    tinyCouch.position.set(-1.2, 0.85, 0);
     const tinyLamp = new THREE.Mesh(new THREE.IcosahedronGeometry(0.1, 0),
       new THREE.MeshBasicMaterial({ color: 0xffd98f }));
-    tinyLamp.position.set(B.x - 12.6, 1.5, B.z - 1.5);
+    tinyLamp.position.set(-0.6, 1.5, -0.5);
     const tinyLampPost = box(0.05, 0.7, 0.05, 0x55483a);
-    tinyLampPost.position.set(B.x - 12.6, 1.05, B.z - 1.5);
+    tinyLampPost.position.set(-0.6, 1.05, -0.5);
     const tinyRug = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.04, 8), mat(0xd9a440, 0.8));
-    tinyRug.position.set(B.x - 12, 0.55, B.z - 0.8);
+    tinyRug.position.set(0, 0.55, 0.2);
     const tinyArt = box(0.4, 0.3, 0.04, 0x27408f);
-    tinyArt.position.set(B.x - 11, 1.6, B.z - 2.2);
-    group.add(tinyCouch, tinyLamp, tinyLampPost, tinyRug, tinyArt);
+    tinyArt.position.set(1, 1.6, -1.2);
+    tankG.add(tinyCouch, tinyLamp, tinyLampPost, tinyRug, tinyArt);
     // the residents
     const lobsterA = buildAnimal('lobster', { body: 0xd84f4f });
     lobsterA.scale.setScalar(0.4);
-    lobsterA.position.set(B.x - 13.2, 0.95, B.z - 1);
+    lobsterA.position.set(-1.2, 0.95, 0);
     const lobsterB = buildAnimal('lobster', { body: 0xb8453a });
     lobsterB.scale.setScalar(0.4);
-    lobsterB.position.set(B.x - 11, 0.6, B.z - 0.6);
+    lobsterB.position.set(1, 0.6, 0.4);
     lobsterB.rotation.y = -0.8;
-    group.add(lobsterA, lobsterB);
+    tankG.add(lobsterA, lobsterB);
     updates.push((dt, t) => {
       if (zones.current() !== 'bulko') return;
       lobsterA.position.y = 0.95 + Math.sin(t * 1.2) * 0.04;
@@ -434,7 +722,7 @@ export function createBulko(player) {
     });
     let tankIdx = 0;
     register({
-      pos: new THREE.Vector3(B.x - 12, 0, B.z + 1), r: 2.8, zone: 'bulko',
+      pos: new THREE.Vector3(B.x - 5, 0, B.z - 3), r: 2.8, zone: 'bulko',
       label: 'inspect the lobster tank',
       use: () => ui.say(TANK_LINES[tankIdx++ % TANK_LINES.length]),
     });
@@ -483,7 +771,7 @@ export function createBulko(player) {
       blockers: [
         { x: B.x - 12, z: B.z - 7, r: 4 }, { x: B.x - 4, z: B.z - 7, r: 4 },
         { x: B.x + 4, z: B.z - 7, r: 4 }, { x: B.x + 12, z: B.z - 7, r: 4 },
-        { x: B.x - 12, z: B.z - 1, r: 3 },   // the tank
+        { x: B.x - 8, z: B.z - 3, r: 3 },   // the tank
         { x: B.x + 12, z: B.z + 6.5, r: 2 }, // food court counter
         { x: B.x + 0.4 + 1.7, z: B.z + 5.5, r: 1 }, // a couch, approximately
       ],

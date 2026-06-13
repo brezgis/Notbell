@@ -243,6 +243,7 @@ function buildVillagerInterior(group, B, name, style) {
   const floor = new THREE.Mesh(new THREE.BoxGeometry(11, 0.4, 9), mat(0x9a7448));
   floor.position.set(B.x, -0.2, B.z);
   floor.receiveShadow = true;
+  floor.castShadow = true;
   group.add(floor);
   for (const [w, h, d, x, y, z] of [
     [11, 4.0, 0.4, B.x, 2.0, B.z - 4.5],
@@ -471,6 +472,7 @@ export function createHouses(animals, obstacles = []) {
     const floor = new THREE.Mesh(new THREE.BoxGeometry(13, 0.4, 10), mat(0xa97c50));
     floor.position.set(B.x, -0.2, B.z);
     floor.receiveShadow = true;
+    floor.castShadow = true;
     group.add(floor);
     for (const [w, h, d, x, y, z] of [
       [13, 4.4, 0.4, B.x, 2.2, B.z - 5],

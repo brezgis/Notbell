@@ -841,6 +841,15 @@ export function createIsland6(player) {
 
   // ========================================================== interior ----
   const B = IN;
+  group.traverse((o) => {
+    if (!o.isMesh) return;
+    const materials = Array.isArray(o.material) ? o.material : [o.material];
+    if (materials.some((m) => m && (
+      m.transparent || m.isMeshBasicMaterial || (m.emissive && m.emissive.getHex() !== 0)
+    ))) return;
+    o.castShadow = true;
+  });
+
   buildInterior();
 
   function buildInterior() {
