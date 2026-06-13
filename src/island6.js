@@ -1500,6 +1500,7 @@ export function createIsland6(player) {
     group.add(room);
 
     zones.registerInterior('labs', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - W / 2 + 0.6, x1: B.x + W / 2 - 0.6, z0: B.z - D / 2 + 0.6, z1: B.z + D / 2 - 0.6 },
       blockers,

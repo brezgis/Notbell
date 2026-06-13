@@ -210,6 +210,13 @@ function shelfClutter(x, y, z, parent) {
   }
 }
 
+function collectInteriorRoot(parent, startIndex) {
+  const root = new THREE.Group();
+  root.add(...parent.children.slice(startIndex));
+  parent.add(root);
+  return root;
+}
+
 // ------------------------------------------------------------ the works ----
 
 export function createBuildings() {
@@ -345,6 +352,7 @@ export function createBuildings() {
 
   // ====================================================== Pip's Odds & Ends
   {
+    const roomStart = group.children.length;
     const B = IN.shop;
     group.add(buildRoom(B, 16, 12, 0xa97c50, 0xe3c98f));
 
@@ -385,7 +393,9 @@ export function createBuildings() {
     group.add(pip);
     wireNpcBob(pip, updates);
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('shop', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 7.5, x1: B.x + 7.5, z0: B.z - 4.4, z1: B.z + 5.4 },
       blockers: [
@@ -410,6 +420,7 @@ export function createBuildings() {
 
   // ====================================================== The Lantern Room
   {
+    const roomStart = group.children.length;
     const B = IN.cafe;
     group.add(buildRoom(B, 14, 11, 0x7a5230, 0xead9b8));
     hangCafeArt(group, B); // culture
@@ -533,7 +544,9 @@ export function createBuildings() {
     group.add(luna);
     wireNpcBob(luna, updates);
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('cafe', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 6.5, x1: B.x + 6.5, z0: B.z - 3.9, z1: B.z + 4.9 },
       blockers: [
@@ -562,6 +575,7 @@ export function createBuildings() {
   const museumDisplays = new THREE.Group();
   let refreshMuseum = () => {};
   {
+    const roomStart = group.children.length;
     const B = IN.museum;
     const wallMat = 0xd8d2c2;
 
@@ -923,7 +937,9 @@ export function createBuildings() {
     group.add(fern);
     wireNpcBob(fern, updates, 0.5);
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('museum', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 18.1, x1: B.x + 18.1, z0: B.z - 14.6, z1: B.z + 10.1 },
       blockers: [

@@ -22,6 +22,14 @@ function box(w, h, d, color) {
   return m;
 }
 
+function collectInteriorRoot(parent, startIndex, exclude = []) {
+  const skip = new Set(exclude.filter(Boolean));
+  const root = new THREE.Group();
+  root.add(...parent.children.slice(startIndex).filter((child) => !skip.has(child)));
+  parent.add(root);
+  return root;
+}
+
 function textPanel(lines, w, h, bg, fg, fontPx) {
   const cv = document.createElement('canvas');
   cv.width = w;
@@ -250,6 +258,8 @@ export function createBulko(player) {
   // -------------------------------------------------------- the interior ----
   const B = IN;
   {
+    const roomStart = group.children.length;
+    let milkroomRoot = null;
     const floor = box(34, 0.4, 22, 0x8a8f95); // honest concrete
     floor.position.set(B.x, -0.2, B.z);
     floor.receiveShadow = true;
@@ -375,6 +385,7 @@ export function createBulko(player) {
 
     // ====================== the milk cooler — a huge, roofless dairy hall ----
     {
+      const milkroomStart = group.children.length;
       const MC = { x: 440, z: 1220 }; // far east of BULKO, beyond its fog
       const cfloor = box(22, 0.4, 16, 0xdfeaf0);
       cfloor.position.set(MC.x, -0.2, MC.z);
@@ -516,7 +527,9 @@ export function createBulko(player) {
         label: 'step back into BULKO',
         use: () => zones.go('bulko', { x: B.x - 14, z: B.z + 3, rotY: -Math.PI / 2 }),
       });
+      milkroomRoot = collectInteriorRoot(group, milkroomStart);
       zones.registerInterior('milkroom', {
+        root: milkroomRoot,
         floorY: 0,
         bounds: { x0: MC.x - 10.5, x1: MC.x + 10.5, z0: MC.z - 7.6, z1: MC.z + 7.6 },
         blockers: [
@@ -765,7 +778,9 @@ export function createBulko(player) {
       },
     });
 
+    const room = collectInteriorRoot(group, roomStart, [milkroomRoot]);
     zones.registerInterior('bulko', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 16.6, x1: B.x + 16.6, z0: B.z - 10.2, z1: B.z + 10.4 },
       blockers: [

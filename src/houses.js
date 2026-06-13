@@ -24,6 +24,13 @@ function box(w, h, d, color) {
   return m;
 }
 
+function collectInteriorRoot(parent, startIndex) {
+  const root = new THREE.Group();
+  root.add(...parent.children.slice(startIndex));
+  parent.add(root);
+  return root;
+}
+
 const IN_HOME = { x: 300, z: 240 }; // cottage interior, off in the elsewhere
 
 const BOOKS = [
@@ -471,6 +478,7 @@ export function createHouses(animals, obstacles = []) {
   // ----- cottage interior
   const B = IN_HOME;
   {
+    const roomStart = group.children.length;
     // floor + walls (same dollhouse recipe as the village interiors)
     const floor = new THREE.Mesh(new THREE.BoxGeometry(13, 0.4, 10), mat(0xa97c50));
     floor.position.set(B.x, -0.2, B.z);
@@ -547,7 +555,9 @@ export function createHouses(animals, obstacles = []) {
       use: () => ui.say('The window faces the sea. The sea, as far as you can tell, faces back.'),
     });
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('home', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 6, x1: B.x + 6, z0: B.z - 4.4, z1: B.z + 4.4 },
       blockers: [
@@ -743,9 +753,12 @@ export function createHouses(animals, obstacles = []) {
     const B = { x: 300, z: 320 + villagerIdx * 80 };
     villagerIdx++;
     const zoneId = `house_${name.toLowerCase()}`;
+    const roomStart = group.children.length;
     const seat = buildVillagerInterior(group, B, name, style);
+    const room = collectInteriorRoot(group, roomStart);
 
     zones.registerInterior(zoneId, {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 5.1, x1: B.x + 5.1, z0: B.z - 4.0, z1: B.z + 4.4 },
       blockers: [{ x: B.x - 3.4, z: B.z - 2.8, r: 1.3 }], // the bed
@@ -860,9 +873,18 @@ export function createHouses(animals, obstacles = []) {
       schedulePoll = 2;
       applySchedules();
     }
+    const zone = zones.current();
+    for (const vh of households) {
+      if (vh.home) {
+        vh.a.g.visible = vh.inCave ? zone === 'cave' : zone === vh.zoneId;
+      } else if (!vh.a.errand && !vh.a.meeting && !vh.a.riding) {
+        vh.a.g.visible = true;
+      }
+    }
     // home villagers breathe gently and turn to face their guest
     for (const vh of households) {
       if (!vh.home) continue;
+      if (!vh.a.g.visible) continue;
       const parts = vh.a.g.userData.parts;
       const phase = vh.seat.x + vh.seat.z;
       parts.body.position.y = parts.bodyY + Math.sin(t * 1.5 + phase) * 0.03;

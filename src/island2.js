@@ -23,6 +23,13 @@ function box(w, h, d, color) {
   return m;
 }
 
+function collectInteriorRoot(parent, startIndex) {
+  const root = new THREE.Group();
+  root.add(...parent.children.slice(startIndex));
+  parent.add(root);
+  return root;
+}
+
 const IN = {
   grocery: { x: 300, z: 900 },
   church: { x: 300, z: 980 },
@@ -92,6 +99,7 @@ export function createIsland2() {
     zones.addBlocker(gSpot.x, gSpot.z, 4.1);
 
     // interior
+    const roomStart = group.children.length;
     const B = IN.grocery;
     const floor = box(15, 0.4, 11, 0xa97c50);
     floor.position.set(B.x, -0.2, B.z);
@@ -160,7 +168,9 @@ export function createIsland2() {
     group.add(barnaby);
     wireBob(barnaby, updates);
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('grocery', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 7.1, x1: B.x + 7.1, z0: B.z - 4.4, z1: B.z + 5.1 },
       blockers: [
@@ -232,6 +242,7 @@ export function createIsland2() {
     zones.addBlocker(cSpot.x, cSpot.z, 4.4);
 
     // interior: long, hushed, lit through colored glass
+    const roomStart = group.children.length;
     const B = IN.church;
     const floor = box(12, 0.4, 16, 0xb9c0b9);
     floor.position.set(B.x, -0.2, B.z);
@@ -319,7 +330,9 @@ export function createIsland2() {
     group.add(alder);
     wireBob(alder, updates, 0.6);
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('church', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 5.6, x1: B.x + 5.6, z0: B.z - 6.6, z1: B.z + 7.6 },
       blockers: [

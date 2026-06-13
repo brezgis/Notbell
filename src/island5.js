@@ -24,6 +24,13 @@ function box(w, h, d, color) {
   return m;
 }
 
+function collectInteriorRoot(parent, startIndex) {
+  const root = new THREE.Group();
+  root.add(...parent.children.slice(startIndex));
+  parent.add(root);
+  return root;
+}
+
 const IN_MANOR = { x: 300, z: 1380 };
 
 const MOLEDECAI_CHAT = [
@@ -260,6 +267,13 @@ export function createIsland5(player) {
       });
     }
 
+    function syncPupVisibility(inManor = zones.current() === 'manor') {
+      for (const p of pups) p.g.visible = inManor ? p.mode === 'inside' : p.mode !== 'inside';
+    }
+    const pupZoneGate = {
+      set visible(inManor) { syncPupVisibility(inManor); },
+    };
+
     function pickPupTarget(data) {
       // mostly the open isle; sometimes, irresistibly, the front door
       if (rand(0, 1) < 0.16) {
@@ -350,9 +364,11 @@ export function createIsland5(player) {
         tone(rand(900, 1200), { dur: 0.07, type: 'triangle', vol: 0.03 });
         tone(rand(1000, 1300), { time: 0.09, dur: 0.07, type: 'triangle', vol: 0.03 });
       }
+      syncPupVisibility(false);
     });
 
     // ------------------------------------------------ the grand hall ----
+    const manorStart = group.children.length;
     const B = IN_MANOR;
     const floor = box(20, 0.4, 14, 0x9a7448);
     floor.position.set(B.x, -0.2, B.z);
@@ -531,20 +547,6 @@ export function createIsland5(player) {
       }
     });
 
-    zones.registerInterior('manor', {
-      floorY: 0,
-      bounds: { x0: B.x - 9.6, x1: B.x + 9.6, z0: B.z - 6.4, z1: B.z + 7.2 },
-      blockers: [
-        { x: B.x + 3, z: B.z + 2, r: 2.2 },
-        { x: B.x - 9.5, z: B.z - 2, r: 1.4 },
-      ],
-      spawn: { x: B.x, z: B.z + 6.4, rotY: Math.PI },
-      lighting: {
-        bg: 0x241e16, fog: 0x241e16, fogNear: 28, fogFar: 70,
-        hemiSky: 0xf2e2c4, hemiGround: 0x5a4c3a, hemiIntensity: 1.1,
-        sunIntensity: 0,
-      },
-    });
     register({
       pos: new THREE.Vector3(M.x, 0, M.z + 1.9), r: 2.6,
       label: 'ring at Moledecai Manor',
@@ -644,8 +646,25 @@ export function createIsland5(player) {
       label: 'descend to the wine cellar',
       use: () => zones.go('cellar'),
     });
+    const manorRoom = collectInteriorRoot(group, manorStart);
+    zones.registerInterior('manor', {
+      root: [manorRoom, pupZoneGate],
+      floorY: 0,
+      bounds: { x0: B.x - 9.6, x1: B.x + 9.6, z0: B.z - 6.4, z1: B.z + 7.2 },
+      blockers: [
+        { x: B.x + 3, z: B.z + 2, r: 2.2 },
+        { x: B.x - 9.5, z: B.z - 2, r: 1.4 },
+      ],
+      spawn: { x: B.x, z: B.z + 6.4, rotY: Math.PI },
+      lighting: {
+        bg: 0x241e16, fog: 0x241e16, fogNear: 28, fogFar: 70,
+        hemiSky: 0xf2e2c4, hemiGround: 0x5a4c3a, hemiIntensity: 1.1,
+        sunIntensity: 0,
+      },
+    });
 
     // ======================= upstairs: the study =========================
+    const upstairsStart = group.children.length;
     const U = { x: 300, z: 1460 };
     const ufloor = box(16, 0.4, 10, 0x8a6a44);
     ufloor.position.set(U.x, -0.2, U.z);
@@ -756,7 +775,9 @@ export function createIsland5(player) {
       label: 'descend the staircase',
       use: () => zones.go('manor', { x: B.x + 7.6, z: B.z - 4.4, rotY: Math.PI }),
     });
+    const upstairsRoom = collectInteriorRoot(group, upstairsStart);
     zones.registerInterior('manor_up', {
+      root: upstairsRoom,
       floorY: 0,
       bounds: { x0: U.x - 7.6, x1: U.x + 7.6, z0: U.z - 4.4, z1: U.z + 4.6 },
       blockers: [{ x: U.x - 5.5, z: U.z - 2.6, r: 1.8 }, { x: U.x + 2, z: U.z - 4.1, r: 1.2 }],
@@ -769,6 +790,7 @@ export function createIsland5(player) {
     });
 
     // ======================= below: the wine cellar =======================
+    const cellarStart = group.children.length;
     const C2 = { x: 300, z: 1540 };
     const cfloor = box(14, 0.4, 9, 0x5a5048);
     cfloor.position.set(C2.x, -0.2, C2.z);
@@ -828,7 +850,9 @@ export function createIsland5(player) {
       label: 'climb back up to the hall',
       use: () => zones.go('manor', { x: B.x - 7.5, z: B.z + 2.4, rotY: 0 }),
     });
+    const cellarRoom = collectInteriorRoot(group, cellarStart);
     zones.registerInterior('cellar', {
+      root: cellarRoom,
       floorY: 0,
       bounds: { x0: C2.x - 6.6, x1: C2.x + 6.6, z0: C2.z - 3.6, z1: C2.z + 4.1 },
       blockers: [{ x: C2.x - 5, z: C2.z - 3.4, r: 1.6 }],

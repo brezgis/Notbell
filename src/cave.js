@@ -359,6 +359,7 @@ export function createCave() {
 
   // exit back to the island
   zones.registerInterior('cave', {
+    root: cavern,
     floorY: 0,
     bounds: { x0: IN.x - 14.5, x1: IN.x + 14.5, z0: IN.z - 13.5, z1: IN.z + 14.5 },
     blockers: [

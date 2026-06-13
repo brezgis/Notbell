@@ -25,6 +25,13 @@ function box(w, h, d, color) {
   return m;
 }
 
+function collectInteriorRoot(parent, startIndex) {
+  const root = new THREE.Group();
+  root.add(...parent.children.slice(startIndex));
+  parent.add(root);
+  return root;
+}
+
 const IN = {
   library: { x: 300, z: 1060 },
   clinic: { x: 300, z: 1140 },
@@ -347,6 +354,7 @@ export function createIsland3() {
     zones.addBlocker(libSpot.x, libSpot.z, 4.2);
 
     const B = IN.library;
+    const roomStart = group.children.length;
     const floor = box(16, 0.4, 12, 0x7a5a40);
     floor.position.set(B.x, -0.2, B.z);
     floor.receiveShadow = true;
@@ -418,7 +426,9 @@ export function createIsland3() {
     group.add(vesper);
     wireBob(vesper, updates, 0.8);
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('library', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 7.6, x1: B.x + 7.6, z0: B.z - 4.0, z1: B.z + 5.5 },
       blockers: [
@@ -502,6 +512,7 @@ export function createIsland3() {
     zones.addBlocker(clinSpot.x, clinSpot.z, 3.8);
 
     const B = IN.clinic;
+    const roomStart = group.children.length;
     const floor = box(12, 0.4, 9, 0xd8dcd2);
     floor.position.set(B.x, -0.2, B.z);
     floor.receiveShadow = true;
@@ -561,7 +572,9 @@ export function createIsland3() {
     group.add(gill);
     wireBob(gill, updates, 0.9);
 
+    const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('clinic', {
+      root: room,
       floorY: 0,
       bounds: { x0: B.x - 5.6, x1: B.x + 5.6, z0: B.z - 3.0, z1: B.z + 4.1 },
       blockers: [

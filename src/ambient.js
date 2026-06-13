@@ -208,6 +208,8 @@ export function createAmbient(animals, scene) {
     m.B.meeting = null;
     setAway(m.A);
     setAway(m.B);
+    if (!m.A.home && !m.A.errand) m.A.g.visible = true;
+    if (!m.B.home && !m.B.errand) m.B.g.visible = true;
     if (!m.B.home && !m.B.errand) {
       m.B.g.position.set(m.returnTo.x, terrainHeight(m.returnTo.x, m.returnTo.z), m.returnTo.z);
       m.B.state = 'idle';
@@ -251,6 +253,7 @@ export function createAmbient(animals, scene) {
     busyVenues.delete(e.venue.id);
     a.errand = null;
     setAway(a);
+    if (!a.home && !a.meeting) a.g.visible = true;
     if (!a.home) {
       a.g.position.set(e.returnTo.x, a.g.position.y, e.returnTo.z);
       a.state = 'idle';
@@ -287,8 +290,11 @@ export function createAmbient(animals, scene) {
       if (m.A.home || m.B.home) { endMeeting(m); continue; } // bedtime wins
       m.until -= dt;
       if (m.until <= 0) { endMeeting(m); continue; }
+      const meetingVisible = zones.current() === 'island';
+      m.A.g.visible = meetingVisible;
+      m.B.g.visible = meetingVisible;
       // the conversation is only audible with an audience
-      const near = zones.current() === 'island' && playerPos &&
+      const near = meetingVisible && playerPos &&
         Math.hypot(playerPos.x - m.A.g.position.x, playerPos.z - m.A.g.position.z) < 18;
       if (!near) {
         if (m.exchange) { clearBubble(m); m.exchange = null; }
@@ -326,7 +332,9 @@ export function createAmbient(animals, scene) {
       if (e.until <= 0) { endErrand(a); continue; }
 
       // chatter, but only when someone's there to enjoy it
-      if (zones.current() !== e.venue.zone) {
+      const visibleHere = zones.current() === e.venue.zone;
+      a.g.visible = visibleHere;
+      if (!visibleHere) {
         if (e.exchange) { clearBubble(e); e.exchange = null; }
         continue;
       }

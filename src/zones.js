@@ -70,6 +70,7 @@ const zones = {
 };
 
 const blockers = []; // solid circles on the island (buildings, cave mound)
+const interiorRoots = new Map();
 
 export function addBlocker(x, z, r) {
   blockers.push({ x, z, r });
@@ -79,22 +80,34 @@ export function nearBlocker(x, z, clearance = 0) {
   return blockers.some((b) => Math.hypot(x - b.x, z - b.z) < b.r + clearance);
 }
 
+function syncInteriorRoots() {
+  for (const [name, roots] of interiorRoots) {
+    for (const root of roots) root.visible = name === currentZone;
+  }
+}
+
 // For whole other worlds (the moon) — bring your own ground and physics.
 // opts: { groundHeight(x,z), canWalk(x,z), lighting, spawn }
 export function registerWorld(name, opts) {
   zones[name] = opts;
 }
 
-// opts: { floorY, bounds: {x0, z0, x1, z1}, blockers: [{x,z,r}],
+// opts: { root, floorY, bounds: {x0, z0, x1, z1}, blockers: [{x,z,r}],
 //         lighting, spawn: {x, z, rotY}, exit: {x, z, rotY} (island-side) }
 export function registerInterior(name, opts) {
+  const { root, ...zoneOpts } = opts;
+  if (root) {
+    const roots = Array.isArray(root) ? root : [root];
+    interiorRoots.set(name, [...(interiorRoots.get(name) || []), ...roots]);
+    syncInteriorRoots();
+  }
   zones[name] = {
-    ...opts,
-    groundHeight: () => opts.floorY,
+    ...zoneOpts,
+    groundHeight: () => zoneOpts.floorY,
     canWalk(x, z) {
-      const b = opts.bounds;
+      const b = zoneOpts.bounds;
       if (x < b.x0 || x > b.x1 || z < b.z0 || z > b.z1) return false;
-      for (const c of opts.blockers || []) {
+      for (const c of zoneOpts.blockers || []) {
         if (Math.hypot(x - c.x, z - c.z) < c.r) return false;
       }
       return true;
@@ -147,6 +160,7 @@ export async function go(name, at) {
   doorChime();
   await fadeSwap(() => {
     currentZone = name;
+    syncInteriorRoots();
     const zone = zones[name];
     const spot = at || zone.spawn || PLAYER_SPAWN;
     player.group.position.set(spot.x, zone.groundHeight(spot.x, spot.z), spot.z);
