@@ -295,12 +295,12 @@ export function buildAnimal(kind, colors = {}) {
     snoutM.position.set(0, 1.16, 0.82);
     g.add(snoutM);
     parts.eyes.forEach((e) => e.scale.setScalar(0.6)); // moles squint generationally
-    for (const sx of [-1, 1]) {
+    for (const [i, sx] of [[0, -1], [1, 1]]) {
       const paw = new THREE.Mesh(ico(0.14, 0), mat(0xf2c6c6, 0.7));
       paw.scale.set(1.3, 0.5, 1);
-      paw.position.set(sx * 0.42, 0.62, 0.4);
+      paw.position.set(0, -0.4, 0.06);
       paw.rotation.z = -sx * 0.5;
-      g.add(paw);
+      parts.legs[i].add(paw);
     }
   } else if (kind === 'penguin') {
     const belly = new THREE.Mesh(ico(0.4), mat(0xf5f2e9));
