@@ -3,17 +3,36 @@
 
 let ctx = null;
 let muted = false;
+let masterGain = null;
+let masterLevel = 1;
 
 function ac() {
-  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = ctx.createGain();
+    masterLevel = muted ? 0 : 1;
+    masterGain.gain.value = masterLevel;
+    masterGain.connect(ctx.destination);
+  }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
+}
+
+function rampMasterGain() {
+  const a = ac();
+  const now = a.currentTime;
+  const target = muted ? 0 : 1;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterLevel, now);
+  masterGain.gain.linearRampToValueAtTime(target, now + 0.015);
+  masterLevel = target;
 }
 
 // Lazy init on first user gesture (browsers require it).
 addEventListener('keydown', (e) => {
   if (e.code === 'KeyM') {
     muted = !muted;
+    rampMasterGain();
     document.dispatchEvent(new CustomEvent('notbell-mute', { detail: muted }));
   } else {
     ac();
@@ -35,7 +54,7 @@ export function tone(freq, { time = 0, dur = 0.09, type = 'square', vol = 0.05, 
   if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t0 + dur);
   gain.gain.setValueAtTime(vol, t0);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(gain).connect(a.destination);
+  osc.connect(gain).connect(masterGain);
   osc.start(t0);
   osc.stop(t0 + dur + 0.02);
 }
@@ -55,7 +74,7 @@ function noise({ time = 0, dur = 0.25, vol = 0.06, freq = 900 } = {}) {
   filter.frequency.value = freq;
   const gain = a.createGain();
   gain.gain.value = vol;
-  src.connect(filter).connect(gain).connect(a.destination);
+  src.connect(filter).connect(gain).connect(masterGain);
   src.start(t0);
 }
 
