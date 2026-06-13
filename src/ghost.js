@@ -24,6 +24,12 @@ const MURMUR_LINES = [
   'I tried haunting the Buttonwagon once. It was already perfect. Nothing for me to add.',
 ];
 
+const FIRST_VISIT_DELAY = [180, 360];
+const BETWEEN_VISIT_DELAY = [600, 1200];
+const APPROACH_STAY = [35, 70];
+const DRIFT_BY_STAY = [20, 40];
+const APPROACH_CHANCE = 0.25;
+
 export function createGhost(player) {
   const group = new THREE.Group();
 
@@ -54,10 +60,11 @@ export function createGhost(player) {
   group.add(ghost);
 
   let state = 'away';   // away | fadingIn | here | fadingOut
-  let timer = rand(60, 150); // first visit comes when it comes
+  let timer = rand(...FIRST_VISIT_DELAY); // first visit comes when it comes
   let fade = 0;
   let lineIdx = 0;
   let drift = rand(0, Math.PI * 2);
+  let willApproach = false;
 
   function setOpacity(k) {
     sheetMat.opacity = 0.55 * k;
@@ -86,6 +93,7 @@ export function createGhost(player) {
       if (timer <= 0) {
         state = 'fadingIn';
         fade = 0;
+        willApproach = rand(0, 1) < APPROACH_CHANCE;
         const a = rand(0, Math.PI * 2);
         const r = rand(7, 12);
         ghost.position.set(playerPos.x + Math.cos(a) * r, playerPos.y, playerPos.z + Math.sin(a) * r);
@@ -107,12 +115,12 @@ export function createGhost(player) {
       setOpacity(Math.min(1, fade / 2));
       if (fade >= 2) {
         state = 'here';
-        timer = rand(35, 70); // how long they stay
+        timer = rand(...(willApproach ? APPROACH_STAY : DRIFT_BY_STAY)); // how long they stay
       }
     } else if (state === 'here') {
       timer -= dt;
-      // drifts closer if you hold still, the way cats and ghosts do
-      if (Math.hypot(dx, dz) > 4) {
+      // Most visits are just a passing haunt; only a few drift over to visit.
+      if (willApproach && Math.hypot(dx, dz) > 4) {
         ghost.position.x += dx * dt * 0.04;
         ghost.position.z += dz * dt * 0.04;
       }
@@ -126,7 +134,7 @@ export function createGhost(player) {
       if (fade <= 0) {
         state = 'away';
         ghost.visible = false;
-        timer = rand(180, 420); // until next time
+        timer = rand(...BETWEEN_VISIT_DELAY); // until next time
       }
     }
   }
