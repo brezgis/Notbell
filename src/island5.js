@@ -4,7 +4,7 @@
 // and the little birds who work on commission.
 
 import * as THREE from 'three';
-import { SITES, ISLAND5, terrainHeight } from './terrain.js';
+import { SITES, ISLAND5, ISLAND5_HAND, terrainHeight } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
@@ -51,6 +51,44 @@ export function createIsland5(player) {
   const M = SITES.manor;
   const SP = SITES.springs;
   const OR = SITES.orchard;
+  const TREE_STRUCTURE_CLEARANCE = 3;
+
+  function groveRailStop() {
+    const toward = ISLAND5_HAND[0];
+    const dx = toward.x - ISLAND5.x, dz = toward.z - ISLAND5.z;
+    const len = Math.hypot(dx, dz);
+    const ux = dx / len, uz = dz / len;
+    let t = 4;
+    while (terrainHeight(ISLAND5.x + ux * (t + 0.5), ISLAND5.z + uz * (t + 0.5)) >= 0.2) t += 0.5;
+    return { x: ISLAND5.x + ux * (t - 2), z: ISLAND5.z + uz * (t - 2) };
+  }
+
+  const treeKeepouts = [
+    { x: M.x - 6, z: M.z - 2, r: 6.4 + TREE_STRUCTURE_CLEARANCE },
+    { x: M.x + 6, z: M.z - 2, r: 6.4 + TREE_STRUCTURE_CLEARANCE },
+    { x: M.x, z: M.z + 1.9, r: 4.5 },
+    { x: M.x, z: M.z + 6, r: 2.0 + TREE_STRUCTURE_CLEARANCE },
+    { ...groveRailStop(), r: 5.2 },
+  ];
+  const placedTrees = [];
+  function clearOfTreeKeepouts(x, z) {
+    if (zones.nearBlocker(x, z, TREE_STRUCTURE_CLEARANCE)) return false;
+    if (treeKeepouts.some((k) => Math.hypot(x - k.x, z - k.z) < k.r)) return false;
+    return !placedTrees.some((p) => Math.hypot(x - p.x, z - p.z) < 2.7);
+  }
+  function treeSpotNear(x, z, minH = 0.5) {
+    for (const [dx, dz] of [
+      [0, 0], [2.4, 0], [-2.4, 0], [0, 2.4], [0, -2.4],
+      [1.7, 1.7], [-1.7, 1.7], [1.7, -1.7], [-1.7, -1.7],
+    ]) {
+      const sx = x + dx, sz = z + dz;
+      const h = terrainHeight(sx, sz);
+      if (h < minH || !clearOfTreeKeepouts(sx, sz)) continue;
+      placedTrees.push({ x: sx, z: sz });
+      return { x: sx, z: sz, h };
+    }
+    return null;
+  }
 
   addIslandInfo({
     key: 'grove',
@@ -64,9 +102,9 @@ export function createIsland5(player) {
   const orchardTrees = [];
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 4; col++) {
-      const tx = OR.x - 5.4 + col * 3.6 + (row % 2) * 1.2;
-      const tz = OR.z - 4.5 + row * 4.2;
-      const ty = terrainHeight(tx, tz);
+      const spot = treeSpotNear(OR.x - 5.4 + col * 3.6 + (row % 2) * 1.2, OR.z - 4.5 + row * 4.2);
+      if (!spot) continue;
+      const { x: tx, z: tz, h: ty } = spot;
       const tree = new THREE.Group();
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.34, 1.6, 7), mat(0x7a5230));
       trunk.position.y = 0.8;
@@ -875,10 +913,9 @@ export function createIsland5(player) {
   // the springs sit in orchard country: oranges hang right over the water
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2 + 0.6;
-    const tx = SP.x + Math.cos(a) * (SP.r + 2.5);
-    const tz = SP.z + Math.sin(a) * (SP.r + 2.5);
-    const ty = terrainHeight(tx, tz);
-    if (ty < 0.5) continue;
+    const spot = treeSpotNear(SP.x + Math.cos(a) * (SP.r + 2.5), SP.z + Math.sin(a) * (SP.r + 2.5));
+    if (!spot) continue;
+    const { x: tx, z: tz, h: ty } = spot;
     const tree = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.34, 1.6, 7), mat(0x7a5230));
     trunk.position.y = 0.8;
@@ -971,10 +1008,9 @@ export function createIsland5(player) {
   const SO = SITES.southOrchard;
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) {
-      const tx = SO.x - 7 + col * 4.4 + (row % 2) * 1.6;
-      const tz = SO.z - 7 + row * 4.6;
-      const ty = terrainHeight(tx, tz);
-      if (ty < 0.5) continue;
+      const spot = treeSpotNear(SO.x - 7 + col * 4.4 + (row % 2) * 1.6, SO.z - 7 + row * 4.6);
+      if (!spot) continue;
+      const { x: tx, z: tz, h: ty } = spot;
       const peachy = (row + col) % 2 === 1;
       const tree = new THREE.Group();
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.36, 1.7, 7), mat(0x7a5230));

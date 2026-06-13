@@ -75,6 +75,10 @@ export function addBlocker(x, z, r) {
   blockers.push({ x, z, r });
 }
 
+export function nearBlocker(x, z, clearance = 0) {
+  return blockers.some((b) => Math.hypot(x - b.x, z - b.z) < b.r + clearance);
+}
+
 // For whole other worlds (the moon) — bring your own ground and physics.
 // opts: { groundHeight(x,z), canWalk(x,z), lighting, spawn }
 export function registerWorld(name, opts) {

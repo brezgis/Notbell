@@ -132,12 +132,24 @@ export function createIsland3() {
 
   // ------------------------------------------------------- moss & such ----
   const flora = [];
-  function placeOnIsle(minH, maxH, tries = 40) {
+  const TREE_STRUCTURE_CLEARANCE = 3;
+  const treeKeepouts = [
+    { x: T.x - 5.5, z: T.z - 3, r: 4.2 + TREE_STRUCTURE_CLEARANCE },
+    { x: T.x + 5.5, z: T.z - 3, r: 3.8 + TREE_STRUCTURE_CLEARANCE },
+    { x: T.x, z: T.z + 6.5, r: 2.8 + TREE_STRUCTURE_CLEARANCE },
+    { x: T.x + 3.5, z: T.z + 5.5, r: 1.8 + TREE_STRUCTURE_CLEARANCE },
+  ];
+  function clearOfTreeKeepouts(x, z) {
+    if (zones.nearBlocker(x, z, TREE_STRUCTURE_CLEARANCE)) return false;
+    return !treeKeepouts.some((k) => Math.hypot(x - k.x, z - k.z) < k.r);
+  }
+  function placeOnIsle(minH, maxH, tries = 40, opts = {}) {
     for (let i = 0; i < tries; i++) {
       const a = rand(0, Math.PI * 2);
       const r = Math.sqrt(rand(0, 1)) * (ISLAND3.r + 2);
       const x = ISLAND3.x + Math.cos(a) * r, z = ISLAND3.z + Math.sin(a) * r;
       if (Math.hypot(x - T.x, z - T.z) < T.r - 2) continue;
+      if (opts.trees && !clearOfTreeKeepouts(x, z)) continue;
       const h = terrainHeight(x, z);
       if (h < minH || h > maxH) continue;
       if (flora.some((f) => Math.hypot(f.x - x, f.z - z) < 1.2)) continue;
@@ -185,7 +197,7 @@ export function createIsland3() {
     group.add(moss);
   }
   for (let i = 0; i < 9; i++) {
-    const s = placeOnIsle(0.8, 6);
+    const s = placeOnIsle(0.8, 6, 40, { trees: true });
     if (!s) continue;
     const tree = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.4, 1.7, 7), mat(0x4a3f32));

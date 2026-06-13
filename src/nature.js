@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { terrainHeight, clearOfSites, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2 } from './terrain.js';
+import { terrainHeight, clearOfSites, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2, SITES } from './terrain.js';
+import * as zones from './zones.js';
 import { rand, pick } from './utils.js';
 import { SEASON, isNight } from './calendar.js';
 import { register } from './interact.js';
@@ -252,13 +253,65 @@ const NO_NET_LINES = [
   'You cup your paws. You miss. It was never close.',
 ];
 
+const TREE_STRUCTURE_CLEARANCE = 3;
+
+function straitKeepouts() {
+  const dir = { x: ISLAND2.x, z: ISLAND2.z };
+  const dLen = Math.hypot(dir.x, dir.z);
+  dir.x /= dLen; dir.z /= dLen;
+  function findShore(fromT, step) {
+    let t = fromT;
+    for (let i = 0; i < 400; i++) {
+      if (terrainHeight(dir.x * (t + step), dir.z * (t + step)) < 0.15) break;
+      t += step;
+    }
+    return t;
+  }
+  const tA = findShore(24, 0.5);
+  const tB = findShore(dLen - 14, -0.5);
+  const A = { x: dir.x * tA, z: dir.z * tA };
+  const B = { x: dir.x * tB, z: dir.z * tB };
+  const len = Math.hypot(B.x - A.x, B.z - A.z);
+  const along = { x: (B.x - A.x) / len, z: (B.z - A.z) / len };
+  const perp = { x: -along.z, z: along.x };
+  function railPlatform(t, inland) {
+    const sp = {
+      x: A.x + along.x * t * len + perp.x * 6,
+      z: A.z + along.z * t * len + perp.z * 6,
+    };
+    return {
+      x: sp.x + along.x * inland * 1.4 - perp.x * 1.8,
+      z: sp.z + along.z * inland * 1.4 - perp.z * 1.8,
+    };
+  }
+  return [
+    { ...A, r: 8.0 },
+    { ...B, r: 8.0 },
+    { ...railPlatform(0, -3), r: 10.0 },
+    { ...railPlatform(1, 3), r: 10.0 },
+  ];
+}
+
+const TREE_KEEPOUTS = [
+  ...straitKeepouts(),
+  { x: SITES.town2.x - 6, z: SITES.town2.z - 3, r: 7.1 },
+  { x: SITES.town2.x + 6, z: SITES.town2.z - 4, r: 7.4 },
+  { x: SITES.garden2.x, z: SITES.garden2.z, r: 5.0 },
+  { x: SITES.bones.x + 2, z: SITES.bones.z, r: 5.2 },
+];
+
+function clearOfTreeKeepouts(x, z) {
+  if (zones.nearBlocker(x, z, TREE_STRUCTURE_CLEARANCE)) return false;
+  return !TREE_KEEPOUTS.some((k) => Math.hypot(x - k.x, z - k.z) < k.r);
+}
+
 export function scatterNature() {
   const group = new THREE.Group();
   const placed = [];
   const flowerSpots = [];
   const treeSpots = [];
 
-  function tryPlace(minH, maxH, minDist, maxR = ISLAND_RADIUS) {
+  function tryPlace(minH, maxH, minDist, maxR = ISLAND_RADIUS, opts = {}) {
     for (let tries = 0; tries < 30; tries++) {
       // both islands get nature — the Far Isle proportionally less
       const far = rand(0, 1) < 0.3;
@@ -267,6 +320,7 @@ export function scatterNature() {
       const x = (far ? ISLAND2.x : 0) + Math.cos(a) * r;
       const z = (far ? ISLAND2.z : 0) + Math.sin(a) * r;
       if (!clearOfSites(x, z, 1)) continue; // plazas, cave, pools, garden…
+      if (opts.trees && !clearOfTreeKeepouts(x, z)) continue;
       const h = terrainHeight(x, z);
       if (h < minH || h > maxH) continue;
       if (placed.some((q) => Math.hypot(q.x - x, q.z - z) < Math.max(minDist, q.d))) continue;
@@ -288,7 +342,7 @@ export function scatterNature() {
   const obstacles = []; // trees/pines/rocks — houses.js avoids these
   const fruitTrees = [];
   for (let i = 0; i < 36; i++) {
-    const spot = tryPlace(0.6, 7, 3.2);
+    const spot = tryPlace(0.6, 7, 3.2, ISLAND_RADIUS, { trees: true });
     if (spot) {
       const tree = makeTree(rand(0, 1) < 0.5);
       add(tree, spot);
@@ -315,7 +369,7 @@ export function scatterNature() {
     }
   }
   for (let i = 0; i < 10; i++) {
-    const spot = tryPlace(1.2, 7, 3.2);
+    const spot = tryPlace(1.2, 7, 3.2, ISLAND_RADIUS, { trees: true });
     if (spot) {
       add(makePine(), spot);
       obstacles.push({ x: spot.x, z: spot.z, r: 2 });
