@@ -364,7 +364,7 @@ export function createIsland5(player) {
         tone(rand(900, 1200), { dur: 0.07, type: 'triangle', vol: 0.03 });
         tone(rand(1000, 1300), { time: 0.09, dur: 0.07, type: 'triangle', vol: 0.03 });
       }
-      syncPupVisibility(false);
+      syncPupVisibility(); // zone-aware: inside pups show in the manor, outside pups on the isle
     });
 
     // ------------------------------------------------ the grand hall ----
