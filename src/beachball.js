@@ -11,19 +11,28 @@ export function createBeachBall(player) {
   const R = 0.55;
 
   const ball = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(R, 1),
-    new THREE.MeshStandardMaterial({ color: 0xfffaf0, flatShading: true, roughness: 0.6 }));
-  ball.add(core);
-  // colored panels: caps stuck on at angles, close enough to a real one
-  const panelColors = [0xd84f4f, 0x5b8bc9, 0xffd23e, 0x4f8f6a];
-  panelColors.forEach((c, i) => {
-    const cap = new THREE.Mesh(new THREE.IcosahedronGeometry(R * 0.55, 1),
-      new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 0.6 }));
-    const a = (i / panelColors.length) * Math.PI * 2;
-    cap.position.set(Math.cos(a) * R * 0.62, Math.sin(i * 2.1) * R * 0.4, Math.sin(a) * R * 0.62);
-    ball.add(cap);
+  const cv = document.createElement('canvas');
+  cv.width = 256;
+  cv.height = 128;
+  const ctx = cv.getContext('2d');
+  const stripes = ['#d84f4f', '#fffaf0', '#5b8bc9', '#fffaf0', '#ffd23e', '#fffaf0', '#4f8f6a', '#fffaf0'];
+  const stripeW = cv.width / stripes.length;
+  stripes.forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(i * stripeW, 0, stripeW + 1, cv.height);
   });
-  ball.traverse((o) => { o.castShadow = true; });
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(R, 16, 12),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }));
+  ball.add(sphere);
+  ball.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
   const D = SITES.dock;
   ball.position.set(D.x + 2, terrainHeight(D.x + 2, D.z - 3) + R, D.z - 3);
   group.add(ball);
