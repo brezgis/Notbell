@@ -28,6 +28,14 @@ function box(w, h, d, color) {
   return m;
 }
 
+function solidShadowCaster(o) {
+  if (!o.isMesh) return false;
+  const materials = Array.isArray(o.material) ? o.material : [o.material];
+  return !materials.some((m) => m && (
+    m.transparent || m.isMeshBasicMaterial || (m.emissive && m.emissive.getHex() !== 0)
+  ));
+}
+
 const IN = { x: 300, z: 1700 }; // the labs interior, off in the elsewhere
 
 // the dock the Persistent calls at (consumed by boats.js — create the labs
@@ -116,7 +124,7 @@ export function buildRover(bodyColor = 0xdfe2e6) {
   const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 4), mat(0xf2cf5b, 0.5));
   antenna.position.set(-0.18, 0.55, -0.25);
   g.add(antenna);
-  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  g.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
   g.userData = { wheels, head: headG };
   return g;
 }
@@ -130,7 +138,7 @@ function hardHat() {
   const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.42, 0.05, 9), mat(0xe2bd42, 0.6));
   brim.position.y = -0.1;
   h.add(brim);
-  h.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  h.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
   return h;
 }
 
@@ -253,7 +261,7 @@ export function createIsland6(player) {
     tube.rotation.x = -0.9; // up, and a little north
     scope.add(tube);
     scope.position.set(fx + 6.4, ROOF_Y, fz);
-    scope.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    scope.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(scope);
     register({
       pos: new THREE.Vector3(fx + 6.4, 0, fz), r: 1.8,
@@ -400,7 +408,7 @@ export function createIsland6(player) {
     bowlG.rotation.x = -0.7; // aimed up and out to sea
     dish.add(bowlG);
     dish.position.set(dx, dy, dz);
-    dish.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    dish.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(dish);
     zones.addBlocker(dx, dz, 1.4);
     updates.push((dt, t) => {
@@ -469,7 +477,7 @@ export function createIsland6(player) {
     rocketGlow.position.set(0, 2.0, 1.13);
     rocket.add(rocketGlow);
     rocket.position.set(P.x, P.h, P.z);
-    rocket.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    rocket.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(rocket);
     zones.addBlocker(P.x, P.z, 1.9);
 
@@ -495,7 +503,7 @@ export function createIsland6(player) {
     gantryLamp.position.set(0, 8.8, 0);
     gantry.add(gantryLamp);
     gantry.position.set(P.x - 3.1, P.h, P.z);
-    gantry.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    gantry.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(gantry);
     zones.addBlocker(P.x - 3.1, P.z, 1.2);
 
@@ -650,7 +658,7 @@ export function createIsland6(player) {
     buoy.add(top);
     const bxp = sx + px * 2.6, bzp = sz + pz * 2.6;
     buoy.position.set(bxp, terrainHeight(bxp, bzp), bzp);
-    buoy.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    buoy.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(buoy);
     LABS_DOCK.buoyPos = new THREE.Vector3(bxp, 0, bzp);
   }
@@ -835,12 +843,7 @@ export function createIsland6(player) {
   // ========================================================== interior ----
   const B = IN;
   group.traverse((o) => {
-    if (!o.isMesh) return;
-    const materials = Array.isArray(o.material) ? o.material : [o.material];
-    if (materials.some((m) => m && (
-      m.transparent || m.isMeshBasicMaterial || (m.emissive && m.emissive.getHex() !== 0)
-    ))) return;
-    o.castShadow = true;
+    if (solidShadowCaster(o)) o.castShadow = true;
   });
 
   buildInterior();
@@ -1496,7 +1499,7 @@ export function createIsland6(player) {
     }
 
     room.traverse((o) => {
-      if (o.isMesh && !o.castShadow) o.castShadow = true;
+      if (solidShadowCaster(o)) o.castShadow = true;
     });
     group.add(room);
 
