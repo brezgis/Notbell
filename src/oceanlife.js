@@ -47,6 +47,11 @@ export function createOceanLife() {
     back.scale.set(0.8, 0.35, 2.2);
     back.position.y = 0.05;
     shark.add(back);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.58, 4), mat(0x6e7e8e));
+    tail.scale.z = 0.18;
+    tail.position.set(0, -0.18, -1.25);
+    tail.receiveShadow = true;
+    shark.add(tail);
     // a face, so everyone can see the friendliness
     const snout = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), mat(0x6e7e8e));
     snout.scale.set(0.85, 0.6, 1.0);
@@ -69,7 +74,7 @@ export function createOceanLife() {
     heart.visible = false;
     shark.add(heart);
     shark.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-    shark.userData = { orbit, a: rand(0, Math.PI * 2), speed: rand(0.1, 0.16), heart, heartT: 0, shy: 0 };
+    shark.userData = { orbit, a: rand(0, Math.PI * 2), speed: rand(0.1, 0.16), heart, tail, heartT: 0, shy: 0 };
     sharks.push(shark);
     group.add(shark);
   }
@@ -250,6 +255,7 @@ export function createOceanLife() {
         u.orbit.cz + Math.sin(u.a) * u.orbit.r
       );
       shark.rotation.y = -u.a; // face along the orbit
+      u.tail.rotation.y = Math.sin(t * 3 + u.a) * 0.4;
       if (dp < 8 && u.heartT <= 0) {
         u.heartT = 6; // a moment of cross-species affection, then cooldown
         u.heart.visible = true;

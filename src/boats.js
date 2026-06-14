@@ -40,12 +40,15 @@ function makeRowboat(color) {
   const bench = box(1.1, 0.1, 0.3, 0x8a5a3a);
   bench.position.set(0, 0.4, -0.2);
   g.add(bench);
+  const oars = [];
   for (const sx of [-1, 1]) {
     const oar = box(0.08, 0.08, 1.7, 0xa97c50);
     oar.position.set(sx * 0.95, 0.45, 0.1);
     oar.rotation.y = sx * 0.35;
     g.add(oar);
+    oars.push(oar);
   }
+  g.userData.oars = oars;
   return g;
 }
 
@@ -98,7 +101,7 @@ export function createBoats(player) {
     boat.position.set(bx, WATER_Y + 0.12, bz);
     boat.rotation.y = outA + rand(-0.3, 0.3);
     group.add(boat);
-    const data = { boat, inUse: false };
+    const data = { boat, inUse: false, oarPhase: 0, oarPower: 0 };
     boats.push(data);
 
     register({
@@ -111,6 +114,8 @@ export function createBoats(player) {
   }
 
   let activeBoat = null;
+  const lastPlayerPos = new THREE.Vector3();
+  let haveLastPlayerPos = false;
 
   async function boardBoat(data) {
     plop();
@@ -120,6 +125,10 @@ export function createBoats(player) {
     });
     data.inUse = true;
     activeBoat = data;
+    data.oarPhase = 0;
+    data.oarPower = 0;
+    lastPlayerPos.copy(player.group.position);
+    haveLastPlayerPos = true;
     data.boat.position.set(0, -0.42, 0.1);
     data.boat.rotation.set(0, 0, 0);
     player.group.add(data.boat); // the boat goes where you go now
@@ -167,6 +176,35 @@ export function createBoats(player) {
       ui.toast('You hop ashore. The boat will wait — it’s good at that.', '⛵');
     },
   });
+
+  function updateRowboatOars(dt, playerPos) {
+    if (!playerPos) return;
+    if (!haveLastPlayerPos) {
+      lastPlayerPos.copy(playerPos);
+      haveLastPlayerPos = true;
+    }
+    const dx = playerPos.x - lastPlayerPos.x;
+    const dz = playerPos.z - lastPlayerPos.z;
+    const speed = Math.hypot(dx, dz) / Math.max(dt, 0.001);
+    lastPlayerPos.copy(playerPos);
+
+    const seaRowing = zones.current() === 'sea' && activeBoat?.inUse;
+    for (const data of boats) {
+      const rowing = seaRowing && data === activeBoat && speed > 0.08;
+      data.oarPower += ((rowing ? 1 : 0) - data.oarPower) * Math.min(1, dt * 6);
+      if (data.oarPower > 0.01) {
+        data.oarPhase = (data.oarPhase + dt * (0.9 + Math.min(speed, 6) * 0.07)) % 1;
+      }
+      const p = data.oarPhase;
+      const stroke = p < 0.58
+        ? Math.sin((p / 0.58) * Math.PI) * 0.55
+        : -Math.sin(((p - 0.58) / 0.42) * Math.PI) * 0.22;
+      for (const oar of data.boat.userData.oars) {
+        const x = stroke * data.oarPower;
+        oar.rotation.x = Math.abs(x) < 0.001 ? 0 : x;
+      }
+    }
+  }
 
   // ---------------------------------------------------------- the tugboat ----
   const tug = new THREE.Group();
@@ -558,6 +596,7 @@ export function createBoats(player) {
 
   function update(dt, t, playerPos) {
     for (const u of updates) u(dt, t, playerPos);
+    updateRowboatOars(dt, playerPos);
     // idle boats bob at their moorings
     for (const data of boats) {
       if (!data.inUse) {
