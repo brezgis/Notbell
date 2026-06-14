@@ -11,6 +11,8 @@ import * as S from './state.js';
 import { buildAnimal } from './animals.js';
 import { kaching, jingle, sip } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
+import { currentWeather } from './almanac.js';
+import { isNight } from './calendar.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -62,6 +64,105 @@ const TANK_LINES = [
   'Inside: a tiny couch, a tiny lamp, a tiny rug, and a tiny framed print of “The Great Wave.” One lobster is reading. The other appears to be doing a crossword.',
   'You detect a family resemblance to Barnaby. You decide, wisely, to mention this to neither party.',
   'A staff member walks past, sees you looking, and simply shakes their head — not at you. At the situation. At all of it.',
+];
+
+// ============================================================ the TV wall ----
+// BULKO's wall of screens, each tuned to a lo-fi "channel." Walk up and the
+// dialogue box plays the broadcast; the screens cycle a couple of faceted canvas
+// frames. Channels: Hoot's late-night show, Scooch's (rain-besotted) weather tied
+// to the real sky, Newt Bellows' real island science, the Sea, and BULKO's ads.
+const TV_CHANNELS = [
+  { key: 'hoot', short: 'LATE NIGHT', emoji: '🦉', bg: '#241b2e' },
+  { key: 'weather', short: 'WEATHER', emoji: '🐸', bg: '#27506e' },
+  { key: 'science', short: 'NOTBELL SCI', emoji: '🔬', bg: '#123a39' },
+  { key: 'sea', short: 'THE SEA', emoji: '🌊', bg: '#1f6f9a' },
+  { key: 'ads', short: 'BULKO', emoji: '📣', bg: '#7a3e1a' },
+];
+
+function makeScreenTex(ch, frame) {
+  const cv = document.createElement('canvas');
+  cv.width = 128;
+  cv.height = 80;
+  const c = cv.getContext('2d');
+  c.fillStyle = ch.bg;
+  c.fillRect(0, 0, 128, 80);
+  c.fillStyle = 'rgba(255,255,255,0.05)'; // soft scanlines
+  for (let y = frame ? 1 : 0; y < 80; y += 4) c.fillRect(0, y, 128, 1);
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.font = '34px serif';
+  c.fillText(ch.emoji, 64, 35 + (frame ? 2 : -1)); // a gentle bob
+  c.fillStyle = '#fff8e8';
+  c.font = 'bold 11px sans-serif';
+  c.fillText(ch.short, 64, 69);
+  if (!frame) { // a blinking ON-AIR dot
+    c.fillStyle = '#ff5a4a';
+    c.beginPath();
+    c.arc(113, 12, 4.5, 0, Math.PI * 2);
+    c.fill();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// ---- channel content ----
+const HOOT = 'Hoot McLaughlin', HOOT_V = 500;
+const HOOT_BITS = [
+  [{ speaker: HOOT, voice: HOOT_V, text: 'Good evening. Or morning. The clock and I have an understanding: it doesn’t tell me, and I don’t ask.' },
+   { speaker: HOOT, voice: HOOT_V, text: 'Our top story: nothing happened today, beautifully, on every island. More on that never.' }],
+  [{ speaker: HOOT, voice: HOOT_V, text: 'My guest tonight has played the Lantern Room every evening for — how long now?' },
+   { speaker: 'Chip', voice: 760, text: 'Since before the candle. I don’t keep time. I keep tempo. Different thing.' },
+   { speaker: HOOT, voice: HOOT_V, text: 'And the secret to a good set?' },
+   { speaker: 'Chip', voice: 760, text: 'Play till the room forgets it’s a room. Then play one more.' }],
+  [{ speaker: HOOT, voice: HOOT_V, text: 'I tried to book the volcano. She no-commented for four hundred years. You have to respect the discipline.' }],
+  [{ speaker: HOOT, voice: HOOT_V, text: 'Tonight’s guest cancelled. Tonight’s guest is the sea — a wonderful listener and a TERRIBLE guest. Took the whole couch. Then took the couch BACK.' }],
+  [{ speaker: HOOT, voice: HOOT_V, text: 'That’s our show. We’re always right back. There is, structurally, nowhere else to be. Goodnight, Notbell.' }],
+];
+const HOOT_NIGHT = [{ speaker: HOOT, voice: HOOT_V, text: 'You’re watching at this hour. So am I. We are not so different — you, and the owl on the screen.' }];
+
+const SCOOCH = 'Scooch', SCOOCH_V = 360;
+function scoochWeather() {
+  const line = {
+    clear: 'Today: clear. Sunny. Cloudless. *Devastating.* For tomorrow I am forecasting rain. I am always forecasting rain. One day I will be right and it will be the finest day of my life.',
+    rain: 'RAIN. It is RAINING. I prepared remarks; I have lost them to joy. Back to you — back to ME — I am simply going to stand in it.',
+    snow: 'Snow today: that is rain that tried its absolute best, and I am PROUD of it. Catch one on your tongue. It counts. Let me have this.',
+    fog: 'Fog. The sky is thinking. Visibility low, mystery high — and there is rain in there somewhere, I can feel it. I am, admittedly, always a little damp.',
+  }[currentWeather()] || 'Conditions: unclear. Like my heart. Which wants rain.';
+  return [{ speaker: SCOOCH, voice: SCOOCH_V, text: line }];
+}
+
+const NEWT = 'Newt Bellows', NEWT_V = 580;
+const SCIENCE_FACTS = [
+  'Here’s one that gets me EVERY time: pumice — the stone that forms when lava cools mid-air — is so full of bubbles it FLOATS. A rock! The only one on Earth that floats!',
+  'When a volcano erupts, ash smashing together builds up static — like shuffling across a carpet, but sky-sized — and you get real LIGHTNING, right inside the eruption!',
+  'The tallest volcano in the solar system isn’t here — it’s Olympus Mons, on Mars: three Everests tall, but so gently sloped you might not notice you were climbing it!',
+  'That orange glow of lava isn’t a colour it “has” — it’s its TEMPERATURE made visible! Same physics as a lightbulb. About 1,200 degrees looks exactly like THAT.',
+  'Plot twist: coral is an ANIMAL — each polyp a tiny cousin of the jellyfish, a millimetre or two across. BILLIONS of them build a reef you can see from orbit!',
+  'Shine ultraviolet light on a reef at night and it glows like a neon city — corals drink in light and beam it back as greens and oranges and reds. It doubles as sunscreen!',
+  'Every manta ray has a unique pattern of spots on its belly — like a fingerprint, for life! Scientists photograph them and keep a whole database of named rays.',
+  'Sharks have NO bones — not one! The skeleton is all cartilage, like your nose and ears: lighter and bendier. That’s how a reef shark turns on a dime.',
+  'A shark can feel the faint electric crackle of a heartbeat through jelly-filled pores in its snout — down to a BILLIONTH of a volt. It finds fish buried in sand, eyes shut!',
+  'A firefly’s glow is “cold light”: nearly ALL the energy becomes light, almost none lost as heat. A lightbulb wastes ninety percent as heat. The firefly is simply better at it!',
+  'Dragonflies catch up to 95% of what they chase — the best aerial hunters we’ve measured! They don’t aim where the prey is; they intercept where it’s GOING.',
+  'Some cicadas wait underground exactly 13 or 17 years before emerging — both PRIME numbers! A prime cycle almost never lines up with a predator’s. Sneaky little mathematicians.',
+  'The astronauts who walked the Moon said the dust smelled like gunpowder — and we still can’t fully say why. The Moon kept a little secret in its pockets!',
+  'Bootprints on the Moon? Still there — no wind, no rain — and they’ll last MILLIONS of years. You could leave a footprint that outlasts the pyramids many times over.',
+  'At the Moon’s average distance, you could line up all seven other planets in the gap between here and there — and they would just barely fit. Space is roomy!',
+  'The Moon drifts away from us about 3.8 cm a year — the speed your fingernails grow. We know because astronauts left mirrors up there and we bounce lasers off them!',
+];
+
+const SEA_BITS = [
+  'The screen shows the sea, doing what the sea does: arriving, leaving, arriving. The sound is just… the sea. Your shoulders drop an inch.',
+  'Wave. Wave. Gull. Wave. (This programming is unsponsored. The sea declined to monetize.)',
+  'All the screens show the same gentle sea — except one, which is a window. Nobody can tell which, including the staff, including the window.',
+];
+
+const TV_ADS = [
+  'BULKO: the one-and-a-half-button hot dog. Pay two, get half a button back. We don’t understand it. You don’t understand it. DO NOT WORRY ABOUT IT.',
+  'The Lantern Room — Lantern Roast, NOT decaf, and Chip plays till the candle’s out. Tell Luna the TV sent you. (Luna will be confused.)',
+  'Wet feet? Cold feet? Pip’s got the scuba suit: unsellable, like a true friend. Go on — swim where the fish gossip.',
+  'BULKO Members: the parm wheel. It is a WHEEL. Of PARM. Roll one home today. (Barnaby pays extra for cousins of the parm. Don’t ask.)',
 ];
 
 export function createBulko(player) {
@@ -552,21 +653,57 @@ export function createBulko(player) {
     const tvBack = box(8.8, 3.2, 0.2, 0xc2c6ca); // the solid rectangle behind the screens (light grey)
     tvBack.position.set(B.x + 2.4, 2.7, B.z + 1.3);
     group.add(tvBack);
+    const tvScreens = [];
     for (let i = 0; i < 8; i++) {
       const tx = B.x + 2.4 + ((i % 4) - 1.5) * 2.1;
       const ty = 2.0 + Math.floor(i / 4) * 1.5;
       const tv = box(1.9, 1.2, 0.18, 0x16140f);
       tv.position.set(tx, ty, B.z + 1.42);
       group.add(tv);
+      const ch = TV_CHANNELS[i % TV_CHANNELS.length];
+      const frames = [makeScreenTex(ch, 0), makeScreenTex(ch, 1)];
       const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.0),
-        new THREE.MeshBasicMaterial({ color: 0x9fdcf7 }));
+        new THREE.MeshBasicMaterial({ map: frames[0] }));
       screen.position.set(tx, ty, B.z + 1.52);
       group.add(screen);
+      tvScreens.push({ screen, frames });
     }
+    // lo-fi flipbook: swap each screen's frame slowly (only while you're in BULKO)
+    let tvStep = 0, tvFlipT = 0;
+    updates.push((dt) => {
+      if (zones.current() !== 'bulko') return;
+      tvFlipT += dt;
+      if (tvFlipT < 1.6) return;
+      tvFlipT = 0;
+      tvStep ^= 1;
+      for (const s of tvScreens) s.screen.material.map = s.frames[tvStep];
+    });
+    const tvIdx = { hoot: 0, science: 0, sea: 0, ads: 0 };
     register({
       pos: new THREE.Vector3(B.x + 2.4, 0, B.z + 3.8), r: 3, zone: 'bulko',
       label: 'watch the wall of TVs',
-      use: () => ui.say('All the screens show the same gentle footage of the sea. All except one, which is just a window. Nobody can tell which, including the staff, including the window.'),
+      use: async () => {
+        const choice = await ui.ask('What’s on?', [
+          { label: '🦉 Late Night with Hoot', value: 'hoot' },
+          { label: '🐸 Weather with Scooch', value: 'weather' },
+          { label: '🔬 Notbell Science', value: 'science' },
+          { label: '🌊 The Sea', value: 'sea' },
+          { label: '📣 BULKO ads', value: 'ads' },
+          { label: 'Switch it off', value: null },
+        ]);
+        if (choice === 'weather') { ui.say(scoochWeather()); return; }
+        if (choice === 'hoot') {
+          const pool = isNight() ? [...HOOT_BITS, HOOT_NIGHT] : HOOT_BITS;
+          ui.say(pool[tvIdx.hoot++ % pool.length]);
+          return;
+        }
+        if (choice === 'science') {
+          ui.say([{ speaker: NEWT, voice: NEWT_V, text: SCIENCE_FACTS[tvIdx.science++ % SCIENCE_FACTS.length] }]);
+          return;
+        }
+        if (choice === 'sea') { ui.say(SEA_BITS[tvIdx.sea++ % SEA_BITS.length]); return; }
+        if (choice === 'ads') { ui.say(TV_ADS[tvIdx.ads++ % TV_ADS.length]); return; }
+      },
     });
 
     // display couches, dared to be imagined in your cottage
