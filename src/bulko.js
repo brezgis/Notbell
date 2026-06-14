@@ -568,12 +568,16 @@ export function createBulko(player) {
         beret.rotation.z = 0.25;
         barley.add(beret);
       }
-      updates.push((dt, t) => {
+      updates.push((dt, t, playerPos) => {
         if (zones.current() !== 'milkroom') return;
         [cocoa, sundae, barley].forEach((c, i) => {
           const p = c.userData.parts;
           if (p?.body) p.body.position.y = p.bodyY + Math.sin(t * 1.1 + i * 1.7) * 0.018;
           if (p?.head) p.head.position.y = p.headY + Math.sin(t * 1.1 + i * 1.7 + 0.6) * 0.02;
+          if (playerPos) { // turn to face a customer, like any good staff
+            const dx = playerPos.x - c.position.x, dz = playerPos.z - c.position.z;
+            if (Math.hypot(dx, dz) < 8) c.rotation.y = turnToward(c.rotation.y, Math.atan2(dx, dz), dt, 2.5);
+          }
         });
       });
 
@@ -653,6 +657,9 @@ export function createBulko(player) {
     const tvBack = box(8.8, 3.2, 0.2, 0xc2c6ca); // the solid rectangle behind the screens (light grey)
     tvBack.position.set(B.x + 2.4, 2.7, B.z + 1.3);
     group.add(tvBack);
+    // each channel keeps two faceted frames; the schedule assigns them to screens
+    const channelFrames = {};
+    for (const ch of TV_CHANNELS) channelFrames[ch.key] = [makeScreenTex(ch, 0), makeScreenTex(ch, 1)];
     const tvScreens = [];
     for (let i = 0; i < 8; i++) {
       const tx = B.x + 2.4 + ((i % 4) - 1.5) * 2.1;
@@ -660,50 +667,46 @@ export function createBulko(player) {
       const tv = box(1.9, 1.2, 0.18, 0x16140f);
       tv.position.set(tx, ty, B.z + 1.42);
       group.add(tv);
-      const ch = TV_CHANNELS[i % TV_CHANNELS.length];
-      const frames = [makeScreenTex(ch, 0), makeScreenTex(ch, 1)];
       const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.0),
-        new THREE.MeshBasicMaterial({ map: frames[0] }));
+        new THREE.MeshBasicMaterial({ map: channelFrames.sea[0] }));
       screen.position.set(tx, ty, B.z + 1.52);
       group.add(screen);
-      tvScreens.push({ screen, frames });
+      tvScreens.push({ screen, key: 'sea' });
     }
-    // lo-fi flipbook: swap each screen's frame slowly (only while you're in BULKO)
-    let tvStep = 0, tvFlipT = 0;
+    // TV scheduling — what's on depends on the hour. Day: weather, science, ads,
+    // and the sea on one random screen. Night: Hoot's show, ads, the sea.
+    const onAir = () => (isNight() ? ['hoot', 'ads', 'sea'] : ['weather', 'science', 'ads', 'sea']);
+    function scheduleScreens() {
+      const fill = isNight() ? ['hoot', 'ads'] : ['weather', 'science', 'ads'];
+      const seaScreen = Math.floor(rand(0, tvScreens.length)); // exactly one screen is the sea
+      tvScreens.forEach((s, i) => { s.key = i === seaScreen ? 'sea' : pick(fill); });
+    }
+    scheduleScreens();
+    // lo-fi flipbook + re-schedule on the day/night flip (and every so often, for variety)
+    let tvStep = 0, tvFlipT = 0, tvNight = isNight(), tvSchedT = 0;
     updates.push((dt) => {
       if (zones.current() !== 'bulko') return;
+      tvSchedT += dt;
+      if (isNight() !== tvNight || tvSchedT > 40) { tvNight = isNight(); tvSchedT = 0; scheduleScreens(); }
       tvFlipT += dt;
-      if (tvFlipT < 1.6) return;
-      tvFlipT = 0;
-      tvStep ^= 1;
-      for (const s of tvScreens) s.screen.material.map = s.frames[tvStep];
+      if (tvFlipT >= 1.6) { tvFlipT = 0; tvStep ^= 1; }
+      for (const s of tvScreens) s.screen.material.map = channelFrames[s.key][tvStep];
     });
+    // watch from anywhere along the wall front; you get whatever's on (random, no menu)
     const tvIdx = { hoot: 0, science: 0, sea: 0, ads: 0 };
+    const tvBroadcast = {
+      weather: () => ui.say(scoochWeather()),
+      hoot: () => { const pool = isNight() ? [...HOOT_BITS, HOOT_NIGHT] : HOOT_BITS; ui.say(pool[tvIdx.hoot++ % pool.length]); },
+      science: () => ui.say([{ speaker: NEWT, voice: NEWT_V, text: SCIENCE_FACTS[tvIdx.science++ % SCIENCE_FACTS.length] }]),
+      sea: () => ui.say(SEA_BITS[tvIdx.sea++ % SEA_BITS.length]),
+      ads: () => ui.say(TV_ADS[tvIdx.ads++ % TV_ADS.length]),
+    };
+    const tvHit = new THREE.Vector3();
     register({
-      pos: new THREE.Vector3(B.x + 2.4, 0, B.z + 3.8), r: 3, zone: 'bulko',
-      label: 'watch the wall of TVs',
-      use: async () => {
-        const choice = await ui.ask('What’s on?', [
-          { label: '🦉 Late Night with Hoot', value: 'hoot' },
-          { label: '🐸 Weather with Scooch', value: 'weather' },
-          { label: '🔬 Notbell Science', value: 'science' },
-          { label: '🌊 The Sea', value: 'sea' },
-          { label: '📣 BULKO ads', value: 'ads' },
-          { label: 'Switch it off', value: null },
-        ]);
-        if (choice === 'weather') { ui.say(scoochWeather()); return; }
-        if (choice === 'hoot') {
-          const pool = isNight() ? [...HOOT_BITS, HOOT_NIGHT] : HOOT_BITS;
-          ui.say(pool[tvIdx.hoot++ % pool.length]);
-          return;
-        }
-        if (choice === 'science') {
-          ui.say([{ speaker: NEWT, voice: NEWT_V, text: SCIENCE_FACTS[tvIdx.science++ % SCIENCE_FACTS.length] }]);
-          return;
-        }
-        if (choice === 'sea') { ui.say(SEA_BITS[tvIdx.sea++ % SEA_BITS.length]); return; }
-        if (choice === 'ads') { ui.say(TV_ADS[tvIdx.ads++ % TV_ADS.length]); return; }
-      },
+      getPos: () => tvHit.set(Math.max(B.x - 1.6, Math.min(B.x + 6.4, player.group.position.x)), 0, B.z + 2.3),
+      r: 2.6, zone: 'bulko',
+      label: 'watch the TVs',
+      use: () => { tvBroadcast[pick(onAir())](); },
     });
 
     // display couches, dared to be imagined in your cottage
@@ -786,9 +789,13 @@ export function createBulko(player) {
       hatHull.castShadow = true; hatSail.castShadow = true;
       frog.add(hatHull, hatSail);
     }
-    updates.push((dt, t) => {
+    updates.push((dt, t, playerPos) => {
       if (zones.current() !== 'bulko') return;
       frog.position.y = 0.6 + Math.abs(Math.sin(t * 1.4)) * 0.1; // a patient little bob, up on his stool
+      if (playerPos) { // Mortimer turns to face whoever's ordering, like Gus
+        const dx = playerPos.x - frog.position.x, dz = playerPos.z - frog.position.z;
+        if (Math.hypot(dx, dz) < 8) frog.rotation.y = turnToward(frog.rotation.y, Math.atan2(dx, dz), dt, 3);
+      }
     });
     // the frog IS the hot dog stand — order from him (the half-button is his doing)
     register({
@@ -925,7 +932,14 @@ export function createBulko(player) {
         { x: B.x + 4, z: B.z - 7, r: 4 }, { x: B.x + 12, z: B.z - 7, r: 4 },
         { x: B.x - 8, z: B.z - 3, r: 3 },   // the tank
         { x: B.x + 12, z: B.z + 6.5, r: 2 }, // food court counter
-        { x: B.x + 0.4 + 1.7, z: B.z + 5.5, r: 1 }, // a couch, approximately
+        // the TV stand — overlapping circles so there's no walk-through gap
+        { x: B.x - 1.2, z: B.z + 1.6, r: 1.1 }, { x: B.x + 0.6, z: B.z + 1.6, r: 1.1 },
+        { x: B.x + 2.4, z: B.z + 1.6, r: 1.1 }, { x: B.x + 4.2, z: B.z + 1.6, r: 1.1 },
+        { x: B.x + 6.0, z: B.z + 1.6, r: 1.1 },
+        { x: B.x - 8, z: B.z + 3.3, r: 2.0 }, // the parmesan wheels
+        // the three display couches
+        { x: B.x - 1, z: B.z + 5.5, r: 1.5 }, { x: B.x + 2.4, z: B.z + 5.5, r: 1.5 },
+        { x: B.x + 5.8, z: B.z + 5.5, r: 1.5 },
       ],
       spawn: { x: B.x - 2, z: B.z + 9.3, rotY: Math.PI },
       lighting: {
