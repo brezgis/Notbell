@@ -107,7 +107,7 @@ function makeScreenTex(ch, frame) {
 }
 
 // ---- channel content ----
-const HOOT = 'Hoot McLaughlin', HOOT_V = 500;
+const HOOT = 'Late Night with Hoot McLaughlin', HOOT_V = 500;
 const HOOT_BITS = [
   [{ speaker: HOOT, voice: HOOT_V, text: 'Good evening. Or morning. The clock and I have an understanding: it doesn’t tell me, and I don’t ask.' },
    { speaker: HOOT, voice: HOOT_V, text: 'Our top story: nothing happened today, beautifully, on every island. More on that never.' }],
@@ -121,7 +121,7 @@ const HOOT_BITS = [
 ];
 const HOOT_NIGHT = [{ speaker: HOOT, voice: HOOT_V, text: 'You’re watching at this hour. So am I. We are not so different — you, and the owl on the screen.' }];
 
-const SCOOCH = 'Scooch', SCOOCH_V = 360;
+const SCOOCH = 'Weather with Scooch', SCOOCH_V = 360;
 function scoochWeather() {
   const line = {
     clear: 'Today: clear. Sunny. Cloudless. *Devastating.* For tomorrow I am forecasting rain. I am always forecasting rain. One day I will be right and it will be the finest day of my life.',
@@ -132,7 +132,7 @@ function scoochWeather() {
   return [{ speaker: SCOOCH, voice: SCOOCH_V, text: line }];
 }
 
-const NEWT = 'Newt Bellows', NEWT_V = 580;
+const NEWT = 'Notbell Science with Newt Bellows', NEWT_V = 580;
 const SCIENCE_FACTS = [
   'Here’s one that gets me EVERY time: pumice — the stone that forms when lava cools mid-air — is so full of bubbles it FLOATS. A rock! The only one on Earth that floats!',
   'When a volcano erupts, ash smashing together builds up static — like shuffling across a carpet, but sky-sized — and you get real LIGHTNING, right inside the eruption!',
@@ -506,7 +506,7 @@ export function createBulko(player) {
       chill.position.set(MC.x, 2.5, MC.z);
       group.add(chill);
       const bigSign = new THREE.Mesh(new THREE.PlaneGeometry(8, 1.4),
-        textPanel([['❄  THE MILK COOLER  ❄', 64, 44]], 768, 140, '#2f5a6e', '#eaf6fb'));
+        textPanel([['❄  COLD FRESH MOO JUICE  ❄', 64, 44]], 768, 140, '#2f5a6e', '#eaf6fb'));
       bigSign.position.set(MC.x, 4.2, MC.z - 7.78);
       group.add(bigSign);
       // the carton wall (north), long
@@ -556,7 +556,7 @@ export function createBulko(player) {
       };
       const cocoa = makeCow(0x6b4a2e, MC.x - 7, MC.z + 2.6, 0.4);
       const sundae = makeCow(0xe6a6bc, MC.x + 7, MC.z + 2.6, -0.4);
-      const barley = makeCow(0xece3d0, MC.x, MC.z + 4.6, 0);
+      const barley = makeCow(0xece3d0, MC.x - 4.5, MC.z + 3.4, 0);
       { // Barley's beret, naturally
         const beret = new THREE.Group();
         const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.37, 0.12, 10), mat(0x2f3a4a, 0.6));
