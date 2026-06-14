@@ -731,7 +731,10 @@ export function createBuildings() {
       }));
     tankGlass.position.set(B.x, 2.5, B.z - 11.2);
     group.add(tankGlass);
-    const tankBack = box(16.2, 4.8, 0.3, 0x16344a);
+    const tankBack = box(16.2, 4.8, 0.3, 0x1d5a7a);
+    tankBack.material.emissive = new THREE.Color(0x0b2f44);
+    tankBack.material.emissiveIntensity = 0.25;
+    tankBack.receiveShadow = true;
     tankBack.position.set(B.x, 2.5, B.z - 14.5);
     group.add(tankBack);
     const tankSand = box(15.8, 0.3, 6.3, 0xd9c08f);
@@ -739,9 +742,12 @@ export function createBuildings() {
     group.add(tankSand);
     // kelp, light rays, the dark grotto corner for cave species
     const kelps = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 9; i++) {
       const kelp = new THREE.Group();
-      const kx = B.x - 7 + i * 2.3, kz = B.z - 11 + (i % 2) * 1.4;
+      const kx = B.x - 7.2 + i * 1.8;
+      const kz = kx > B.x + 2
+        ? B.z - 8.05 - (i % 2) * 0.35
+        : B.z - 11 + (i % 2) * 1.4;
       for (let seg = 0; seg < 4; seg++) {
         const blade = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.0, 4), mat(0x3f7a45, 0.9));
         blade.position.y = 0.6 + seg * 0.8;
@@ -758,13 +764,17 @@ export function createBuildings() {
       ray.rotation.z = 0.18;
       group.add(ray);
     }
-    const grotto = box(4.5, 4.4, 6.2, 0x10141c);
+    const grotto = box(4.5, 4.4, 6.2, 0x14364a);
+    grotto.material.emissive = new THREE.Color(0x071f2c);
+    grotto.material.emissiveIntensity = 0.2;
+    grotto.receiveShadow = true;
     grotto.position.set(B.x + 5.6, 2.4, B.z - 11.3);
     group.add(grotto);
     const grottoGlow = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 0),
       new THREE.MeshBasicMaterial({ color: 0x7fe8d8 }));
     grottoGlow.position.set(B.x + 5.6, 1.2, B.z - 9.4);
     group.add(grottoGlow);
+    group.add(warmLamp(B.x + 5.6, 2.4, B.z - 10.0, 0x7fe8d8, 28, 8));
     const bubbles = [];
     for (let i = 0; i < 12; i++) {
       const bub = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0),
