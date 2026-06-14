@@ -1,3 +1,4 @@
 shots/*.png
+shots/**/*.png
 shots/node_modules
 nohup.out

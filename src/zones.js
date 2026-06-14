@@ -123,6 +123,13 @@ export function current() {
   return currentZone;
 }
 
+// Fired after a zone change settles (player already at the new spot). The HUD
+// listens so the place name + clock refresh the moment you step through a door.
+const changeListeners = [];
+export function onChange(fn) {
+  changeListeners.push(fn);
+}
+
 export function groundHeight(x, z) {
   return zones[currentZone].groundHeight(x, z);
 }
@@ -155,20 +162,26 @@ function applyLighting(l) {
 let traveling = false;
 
 export async function go(name, at) {
-  if (traveling) return;
+  if (traveling) return false;
+  const target = zones[name] ? name : 'island';
+  const zone = zones[target];
   traveling = true;
-  doorChime();
-  await fadeSwap(() => {
-    currentZone = name;
-    syncInteriorRoots();
-    const zone = zones[name];
-    const spot = at || zone.spawn || PLAYER_SPAWN;
-    player.group.position.set(spot.x, zone.groundHeight(spot.x, spot.z), spot.z);
-    if (spot.rotY !== undefined) player.group.rotation.y = spot.rotY;
-    applyLighting(zone.lighting || ISLAND_LIGHTING);
-    snapCamera();
-  });
-  traveling = false;
+  try {
+    doorChime();
+    await fadeSwap(() => {
+      currentZone = target;
+      syncInteriorRoots();
+      const spot = at || zone.spawn || PLAYER_SPAWN;
+      player.group.position.set(spot.x, zone.groundHeight(spot.x, spot.z), spot.z);
+      if (spot.rotY !== undefined) player.group.rotation.y = spot.rotY;
+      applyLighting(zone.lighting || ISLAND_LIGHTING);
+      snapCamera();
+    });
+    for (const fn of changeListeners) fn(target);
+    return true;
+  } finally {
+    traveling = false;
+  }
 }
 
 // Convenience for door pairs: enter goes to the interior's spawn,

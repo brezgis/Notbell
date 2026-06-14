@@ -31,6 +31,14 @@ export const state = {
 
 let saveTimer = 0;
 
+function validItemCount(n) {
+  return Number.isInteger(n) && n > 0;
+}
+
+function validButtonAmount(n) {
+  return Number.isFinite(n) && n > 0;
+}
+
 export function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
@@ -76,15 +84,17 @@ export function load() {
 const TRACKED = new Set(['fish', 'bug', 'fossil', 'pool', 'art', 'meteor']);
 
 export function addItem(id, n = 1) {
+  if (!ITEMS[id] || !validItemCount(n)) return false;
   state.inv[id] = (state.inv[id] || 0) + n;
   if (TRACKED.has(ITEMS[id]?.kind)) {
     state.seen[id] = (state.seen[id] || 0) + n;
   }
   save();
+  return true;
 }
 
 export function removeItem(id, n = 1) {
-  if (!state.inv[id]) return false;
+  if (!validItemCount(n) || (state.inv[id] || 0) < n) return false;
   state.inv[id] -= n;
   if (state.inv[id] <= 0) delete state.inv[id];
   save();
@@ -96,12 +106,14 @@ export function countItem(id) {
 }
 
 export function earn(n) {
+  if (!validButtonAmount(n)) return false;
   state.buttons += n;
   save();
+  return true;
 }
 
 export function spend(n) {
-  if (state.buttons < n) return false;
+  if (!validButtonAmount(n) || state.buttons < n) return false;
   state.buttons -= n;
   save();
   return true;

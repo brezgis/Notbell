@@ -32,6 +32,15 @@ export function hourNow() {
   return (d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600 + shift + 24) % 24;
 }
 
+// The clock the HUD wears, e.g. "7:14 AM". Honors the same tz nudge as hourNow.
+export function clockLabel(h = hourNow()) {
+  const hr = Math.floor(h) % 24;
+  const mn = Math.floor((h - Math.floor(h)) * 60);
+  const ampm = hr < 12 ? 'AM' : 'PM';
+  const h12 = hr % 12 || 12;
+  return `${h12}:${String(mn).padStart(2, '0')} ${ampm}`;
+}
+
 // 0 at deep night → 1 at high noon, smooth. The sun keeps real hours.
 export function dayFactor(h = hourNow()) {
   return Math.max(0, Math.sin(((h - 6) / 12) * Math.PI));

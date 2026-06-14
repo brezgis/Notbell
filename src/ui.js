@@ -47,6 +47,12 @@ let chooseFn = null;       // resolves the current choice menu
 let choiceEls = [];
 let choiceIdx = 0;
 
+export function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
+
 export function isBusy() {
   return busy;
 }
@@ -139,7 +145,8 @@ function showChoices(choices, done) {
   choices.forEach((c, i) => {
     const b = el('button', null, choicesBox);
     b.className = 'choice' + (c.disabled ? ' disabled' : '');
-    b.innerHTML = `<span>${c.label}</span>${c.hint ? `<span class="hint">${c.hint}</span>` : ''}`;
+    b.innerHTML = `<span>${escapeHtml(c.label)}</span>` +
+      (c.hint ? `<span class="hint">${escapeHtml(c.hint)}</span>` : '');
     if (!c.disabled) {
       b.addEventListener('click', () => pickChoice(i));
     }
@@ -204,7 +211,7 @@ export function prompt(text) {
   if (!text || busy) {
     promptChip.style.display = 'none';
   } else {
-    promptChip.innerHTML = `<b>E</b> ${text}`;
+    promptChip.innerHTML = `<b>E</b> ${escapeHtml(text)}`;
     promptChip.style.display = 'block';
   }
 }
@@ -225,7 +232,7 @@ export function toast(text, emoji = '') {
 export function foundItem(id) {
   const it = ITEMS[id];
   if (!it) return;
-  toast(`You got a <b>${it.name}</b>! <i>${it.blurb}</i>`, it.emoji);
+  toast(`You got a <b>${escapeHtml(it.name)}</b>! <i>${escapeHtml(it.blurb)}</i>`, it.emoji);
 }
 
 // ------------------------------------------------------------------ HUD ----
@@ -257,13 +264,14 @@ function renderPockets() {
     .map(([id, n]) => ({ it: ITEMS[id], n }))
     .filter(({ it }) => it)
     .map(({ it, n }) =>
-      `<div class="row"><span>${it.emoji} ${it.name}</span>` +
+      `<div class="row"><span>${it.emoji} ${escapeHtml(it.name)}</span>` +
       `<span class="dim">×${n}${it.price > 0 ? ` · ${it.price}🔘` : ''}</span></div>`)
     .join('');
   const donated = state.donations.length;
+  const owner = state.name ? `${escapeHtml(state.name)}’s ` : '';
   pockets.innerHTML =
     `<div class="fg-close pockets-close">✕</div>` +
-    `<h3>🎒 ${state.name ? state.name + '’s ' : ''}Pockets</h3>` +
+    `<h3>🎒 ${owner}Pockets</h3>` +
     (rows || `<div class="row dim">Empty. The island is full of things…</div>`) +
     `<div class="row total"><span>Buttons</span><span>🔘 ${state.buttons}</span></div>` +
     (donated ? `<div class="row dim"><span>Museum pieces donated</span><span>${donated}</span></div>` : '') +
@@ -277,12 +285,17 @@ function renderPockets() {
 
 // Fade to black, run fn (teleport, lighting swap), fade back in.
 export function fadeSwap(fn) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     fadeEl.classList.add('on');
     setTimeout(async () => {
-      await fn?.();
-      fadeEl.classList.remove('on');
-      setTimeout(resolve, 350);
+      try {
+        await fn?.();
+        fadeEl.classList.remove('on');
+        setTimeout(resolve, 350);
+      } catch (err) {
+        fadeEl.classList.remove('on');
+        setTimeout(() => reject(err), 350);
+      }
     }, 380);
   });
 }

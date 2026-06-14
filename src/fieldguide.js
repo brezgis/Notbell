@@ -79,6 +79,41 @@ function charted(isle) {
   return !isle.key || !!state.visited[isle.key];
 }
 
+// The label the HUD wears — derived from (zone, x, z). Interiors and the moon
+// get their own name; out on the island it's the nearest charted shore; open
+// water (and anywhere unnamed) is just the archipelago.
+const ZONE_PLACES = {
+  shop: '🪙 Pip’s Odds & Ends',
+  cafe: '☕ The Lantern Room',
+  museum: '🏛️ Notbell Museum',
+  home: '🏡 Your Cottage',
+  cave: '✨ The Glow Worm Cave',
+  library: '📚 The Quiet Stacks',
+  clinic: '🩹 Dr. Gill’s Clinic',
+  grocery: '🥬 Barnaby’s Greens & Goods',
+  church: '🕯️ The Listening House',
+  manor: '🎩 Mole Manor',
+  manor_up: '🎩 Mole Manor',
+  cellar: '🔦 The Manor Cellar',
+  milkroom: '❄️ The Milk Cooler',
+  bulko: '🛒 BULKO',
+  labs: '🚀 Notbell Labs',
+  moon: '🌙 The Moon',
+};
+
+export function placeName(zone, x, z) {
+  if (ZONE_PLACES[zone]) return ZONE_PLACES[zone];
+  if (zone.startsWith('house_')) {
+    const who = zone.slice(6).replace(/\b\w/g, (c) => c.toUpperCase());
+    return `🏠 ${who}’s House`;
+  }
+  if (zone === 'island') {
+    const isle = isleAt(x, z);
+    if (isle) return `${isle.icon} ${isle.name}`;
+  }
+  return '🍃 Notbell Archipelago';
+}
+
 // called from the main loop every couple of seconds while outdoors
 export function markVisited(player, zone) {
   if (zone !== 'island') return;

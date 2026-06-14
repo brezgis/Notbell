@@ -28,12 +28,12 @@ import { createIsland5 } from './island5.js';
 import { createIsland6 } from './island6.js';
 import { createMoon } from './moon.js';
 import { wireHatKey } from './hats.js';
-import { initFieldGuide, markVisited } from './fieldguide.js';
+import { initFieldGuide, markVisited, placeName } from './fieldguide.js';
 import { createMultiplayer } from './multiplayer.js';
 import { initControls, isTouchDevice } from './controls.js';
 import { initSettings } from './settings.js';
 import { setMood } from './audio.js';
-import { HOLIDAY, isNight } from './calendar.js';
+import { HOLIDAY, isNight, clockLabel } from './calendar.js';
 import { currentWeather } from './almanac.js';
 import * as almanac from './almanac.js';
 import * as zones from './zones.js';
@@ -265,6 +265,18 @@ const clock = new THREE.Clock();
 let moodT = 0;
 let whereT = 6;
 
+// the title chip names where you are and what time it is — refreshed on the
+// whereT tick (below) and the instant a door swaps zones
+const titleEl = document.getElementById('title');
+function updateHud() {
+  if (!titleEl) return;
+  const p = player.group.position;
+  titleEl.innerHTML =
+    `${placeName(zones.current(), p.x, p.z)} <span class="dim">· ${clockLabel()}</span>`;
+}
+zones.onChange(updateHud);
+updateHud();
+
 // pick up exactly where you left off — spot, zone, camera and all
 if (S.state.where && S.state.where.zone !== 'sea') {
   const w = S.state.where;
@@ -344,6 +356,7 @@ renderer.setAnimationLoop(() => {
   if (whereT <= 0) {
     whereT = 2.5;
     markVisited(player, zone); // new shores ink themselves onto the chart
+    updateHud(); // place name + clock keep pace as you wander
     S.state.where = {
       zone, x: playerPos.x, z: playerPos.z, rotY: player.group.rotation.y,
       camYaw, camPitch, camDist,
@@ -392,6 +405,6 @@ window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, a
     S.state.name = (raw || 'Sandy').trim().slice(0, 16) || 'Sandy';
     S.save();
     ui.updateHUD();
-    ui.toast(`Welcome home, <b>${S.state.name}</b>. The tide pools already knew, somehow.`, '✨');
+    ui.toast(`Welcome home, <b>${ui.escapeHtml(S.state.name)}</b>. The tide pools already knew, somehow.`, '✨');
   }
 })();

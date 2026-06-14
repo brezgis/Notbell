@@ -49,7 +49,7 @@ export function initSettings() {
 
       <h4>You</h4>
       <div class="row">
-        <input id="set-name" maxlength="16" placeholder="display name" value="${(state.name || '').replace(/"/g, '&quot;')}">
+        <input id="set-name" maxlength="16" placeholder="display name" value="${ui.escapeHtml(state.name || '')}">
         <button id="set-name-go">Rename</button>
       </div>
 
@@ -78,7 +78,7 @@ export function initSettings() {
       state.name = v;
       save();
       ui.updateHUD();
-      ui.toast(`The islanders will call you <b>${v}</b> now.`, '✨');
+      ui.toast(`The islanders will call you <b>${ui.escapeHtml(v)}</b> now.`, '✨');
     };
     panel.querySelector('#set-sound').onclick = () => {
       // M is the mute key; settings speaks fluent keyboard, like everything

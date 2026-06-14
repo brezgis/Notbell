@@ -142,8 +142,9 @@
     .touch #stick { display: block; }
     .touch #btn-row { display: flex; }
     .touch #help { display: none; } /* thumbs don't need a keyboard legend */
-    .touch #title { display: none; } /* small screens earn their pixels */
     .touch .kbhint { display: none; } /* keyboard hints, ditto */
+    /* #title stays on touch now — it's the place name + clock (sits above the
+       button column at top:60px), so it earns its pixels */
 
     /* zone fade — dialogue floats above it, so ferry stories play in the dark */
     #fade {
