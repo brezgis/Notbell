@@ -724,16 +724,87 @@ export function createIsland5(player) {
       use: () => ui.say('It is aimed at the volcano, who is asleep. A note taped to the tube: “SHE SMOKED AT 3 A.M., TUESDAY. NOBODY BELIEVES ME. —M.”'),
     });
     // THE crooked portrait, and what it hides
-    const portU = box(1.5, 2.0, 0.1, 0xd9a440);
-    portU.position.set(U.x - 1.5, 2.6, U.z - 4.85);
+    const portCv = document.createElement('canvas');
+    portCv.width = 256;
+    portCv.height = 340;
+    const portCtx = portCv.getContext('2d');
+    const oilGround = portCtx.createRadialGradient(126, 116, 18, 128, 176, 240);
+    oilGround.addColorStop(0, '#34402e');
+    oilGround.addColorStop(0.62, '#241d18');
+    oilGround.addColorStop(1, '#100d0b');
+    portCtx.fillStyle = oilGround;
+    portCtx.fillRect(0, 0, 256, 340);
+    portCtx.fillStyle = 'rgba(76, 59, 33, 0.42)';
+    portCtx.fillRect(28, 40, 64, 84);
+    portCtx.fillStyle = 'rgba(22, 48, 40, 0.5)';
+    portCtx.fillRect(160, 54, 48, 116);
+    portCtx.lineJoin = 'round';
+    portCtx.lineWidth = 18;
+    portCtx.strokeStyle = '#9e6d24';
+    portCtx.strokeRect(18, 18, 220, 304);
+    portCtx.lineWidth = 7;
+    portCtx.strokeStyle = '#efc96a';
+    portCtx.strokeRect(32, 32, 192, 276);
+    const portraitPoly = (pts, color) => {
+      portCtx.fillStyle = color;
+      portCtx.beginPath();
+      portCtx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) portCtx.lineTo(pts[i][0], pts[i][1]);
+      portCtx.closePath();
+      portCtx.fill();
+    };
+    portraitPoly([[58, 300], [78, 248], [102, 224], [153, 224], [179, 248], [200, 300], [186, 322], [70, 322]], '#27251f');
+    portraitPoly([[78, 248], [105, 224], [128, 254], [102, 288]], '#f0e6d1');
+    portraitPoly([[151, 224], [178, 248], [152, 288], [128, 254]], '#d8cbb2');
+    portraitPoly([[112, 254], [128, 270], [144, 254], [140, 304], [116, 304]], '#3c3329');
+    portraitPoly([[119, 294], [137, 294], [137, 314], [119, 314]], '#76342c');
+    portCtx.fillStyle = '#ddb54e';
+    portCtx.beginPath();
+    portCtx.arc(128, 318, 10, 0, Math.PI * 2);
+    portCtx.fill();
+    portraitPoly([[76, 118], [88, 88], [113, 68], [148, 70], [174, 92], [188, 126], [184, 170], [164, 206], [130, 225], [94, 212], [70, 174], [66, 138]], '#493b31');
+    portraitPoly([[88, 88], [113, 68], [120, 117], [84, 142]], '#5a4b3e');
+    portraitPoly([[148, 70], [174, 92], [166, 154], [128, 120]], '#3a2f29');
+    portraitPoly([[70, 174], [94, 212], [128, 225], [112, 182]], '#362c27');
+    portraitPoly([[166, 154], [184, 170], [164, 206], [132, 184]], '#2f2823');
+    portraitPoly([[96, 148], [119, 132], [146, 134], [164, 154], [160, 184], [140, 204], [112, 200], [94, 176]], '#d6b69f');
+    portraitPoly([[119, 132], [146, 134], [154, 156], [128, 166], [104, 156]], '#e7c8ad');
+    portraitPoly([[112, 178], [128, 166], [145, 178], [136, 194], [119, 194]], '#c9a58f');
+    portraitPoly([[121, 160], [136, 160], [128, 169]], '#16120f');
+    portCtx.strokeStyle = '#17120f';
+    portCtx.lineWidth = 4;
+    portCtx.beginPath();
+    portCtx.moveTo(97, 126);
+    portCtx.lineTo(115, 123);
+    portCtx.moveTo(141, 123);
+    portCtx.lineTo(159, 126);
+    portCtx.stroke();
+    portCtx.lineWidth = 3;
+    portCtx.strokeStyle = '#d4b04b';
+    portCtx.beginPath();
+    portCtx.arc(158, 128, 13, 0, Math.PI * 2);
+    portCtx.moveTo(168, 137);
+    portCtx.lineTo(181, 154);
+    portCtx.stroke();
+    const portTex = new THREE.CanvasTexture(portCv);
+    portTex.colorSpace = THREE.SRGBColorSpace;
+    const portGold = mat(0xd9a440);
+    const portU = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.0, 0.1), [
+      portGold, portGold, portGold, portGold,
+      new THREE.MeshBasicMaterial({ map: portTex }),
+      portGold,
+    ]);
+    portU.castShadow = true;
+    portU.receiveShadow = true;
+    portU.position.set(U.x - 1.5, 2.6, U.z - 4.72);
     portU.rotation.z = 0.05; // suspiciously crooked
     group.add(portU);
     const safeBox = box(1.1, 1.1, 0.4, 0x4a4f55);
-    safeBox.position.set(U.x - 1.5, 2.5, U.z - 4.95);
+    safeBox.position.set(U.x - 1.5, 2.5, U.z - 4.86);
     safeBox.visible = false;
     const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.1, 10), mat(0xd9a440, 0.3));
     dial.rotation.x = Math.PI / 2;
-    dial.position.set(U.x - 1.5, 2.5, U.z - 4.7);
+    dial.position.set(U.x - 1.5, 2.5, U.z - 4.6);
     dial.visible = false;
     group.add(safeBox, dial);
     register({
