@@ -1305,7 +1305,7 @@ export function createBulko(player) {
     });
     // the frog IS the hot dog stand — order from him (the half-button is his doing)
     register({
-      getPos: () => frog.position, r: 2.8, zone: 'bulko',
+      getPos: () => frog.position, r: 3.6, zone: 'bulko',
       label: 'order from Mortimer',
       use: async () => {
         if (!S.hasFlag('metFrog')) {

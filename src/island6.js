@@ -205,12 +205,13 @@ export function createIsland6(player) {
   // stairs up the WEST side (the causeway owns the east approach now),
   // a railed walk across the top, a telescope at the far end.
   // "the catwalk is the best part of the facility" —management
-  const ROOF_Y = fy + 5.3;
+  const ROOF_Y = fy + 5.65;
+  const CATWALK_HALF_W = 1.55;
   const stairX0 = fx - 7.2;  // top of the stairs (roof's west edge)
   const stairX1 = fx - 14.2; // bottom of the stairs (ground, westward)
   zones.addCrossing({
     contains(x, z) {
-      return x >= stairX1 && x <= stairX0 && Math.abs(z - fz) < 1.0;
+      return x >= stairX1 && x <= stairX0 && Math.abs(z - fz) < CATWALK_HALF_W;
     },
     height(x) {
       const t = (x - stairX0) / (stairX1 - stairX0);
@@ -219,7 +220,7 @@ export function createIsland6(player) {
   });
   zones.addCrossing({
     contains(x, z) {
-      return x >= stairX0 && x <= fx + 7.2 && Math.abs(z - fz) < 1.0;
+      return x >= stairX0 && x <= fx + 7.2 && Math.abs(z - fz) < CATWALK_HALF_W;
     },
     height: () => ROOF_Y,
   });
@@ -227,28 +228,33 @@ export function createIsland6(player) {
     // the stair: a long inclined slab with cleats, plus rails
     const run = stairX0 - stairX1; // climbs eastward, toward the roof
     const rise = ROOF_Y - fy;
-    const slab = box(Math.hypot(run, rise) + 0.4, 0.16, 1.9, 0x9aa3ad);
+    const slab = box(Math.hypot(run, rise) + 0.4, 0.16, CATWALK_HALF_W * 2 - 0.2, 0x9aa3ad);
     slab.position.set((stairX0 + stairX1) / 2, (ROOF_Y + fy) / 2 + 0.05, fz);
     slab.rotation.z = Math.atan2(rise, run);
+    slab.receiveShadow = true;
     group.add(slab);
     for (let i = 0; i < 8; i++) {
       const t = (i + 0.5) / 8;
-      const cleat = box(0.18, 0.07, 1.9, 0x6b7280);
+      const cleat = box(0.18, 0.07, CATWALK_HALF_W * 2 - 0.2, 0x6b7280);
       cleat.position.set(stairX1 + t * run, fy + t * rise + 0.14, fz);
+      cleat.receiveShadow = true;
       group.add(cleat);
     }
     // the catwalk deck and rails
-    const deck = box(15, 0.14, 2.2, 0x9aa3ad);
+    const deck = box(15, 0.14, CATWALK_HALF_W * 2, 0x9aa3ad);
     deck.position.set(fx, ROOF_Y - 0.07, fz);
+    deck.receiveShadow = true;
     group.add(deck);
     for (const sz of [-1, 1]) {
       for (let i = 0; i <= 7; i++) {
-        const post = box(0.08, 1.0, 0.08, 0xd9534f);
-        post.position.set(fx - 7 + i * 2, ROOF_Y + 0.5, fz + sz * 1.05);
+        const post = box(0.08, 1.05, 0.08, 0xd9534f);
+        post.position.set(fx - 7 + i * 2, ROOF_Y + 0.52, fz + sz * CATWALK_HALF_W);
+        post.receiveShadow = true;
         group.add(post);
       }
       const rail = box(15, 0.08, 0.08, 0xd9534f);
-      rail.position.set(fx, ROOF_Y + 1.0, fz + sz * 1.05);
+      rail.position.set(fx, ROOF_Y + 1.05, fz + sz * CATWALK_HALF_W);
+      rail.receiveShadow = true;
       group.add(rail);
     }
     // the telescope, pointed somewhere very specific
@@ -276,7 +282,7 @@ export function createIsland6(player) {
   // benches, planters, and the flag. office-park charm, frontier edition.
   {
     for (const [bx, bz, ry] of [
-      [fx - 3.4, fz + 5.6, 0.5], [fx + 3.4, fz + 5.6, -0.5], [Y.x + 6.5, Y.z + 1, -Math.PI / 2],
+      [fx - 3.4, fz + 5.6, 0.5], [fx + 3.4, fz + 5.6, -0.5], [Y.x - 6.2, Y.z + 4.8, Math.PI / 2],
     ]) {
       const bench = new THREE.Group();
       const seat = box(2.0, 0.12, 0.55, 0xa97c50);
@@ -297,7 +303,7 @@ export function createIsland6(player) {
     }
     // planters: poured concrete, institutional; flowers: insubordinate
     for (const [px, pz] of [
-      [fx - 5.8, fz + 5.6], [fx + 5.8, fz + 5.6], [Y.x + 6.5, Y.z + 3.6], [Y.x + 6.5, Y.z - 1.6],
+      [fx - 5.8, fz + 5.6], [fx + 5.8, fz + 5.6], [Y.x - 3.8, Y.z + 7.0], [Y.x - 8.6, Y.z + 6.1],
     ]) {
       const py = terrainHeight(px, pz);
       const tub = box(1.5, 0.55, 1.5, 0xb6b1a4);
@@ -994,6 +1000,7 @@ export function createIsland6(player) {
     }
 
     // --------------------------------------------------- chemistry, west ----
+    const chemSteam = [];
     for (const bz of [B.z + 1.5, B.z + 5.5]) {
       const bench = box(5.4, 1.0, 1.3, 0xd9d4c8);
       bench.position.set(B.x - 14.2, 0.5, bz);
@@ -1010,6 +1017,16 @@ export function createIsland6(player) {
         const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 5), mat(0xd9d4c8, 0.3));
         neck.position.set(fl.position.x, 1.45, fl.position.z);
         room.add(neck);
+        if (i % 2 === 0) {
+          const puff = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 0),
+            new THREE.MeshStandardMaterial({
+              color: 0xf5f2e9, transparent: true, opacity: 0.18,
+              flatShading: true, roughness: 1,
+            }));
+          puff.position.set(fl.position.x, 1.62, fl.position.z);
+          room.add(puff);
+          chemSteam.push({ m: puff, x: fl.position.x, z: fl.position.z, phase: chemSteam.length * 0.23 });
+        }
       }
     }
     // bubbles: three tiny spheres on shift rotation above the benches
@@ -1021,12 +1038,21 @@ export function createIsland6(player) {
       room.add(bub);
       chemBubbles.push({ m: bub, t: i * 0.6 });
     }
-    labUpdates.push((dt) => {
+    labUpdates.push((dt, t) => {
       for (const b of chemBubbles) {
         b.t += dt;
         const ph = b.t % 1.8;
         b.m.position.y = 1.4 + ph * 0.5;
         b.m.material.opacity = 0.7 * (1 - ph / 1.8);
+      }
+      for (const s of chemSteam) {
+        const k = (s.phase + t * 0.12) % 1;
+        s.m.position.set(
+          s.x + Math.sin(t * 0.6 + s.phase * 11) * 0.08,
+          1.55 + k * 0.8,
+          s.z + Math.cos(t * 0.5 + s.phase * 9) * 0.06);
+        s.m.scale.setScalar(0.45 + k * 0.85);
+        s.m.material.opacity = 0.22 * Math.sin(k * Math.PI);
       }
     });
     register({
@@ -1131,6 +1157,7 @@ export function createIsland6(player) {
       new THREE.MeshStandardMaterial({ color: 0xf5f2e9, transparent: true, opacity: 0.6 }));
     silk.position.set(0, -0.37, 0);
     ada.add(silk);
+    ada.scale.setScalar(1.65);
     ada.position.set(B.x + 10.2, 2.95, B.z - 4.9);
     room.add(ada);
     let adaIdx = 0;
@@ -1380,6 +1407,37 @@ export function createIsland6(player) {
         label: 'talk to Pots',
         use: () => ui.say(POTS_LINES[potsIdx++ % POTS_LINES.length], { speaker: 'Pots', voice: 300 }),
       });
+      const menuFrame = box(5.0, 2.25, 0.16, 0x6b4a2e);
+      menuFrame.position.set(B.x - 14.6, 2.35, B.z - 11.72);
+      menuFrame.receiveShadow = true;
+      room.add(menuFrame);
+      const menuCv = document.createElement('canvas');
+      menuCv.width = 512; menuCv.height = 256;
+      const menuCtx = menuCv.getContext('2d');
+      menuCtx.fillStyle = '#2e3a32';
+      menuCtx.fillRect(0, 0, 512, 256);
+      menuCtx.strokeStyle = '#e8e0d0';
+      menuCtx.lineWidth = 8;
+      menuCtx.strokeRect(14, 14, 484, 228);
+      menuCtx.textAlign = 'center';
+      menuCtx.textBaseline = 'middle';
+      for (const [text, y, px] of [
+        ["POTS' CANTEEN ·", 45, 34],
+        ['Coffee — free, always ·', 96, 26],
+        ['Bolt Soup — 6 ·', 137, 25],
+        ['Gear Loaf — 8 ·', 178, 25],
+        ['(Tuesday: also Gear Loaf)', 218, 21],
+      ]) {
+        menuCtx.font = `800 ${px}px ui-rounded, "Segoe UI", system-ui, sans-serif`;
+        menuCtx.fillStyle = y === 45 ? '#f2cf5b' : '#f5f2e9';
+        menuCtx.fillText(text, 256, y);
+      }
+      const menuTex = new THREE.CanvasTexture(menuCv);
+      menuTex.colorSpace = THREE.SRGBColorSpace;
+      const menuPanel = new THREE.Mesh(new THREE.PlaneGeometry(4.55, 1.95),
+        new THREE.MeshBasicMaterial({ map: menuTex }));
+      menuPanel.position.set(B.x - 14.6, 2.35, B.z - 11.61);
+      room.add(menuPanel);
       labUpdates.push((dt, t, playerPos) => {
         const dx = playerPos.x - pots.position.x, dz = playerPos.z - pots.position.z;
         if (Math.hypot(dx, dz) < 6) {
