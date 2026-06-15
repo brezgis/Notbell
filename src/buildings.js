@@ -76,6 +76,16 @@ function makeShopExterior() {
     const w = makeWindow();
     w.position.set(sx * 2.1, 2.0, 3.0);
     g.add(w);
+    const side = makeWindow();
+    side.position.set(sx * 3.51, 2.0, 0);
+    side.rotation.y = Math.PI / 2;
+    side.traverse((o) => {
+      if (o.isMesh && !o.material.transparent) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+      }
+    });
+    g.add(side);
   }
   // a big button for a sign, naturally
   const sign = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.16, 10), mat(0xf2cf5b, 0.35));
@@ -226,11 +236,13 @@ export function createBuildings() {
   const updates = [];
 
   // plaza centerpiece: a little well with a button-shaped roof finial
+  const wellX = C.x;
+  const wellZ = C.z + 4;
   const well = new THREE.Group();
   const wellBase = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.9, 8), mat(0x9aa0a6));
   wellBase.position.y = 0.45;
   const wellWater = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.1, 8), mat(0x3fb0e8, 0.3));
-  wellWater.position.y = 0.82;
+  wellWater.position.y = 0.86;
   well.add(wellBase, wellWater);
   for (const sx of [-1, 1]) {
     const post = box(0.14, 1.3, 0.14, 0x7a5230);
@@ -241,10 +253,10 @@ export function createBuildings() {
   wellRoof.position.y = 2.4;
   wellRoof.rotation.y = Math.PI / 4;
   well.add(wellRoof);
-  well.position.set(C.x, terrainHeight(C.x, C.z), C.z);
+  well.position.set(wellX, terrainHeight(wellX, wellZ), wellZ);
   well.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   group.add(well);
-  zones.addBlocker(C.x, C.z, 1.7);
+  zones.addBlocker(wellX, wellZ, 1.7);
   register({
     pos: well.position, r: 2.2, label: 'peer into the well',
     use: () => ui.say([
