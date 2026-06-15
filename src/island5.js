@@ -13,6 +13,7 @@ import { buildAnimal, animateGait } from './animals.js';
 import { jingle, kaching, splash, tone } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { addIslandInfo } from './fieldguide.js';
+import { glowWindow } from './nightglow.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -234,7 +235,11 @@ export function createIsland5(player) {
       ext.add(win);
     }
     ext.position.set(M.x, my, M.z - 2);
-    ext.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    ext.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = true;
+      if (o.material.color && o.material.color.getHex() === 0xbfe6f2) glowWindow(o); // every manor window glows
+    });
     group.add(ext);
     zones.addBlocker(M.x - 6, M.z - 2, 6.4);
     zones.addBlocker(M.x + 6, M.z - 2, 6.4);

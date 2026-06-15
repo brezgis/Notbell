@@ -36,6 +36,7 @@ import { setMood } from './audio.js';
 import { HOLIDAY, isNight, clockLabel } from './calendar.js';
 import { currentWeather } from './almanac.js';
 import * as almanac from './almanac.js';
+import { updateNightGlow } from './nightglow.js';
 import * as zones from './zones.js';
 import * as interact from './interact.js';
 import * as ui from './ui.js';
@@ -331,6 +332,7 @@ renderer.setAnimationLoop(() => {
     // the open world only spends effort when you can see it
     ocean.update(t);
     sky.update(dt);
+    updateNightGlow(dt); // windows warm up after dark / in rain or fog
     nature.update(dt, t, playerPos);
     oceanLife.update(dt, t, playerPos);
     boats.update(dt, t, playerPos);

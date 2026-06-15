@@ -11,6 +11,8 @@ import * as S from './state.js';
 import { buildAnimal } from './animals.js';
 import { jingle, sip, kaching } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
+import { makeWindow, makeRectWindow } from './buildings.js';
+import { glowWindow } from './nightglow.js';
 
 // where the MouseBoat is moored — houses.js puts Crumb to bed on its deck
 export let MOUSEBOAT = null;
@@ -342,7 +344,7 @@ export function createIsland3() {
     door.position.set(0, 1.0, 2.91);
     ext.add(door);
     for (const sx of [-2, 2]) {
-      const win = box(1.0, 1.2, 0.14, 0xbfe6f2);
+      const win = makeRectWindow(0.85, 1.0);
       win.position.set(sx, 1.9, 2.92);
       ext.add(win);
     }
@@ -516,6 +518,9 @@ export function createIsland3() {
     const crossH = box(1.3, 0.5, 0.12, 0x8fce7a);
     crossH.position.set(0, 3.0, 2.56);
     ext.add(crossV, crossH);
+    const cwin = makeWindow(0.4);
+    cwin.position.set(1.6, 1.7, 2.51);
+    ext.add(cwin);
     ext.position.set(clinSpot.x, cy, clinSpot.z);
     ext.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(ext);
@@ -809,6 +814,7 @@ export function createIsland3() {
     const porthole = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.1, 8), mat(0xbfe6f2, 0.3));
     porthole.rotation.x = Math.PI / 2;
     porthole.position.set(0, 1.8, 0.65);
+    glowWindow(porthole); // glows at night like the rest
     boat.add(porthole);
     const stovepipe = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6), mat(0x2e2a26));
     stovepipe.position.set(0.8, 3.0, -1.4);

@@ -9,6 +9,7 @@ import { register } from './interact.js';
 import * as ui from './ui.js';
 import { tone } from './audio.js';
 import { rand } from './utils.js';
+import { glowWindow } from './nightglow.js';
 
 function mat(color, rough = 0.85) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -182,6 +183,7 @@ export function createBridge(player, animals = []) {
     for (const sz of [-0.5, 0.5]) {
       const win = box(1.26, 0.34, 0.5, 0xbfe6f2);
       win.position.set(0, 1.0, sz);
+      glowWindow(win);
       car.add(win);
     }
     train.add(car);

@@ -12,6 +12,7 @@ import { ITEMS, GROWTH } from './catalog.js';
 import { kaching, sip, jingle } from './audio.js';
 import { buildAnimal } from './animals.js';
 import { rand, pick, turnToward } from './utils.js';
+import { makeWindow } from './buildings.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -82,6 +83,12 @@ export function createIsland2() {
     const door = box(1.1, 1.9, 0.18, 0x2e6e66);
     door.position.set(0, 0.95, 2.71);
     ext.add(door);
+    // a window on each side of the door
+    for (const sx of [-2.0, 2.0]) {
+      const gwin = makeWindow(0.4);
+      gwin.position.set(sx, 1.7, 2.72);
+      ext.add(gwin);
+    }
     // produce crates out front
     for (const [ox, c] of [[-2.2, 0xff9430], [-1.2, 0xd84f4f], [1.4, 0x8fce7a]]) {
       const crate = box(0.8, 0.5, 0.8, 0xa97c50);
@@ -274,6 +281,17 @@ export function createIsland2() {
           new THREE.MeshBasicMaterial({ color: paneColor[ch], transparent: true, opacity: 0.9 }));
         pane.position.set(B.x - 2.1 + ci * 0.7, 4.3 - ri * 0.7, B.z - 7.78);
         group.add(pane);
+      });
+    });
+    // the same bell, shown to the world: mirror the great window onto the
+    // OUTSIDE of the nave's back wall — smaller panes, set a little overhead
+    PANES.forEach((row, ri) => {
+      [...row].forEach((ch, ci) => {
+        if (!paneColor[ch]) return;
+        const pane = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.48),
+          new THREE.MeshBasicMaterial({ color: paneColor[ch], transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
+        pane.position.set(-1.65 + ci * 0.55, 3.8 - ri * 0.55, -3.52);
+        ext.add(pane);
       });
     });
     // pews

@@ -12,6 +12,7 @@ import { jingle, doorChime, thud } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { hourNow } from './calendar.js';
 import { MOUSEBOAT } from './island3.js';
+import { makeWindow } from './buildings.js';
 import { currentWeather } from './almanac.js';
 
 function mat(color, rough = 0.9) {
@@ -170,8 +171,7 @@ function makeCottage({ wall, roof, door }, scale = 1) {
   const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(0xf2cf5b, 0.4));
   knob.position.set(0.3 * scale, 0.85 * scale, 2.12 * scale);
   g.add(knob);
-  const win = new THREE.Mesh(new THREE.CylinderGeometry(0.35 * scale, 0.35 * scale, 0.14, 8), mat(0xbfe6f2, 0.3));
-  win.rotation.x = Math.PI / 2;
+  const win = makeWindow(0.35 * scale); // round, like the others — and it glows at night
   win.position.set(-1.3 * scale, 1.5 * scale, 2.0 * scale);
   g.add(win);
   return g;

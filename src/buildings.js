@@ -14,6 +14,7 @@ import { buildAnimal } from './animals.js';
 import { rand, turnToward } from './utils.js';
 import { HOLIDAY } from './calendar.js';
 import { hangCafeArt, artPiece, makeFramed } from './art.js';
+import { glowWindow } from './nightglow.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -41,13 +42,26 @@ function makeDoor(color = 0x6b4a2e) {
   return g;
 }
 
-function makeWindow(r = 0.45) {
+export function makeWindow(r = 0.45) {
   const g = new THREE.Group();
   const rim = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.1, r + 0.1, 0.14, 8), mat(0xfff6e0));
   rim.rotation.x = Math.PI / 2;
   const glass = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.16, 8), mat(0xbfe6f2, 0.3));
   glass.rotation.x = Math.PI / 2;
+  glowWindow(glass); // stays a lit, lantern-catching surface; warms at night
   g.add(rim, glass);
+  return g;
+}
+
+// A matted rectangular window: a cream border + a solid back, with a glass pane
+// set inside it — the rectangular cousin of makeWindow. It glows too.
+export function makeRectWindow(w = 0.8, h = 1.3) {
+  const g = new THREE.Group();
+  const frame = box(w + 0.2, h + 0.2, 0.12, 0xfff6e0); // cream mat + solid back
+  const glass = box(w, h, 0.16, 0xbfe6f2);
+  glass.position.z = 0.05; // the pane sits proud of the mat
+  glowWindow(glass);
+  g.add(frame, glass);
   return g;
 }
 
@@ -167,6 +181,12 @@ function makeMuseumExterior() {
   door.position.z = 3.26;
   door.scale.setScalar(1.1);
   g.add(door);
+  // a narrow matted window in each bay flanking the door (between the pillars)
+  for (const sx of [-1.95, 1.95]) {
+    const mwin = makeRectWindow(0.8, 1.3);
+    mwin.position.set(sx, 2.0, 3.26);
+    g.add(mwin);
+  }
   return g;
 }
 

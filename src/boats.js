@@ -12,6 +12,7 @@ import * as S from './state.js';
 import { buildAnimal } from './animals.js';
 import { plop, doorChime } from './audio.js';
 import { rand, turnToward } from './utils.js';
+import { glowWindow } from './nightglow.js';
 import { BULKO_DOCK } from './bulko.js';
 import { LABS_DOCK } from './island6.js';
 
@@ -221,6 +222,14 @@ export function createBoats(player) {
   const cabinRoof = box(1.8, 0.18, 2.0, 0xb0453a);
   cabinRoof.position.set(0, 2.4, -0.6);
   tug.add(cabinRoof);
+  // a porthole on each side of the cabin — glows at night like the others
+  for (const psx of [-1, 1]) {
+    const porthole = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.1, 8), mat(0xbfe6f2, 0.3));
+    porthole.rotation.z = Math.PI / 2; // faces out the side
+    porthole.position.set(psx * 0.81, 1.65, -0.6);
+    glowWindow(porthole);
+    tug.add(porthole);
+  }
   const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.9, 7), mat(0xb0453a));
   funnel.position.set(0, 1.6, 0.9);
   tug.add(funnel);
