@@ -231,30 +231,30 @@ export function createIsland6(player) {
     const slab = box(Math.hypot(run, rise) + 0.4, 0.16, CATWALK_HALF_W * 2 - 0.2, 0x9aa3ad);
     slab.position.set((stairX0 + stairX1) / 2, (ROOF_Y + fy) / 2 + 0.05, fz);
     slab.rotation.z = Math.atan2(rise, run);
-    slab.receiveShadow = true;
+    slab.castShadow = slab.receiveShadow = true;
     group.add(slab);
     for (let i = 0; i < 8; i++) {
       const t = (i + 0.5) / 8;
       const cleat = box(0.18, 0.07, CATWALK_HALF_W * 2 - 0.2, 0x6b7280);
       cleat.position.set(stairX1 + t * run, fy + t * rise + 0.14, fz);
-      cleat.receiveShadow = true;
+      cleat.castShadow = cleat.receiveShadow = true;
       group.add(cleat);
     }
     // the catwalk deck and rails
     const deck = box(15, 0.14, CATWALK_HALF_W * 2, 0x9aa3ad);
     deck.position.set(fx, ROOF_Y - 0.07, fz);
-    deck.receiveShadow = true;
+    deck.castShadow = deck.receiveShadow = true;
     group.add(deck);
     for (const sz of [-1, 1]) {
       for (let i = 0; i <= 7; i++) {
         const post = box(0.08, 1.05, 0.08, 0xd9534f);
         post.position.set(fx - 7 + i * 2, ROOF_Y + 0.52, fz + sz * CATWALK_HALF_W);
-        post.receiveShadow = true;
+        post.castShadow = post.receiveShadow = true;
         group.add(post);
       }
       const rail = box(15, 0.08, 0.08, 0xd9534f);
       rail.position.set(fx, ROOF_Y + 1.05, fz + sz * CATWALK_HALF_W);
-      rail.receiveShadow = true;
+      rail.castShadow = rail.receiveShadow = true;
       group.add(rail);
     }
     // the telescope, pointed somewhere very specific
