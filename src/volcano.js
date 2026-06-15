@@ -3,11 +3,12 @@
 // never hurt anyone and isn't going to start for you.
 
 import * as THREE from 'three';
-import { VOLCANO, SITES, terrainHeight } from './terrain.js';
+import { VOLCANO, SITES, WATER_Y, terrainHeight } from './terrain.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
-import { buildAnimal } from './animals.js';
+import { buildAnimal, animateGait } from './animals.js';
+import { isNight } from './calendar.js';
 import { sip } from './audio.js';
 import { rand, pick } from './utils.js';
 
@@ -99,6 +100,19 @@ export function createVolcano() {
   const VB = SITES.vbeach;
   const baskX = VB.x - 2.5, baskZ = VB.z + 1;
   const baskY = terrainHeight(baskX, baskZ);
+  const landWaypoint = (dx, dz) => {
+    const x = baskX + dx, z = baskZ + dz;
+    return terrainHeight(x, z) > WATER_Y ? { x, z } : null;
+  };
+  const cinderWaypoints = [
+    { x: baskX, z: baskZ },
+    landWaypoint(2.3, -2.1),
+    landWaypoint(4.1, 0.7),
+    landWaypoint(0.8, 3.3),
+  ].filter(Boolean);
+  const cinderRoute = cinderWaypoints.length > 1
+    ? cinderWaypoints.flatMap((_, i) => (i === 0 ? [] : [i, 0]))
+    : [0];
   const baskRock = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 1), mat(0x5e5854, 0.95));
   baskRock.scale.set(1.3, 0.28, 1.0);
   baskRock.position.set(baskX, baskY + 0.25, baskZ);
@@ -197,9 +211,51 @@ export function createVolcano() {
       }
     },
   });
+  let cinderRouteStep = 0;
+  let cinderPause = 4.5;
   updates.push((dt, t) => {
-    const parts = cinder.userData.parts;
-    parts.body.position.y = parts.bodyY + Math.sin(t * 1.1) * 0.02;
+    if (isNight()) {
+      const ease = Math.min(1, dt * 1.4);
+      cinder.position.x += (baskX - cinder.position.x) * ease;
+      cinder.position.z += (baskZ - cinder.position.z) * ease;
+      if (Math.hypot(cinder.position.x - baskX, cinder.position.z - baskZ) < 0.03) {
+        cinder.position.x = baskX;
+        cinder.position.z = baskZ;
+      }
+      cinder.position.y = terrainHeight(cinder.position.x, cinder.position.z) + 0.45;
+      cinder.rotation.y = Math.atan2(0 - cinder.position.x, 0 - cinder.position.z);
+      cinderRouteStep = 0;
+      cinderPause = 4.5;
+      animateGait(cinder, t, 0);
+      return;
+    }
+
+    if (cinderPause > 0) {
+      cinderPause -= dt;
+      cinder.position.y = terrainHeight(cinder.position.x, cinder.position.z) + 0.55;
+      animateGait(cinder, t, 0);
+      return;
+    }
+
+    const target = cinderWaypoints[cinderRoute[cinderRouteStep]];
+    const dx = target.x - cinder.position.x, dz = target.z - cinder.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.08) {
+      cinder.position.x = target.x;
+      cinder.position.z = target.z;
+      cinder.position.y = terrainHeight(target.x, target.z) + 0.55;
+      cinderPause = cinderRoute[cinderRouteStep] === 0 ? 5.5 : 2.4;
+      cinderRouteStep = (cinderRouteStep + 1) % cinderRoute.length;
+      animateGait(cinder, t, 0);
+      return;
+    }
+
+    const step = Math.min(dist, dt * 1.2);
+    cinder.rotation.y = Math.atan2(dx, dz);
+    cinder.position.x += (dx / dist) * step;
+    cinder.position.z += (dz / dist) * step;
+    cinder.position.y = terrainHeight(cinder.position.x, cinder.position.z) + 0.55;
+    animateGait(cinder, t, 1);
   });
 
   const CINDER_LINES = [

@@ -2,12 +2,28 @@
 // far out, where the water turns deep — whales that crest and blow.
 
 import * as THREE from 'three';
-import { WATER_Y, ISLAND2, VOLCANO, terrainHeight } from './terrain.js';
+import {
+  WATER_Y, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND4, ISLAND5, ISLAND5_SOUTH,
+  ISLAND5_HAND, ISLAND6, TEXAS, VOLCANO, terrainHeight,
+} from './terrain.js';
 import { splash } from './audio.js';
 import { rand, pick } from './utils.js';
 
 // the bright water: a coral shelf roughly between the islands and the mountain
 export const REEF = { x: 58, z: -72, r: 16 };
+
+const LAND = [
+  { x: 0, z: 0, r: ISLAND_RADIUS },
+  ISLAND2,
+  ISLAND3,
+  ISLAND4,
+  ISLAND5,
+  ISLAND5_SOUTH,
+  ...ISLAND5_HAND,
+  ISLAND6,
+  TEXAS,
+  VOLCANO,
+];
 
 function mat(color, rough = 0.6) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -121,13 +137,15 @@ export function createOceanLife() {
 
   function startBreach(whale) {
     // pick deep water: a ring well away from both shores
+    let spot = whale.userData.spot;
     for (let tries = 0; tries < 20; tries++) {
       const a = rand(0, Math.PI * 2);
       const r = rand(58, 85);
       const x = Math.cos(a) * r + 40, z = Math.sin(a) * r - 15;
-      whale.userData.spot = { x, z };
-      break;
+      spot = { x, z };
+      if (LAND.every((island) => Math.hypot(x - island.x, z - island.z) >= island.r + 12)) break;
     }
+    whale.userData.spot = spot;
     whale.userData.breachT = 0;
     whale.visible = true;
     whale.rotation.y = rand(0, Math.PI * 2);
