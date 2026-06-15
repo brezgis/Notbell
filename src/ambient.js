@@ -15,6 +15,23 @@ import { FRIENDS } from './villagers.js';
 // ---------------------------------------------------------- bubbles ----
 
 const bubbleCache = new Map();
+const BUBBLE_FADE_NEAR = 10;
+const BUBBLE_FADE_FAR = 26;
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function updateBubbleOpacity(bubble, playerPos) {
+  if (!bubble?.material) return;
+  if (!playerPos) {
+    bubble.material.opacity = 1;
+    return;
+  }
+  const dist = Math.hypot(playerPos.x - bubble.position.x, playerPos.z - bubble.position.z);
+  bubble.material.opacity = 1 - smoothstep(BUBBLE_FADE_NEAR, BUBBLE_FADE_FAR, dist);
+}
 
 function bubbleSprite(text) {
   if (!bubbleCache.has(text)) {
@@ -361,6 +378,9 @@ export function createAmbient(animals, scene) {
         }
       }
     }
+
+    for (const m of meetings) updateBubbleOpacity(m.bubble, playerPos);
+    for (const a of animals) updateBubbleOpacity(a.errand?.bubble, playerPos);
   }
 
   function showLine(a, e, [who, text]) {
