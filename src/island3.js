@@ -265,6 +265,7 @@ export function createIsland3() {
   }
 
   const shroomSpots = [];
+  const forestTrees = [];
   for (let i = 0; i < 34; i++) {
     const s = placeOnIsle(0.5, 6);
     if (!s) continue;
@@ -319,6 +320,7 @@ export function createIsland3() {
     tree.position.set(s.x, s.h - 0.05, s.z);
     tree.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(tree);
+    forestTrees.push(tree);
   }
 
   // ---------------------------------------------------------- library ----
@@ -413,6 +415,12 @@ export function createIsland3() {
     nook.scale.y = 0.4;
     nook.position.set(B.x + 5.5, 0.3, B.z + 2.5);
     group.add(nook);
+    const leftNook = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 1), mat(0x5b8bc9, 0.95));
+    leftNook.scale.y = 0.4;
+    leftNook.position.set(B.x - 5.5, 0.3, B.z + 2.5);
+    leftNook.castShadow = true;
+    leftNook.receiveShadow = true;
+    group.add(leftNook);
     const desk = box(2.6, 1.0, 1.2, 0x6b4a2e);
     desk.position.set(B.x - 4, 0.5, B.z + 1);
     group.add(desk);
@@ -433,6 +441,7 @@ export function createIsland3() {
       bounds: { x0: B.x - 7.6, x1: B.x + 7.6, z0: B.z - 4.0, z1: B.z + 5.5 },
       blockers: [
         { x: B.x - 4, z: B.z + 1, r: 1.5 },
+        { x: B.x - 5.5, z: B.z + 2.5, r: 1.0 },
         { x: B.x + 5.5, z: B.z + 2.5, r: 1.0 },
       ],
       spawn: { x: B.x, z: B.z + 4.8, rotY: Math.PI },
@@ -546,6 +555,27 @@ export function createIsland3() {
       pop.position.set(B.x + 3.2 + rand(-0.08, 0.08), 1.1 + i * 0.07, B.z - 2.4 + rand(-0.08, 0.08));
       group.add(pop);
     }
+    for (const z of [B.z + 0.8, B.z + 2.0]) {
+      const seat = box(0.8, 0.22, 0.8, 0x8a9a92);
+      seat.position.set(B.x + 5.05, 0.42, z);
+      seat.receiveShadow = true;
+      const back = box(0.18, 0.9, 0.8, 0x6e7f78);
+      back.position.set(B.x + 5.5, 0.86, z);
+      back.receiveShadow = true;
+      group.add(seat, back);
+    }
+    const rack = box(0.16, 0.9, 1.15, 0x8a6f4d);
+    rack.position.set(B.x + 5.35, 0.65, B.z + 3.15);
+    rack.receiveShadow = true;
+    group.add(rack);
+    const magColors = [0xff6b81, 0xffd23e, 0x5b8bc9, 0x8fce7a];
+    for (let i = 0; i < 4; i++) {
+      const mag = box(0.05, 0.34, 0.2, magColors[i]);
+      mag.position.set(B.x + 5.23, 0.35 + i * 0.14, B.z + 2.78 + i * 0.22);
+      mag.rotation.z = 0.18;
+      mag.receiveShadow = true;
+      group.add(mag);
+    }
     // eye chart: descending paw prints
     const chartCv = document.createElement('canvas');
     chartCv.width = 128;
@@ -569,7 +599,7 @@ export function createIsland3() {
     group.add(chart);
 
     const gill = buildAnimal('axolotl', { body: 0xf2b8c6, head: 0xf2b8c6 });
-    gill.position.set(B.x + 2.5, 0, B.z - 3.4);
+    gill.position.set(B.x + 2.5, 0.6, B.z - 3.4);
     group.add(gill);
     wireBob(gill, updates, 0.9);
 
@@ -699,6 +729,26 @@ export function createIsland3() {
     }
     frog.position.set(fs.x + 0.7, terrainHeight(fs.x + 0.7, fs.z + 0.4), fs.z + 0.4);
     group.add(frog);
+    const nearestTree = forestTrees.reduce((best, tree) => {
+      const d = Math.hypot(tree.position.x - frog.position.x, tree.position.z - frog.position.z);
+      return !best || d < best.d ? { tree, d } : best;
+    }, null);
+    if (nearestTree) {
+      const dx = nearestTree.tree.position.x - frog.position.x;
+      const dz = nearestTree.tree.position.z - frog.position.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const ux = dx / len;
+      const uz = dz / len;
+      for (const push of [3.4, 2.7, 4.2]) {
+        const tx = nearestTree.tree.position.x + ux * push;
+        const tz = nearestTree.tree.position.z + uz * push;
+        const th = terrainHeight(tx, tz);
+        if (th > WATER_Y + 0.2) {
+          nearestTree.tree.position.set(tx, th - 0.05, tz);
+          break;
+        }
+      }
+    }
     let hopT = rand(1, 3);
     let hop = 99;
     updates.push((dt) => {
