@@ -209,7 +209,7 @@ export function createIsland2() {
     const nave = box(5.4, 4.4, 7, 0xd8d4c8);
     nave.position.y = 2.2;
     ext.add(nave);
-    const roofGeo = new THREE.CylinderGeometry(2.6, 2.6, 7.4, 3, 1, false, Math.PI / 2);
+    const roofGeo = new THREE.CylinderGeometry(2.95, 2.95, 7.4, 3, 1, false, Math.PI / 2);
     roofGeo.rotateZ(Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, mat(0x5a6a80));
     roof.scale.y = 1.1;

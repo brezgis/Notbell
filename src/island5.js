@@ -4,7 +4,7 @@
 // and the little birds who work on commission.
 
 import * as THREE from 'three';
-import { SITES, ISLAND5, ISLAND5_HAND, terrainHeight } from './terrain.js';
+import { SITES, ISLAND5, ISLAND5_HAND, WATER_Y, terrainHeight } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
@@ -70,12 +70,13 @@ export function createIsland5(player) {
     return { x: ISLAND5.x + ux * (t - 2), z: ISLAND5.z + uz * (t - 2) };
   }
 
+  const groveStop = groveRailStop();
   const treeKeepouts = [
     { x: M.x - 6, z: M.z - 2, r: 6.4 + TREE_STRUCTURE_CLEARANCE },
     { x: M.x + 6, z: M.z - 2, r: 6.4 + TREE_STRUCTURE_CLEARANCE },
     { x: M.x, z: M.z + 1.9, r: 4.5 },
     { x: M.x, z: M.z + 6, r: 2.0 + TREE_STRUCTURE_CLEARANCE },
-    { ...groveRailStop(), r: 5.2 },
+    { ...groveStop, r: 5.2 },
   ];
   const placedTrees = [];
   function clearOfTreeKeepouts(x, z) {
@@ -95,6 +96,20 @@ export function createIsland5(player) {
       return { x: sx, z: sz, h };
     }
     return null;
+  }
+  function distToSegment(x, z, a, b) {
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const l2 = dx * dx + dz * dz || 1;
+    const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / l2));
+    return Math.hypot(x - (a.x + dx * t), z - (a.z + dz * t));
+  }
+  const groveLineSegments = [
+    [{ x: 0, z: 0 }, ISLAND5_HAND[1]],
+    [ISLAND5_HAND[1], ISLAND5_HAND[0]],
+    [ISLAND5_HAND[0], groveStop],
+  ];
+  function clearOfGroveLine(x, z) {
+    return groveLineSegments.every(([a, b]) => distToSegment(x, z, a, b) > 2.4);
   }
 
   addIslandInfo({
@@ -1046,7 +1061,12 @@ export function createIsland5(player) {
     });
   }
   // benches for the post-soak glow
-  for (const [bx2, bz2, ry2] of [[SP.x - 4.5, SP.z + 4.5, 0.6], [SP.x + 4.5, SP.z + 4, -0.7], [SP.x + 0.5, SP.z - 5.5, Math.PI]]) {
+  const springBenches = [
+    [SP.x - 4.5, SP.z + 4.5, 0.6],
+    [SP.x + 4.5, SP.z + 4, -0.7 + Math.PI],
+    [SP.x + 0.5, SP.z - 5.5, Math.PI],
+  ];
+  for (const [bx2, bz2, ry2] of springBenches) {
     const by2 = terrainHeight(bx2, bz2);
     const bench = box(2.0, 0.4, 0.7, 0xa97c50);
     bench.position.set(bx2, by2 + 0.35, bz2);
@@ -1143,6 +1163,34 @@ export function createIsland5(player) {
           ui.updateHUD();
         },
       });
+    }
+  }
+
+  // Panhandle wildflowers stay off the Grove Line and out from under trees.
+  const flowerColors = [0xff6b81, 0xffd23e, 0xffffff, 0xc77dff];
+  function addFlower(x, z, h) {
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.25, 4), mat(0x4e9a45));
+    stem.position.set(x, h + 0.3, z);
+    const bloom = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 0), mat(pick(flowerColors), 0.7));
+    bloom.position.set(x, h + 0.45, z);
+    for (const part of [stem, bloom]) {
+      part.castShadow = true;
+      part.receiveShadow = true;
+      group.add(part);
+    }
+  }
+  for (const islet of ISLAND5_HAND) {
+    let flowers = 0;
+    for (let tries = 0; tries < 80 && flowers < 12; tries++) {
+      const a = rand(0, Math.PI * 2);
+      const r = Math.sqrt(rand(0, 1)) * (islet.r - 1.2);
+      const x = islet.x + Math.cos(a) * r;
+      const z = islet.z + Math.sin(a) * r;
+      const h = terrainHeight(x, z);
+      if (h <= WATER_Y || !clearOfGroveLine(x, z) || zones.nearBlocker(x, z, 1.2)) continue;
+      if (placedTrees.some((p) => Math.hypot(x - p.x, z - p.z) < 2.8)) continue;
+      addFlower(x, z, h);
+      flowers++;
     }
   }
 
