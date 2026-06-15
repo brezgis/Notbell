@@ -210,10 +210,10 @@ export function createBoats(player) {
   // ---------------------------------------------------------- the tugboat ----
   const tug = new THREE.Group();
   const hull = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.2, 1.2, 8), mat(0x2e3e5c));
-  hull.scale.z = 2.2;
+  hull.scale.z = 2.5;
   hull.position.y = 0.3;
   tug.add(hull);
-  const deck = box(2.6, 0.2, 5.2, 0xa97c50);
+  const deck = box(2.6, 0.2, 6.4, 0xa97c50);
   deck.position.y = 0.95;
   tug.add(deck);
   const cabin = box(1.6, 1.3, 1.8, 0xf3e6cf);
@@ -234,7 +234,7 @@ export function createBoats(player) {
   funnel.position.set(0, 1.6, 0.9);
   tug.add(funnel);
   const bumper = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.1, 6, 10), mat(0x2e2a26, 0.6));
-  bumper.position.set(0, 0.6, 2.6);
+  bumper.position.set(0, 0.6, 3.2);
   tug.add(bumper);
   tug.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   // moored across the pier from the rowboats, so walking the planks offers
@@ -252,8 +252,8 @@ export function createBoats(player) {
   // Captain Brine, the goose who has been everywhere and stays here
   const brine = buildAnimal('duck', { body: 0x9aa3a0, head: 0xb8beba });
   brine.scale.setScalar(1.25);
-  brine.position.set(0, 1.05, 0.6);
-  brine.rotation.y = Math.PI + 0.4;
+  brine.position.set(0, 1.05, 2.0); // up at the bow now, clear of the sides
+  brine.rotation.y = 0.4; // facing forward — her back to the stern passenger
   tug.add(brine);
   const BRINE_LINES = [
     'Captain Brine. Tug’s called the Persistent. She doesn’t tug much these days. Neither do I.',
@@ -645,9 +645,9 @@ export function createBoats(player) {
         // you, on deck, enjoying the spray
         const ry = tug.rotation.y;
         player.group.position.set(
-          tug.position.x + Math.sin(ry) * 1.55,
+          tug.position.x - Math.sin(ry) * 2.0,
           tug.position.y + 0.72,
-          tug.position.z + Math.cos(ry) * 1.55);
+          tug.position.z - Math.cos(ry) * 2.0);
         player.group.rotation.y = ry;
         // the story, told over open water
         if (!v.storyFired && v.elapsed > 2.2 && !ui.isBusy()) {
