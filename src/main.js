@@ -137,8 +137,23 @@ addEventListener('pointermove', (e) => {
   refreshCamOffset();
 });
 addEventListener('wheel', (e) => {
+  // a ctrl/⌘ wheel (this is also how a trackpad pinch arrives) is the browser's
+  // page-zoom gesture — swallow it so it zooms the camera, not the whole page
+  // (page-zoom would slide the fixed HUD out of frame). Plain scroll still
+  // passes through, so modal lists (pockets, the almanac) can scroll.
+  if (e.ctrlKey) e.preventDefault();
   setZoom(camDist + e.deltaY * 0.02);
-}, { passive: true });
+}, { passive: false });
+// Safari delivers trackpad pinches as gesture events instead of ctrl+wheel —
+// same deal: keep them on the camera, off the page.
+let gestureScale = 1;
+addEventListener('gesturestart', (e) => { e.preventDefault(); gestureScale = e.scale; }, { passive: false });
+addEventListener('gesturechange', (e) => {
+  e.preventDefault();
+  setZoom(camDist - (e.scale - gestureScale) * 16);
+  gestureScale = e.scale;
+}, { passive: false });
+addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
 
 const player = createPlayer();
 
