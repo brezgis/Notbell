@@ -68,39 +68,529 @@ const TANK_LINES = [
 
 // ============================================================ the TV wall ----
 // BULKO's wall of screens, each tuned to a lo-fi "channel." Walk up and the
-// dialogue box plays the broadcast; the screens cycle a couple of faceted canvas
-// frames. Channels: Hoot's late-night show, Scooch's (rain-besotted) weather tied
-// to the real sky, Newt Bellows' real island science, the Sea, and BULKO's ads.
-const TV_CHANNELS = [
-  { key: 'hoot', short: 'LATE NIGHT', emoji: '🦉', bg: '#241b2e' },
-  { key: 'weather', short: 'WEATHER', emoji: '🐸', bg: '#27506e' },
-  { key: 'science', short: 'NOTBELL SCI', emoji: '🔬', bg: '#123a39' },
-  { key: 'sea', short: 'THE SEA', emoji: '🌊', bg: '#1f6f9a' },
-  { key: 'ads', short: 'BULKO', emoji: '📣', bg: '#7a3e1a' },
-];
+// dialogue box plays the broadcast; the screens cycle two chunky painted canvas
+// frames, in the same code-painted spirit as Luna's rotating café prints.
 
-function makeScreenTex(ch, frame) {
+const TV_WEATHERS = ['clear', 'rain', 'snow', 'fog'];
+const TV_AD_KEYS = ['ad_hotdog', 'ad_lantern', 'ad_scuba', 'ad_parm'];
+
+function makeScreenTex(key, frame) {
   const cv = document.createElement('canvas');
-  cv.width = 128;
-  cv.height = 80;
+  cv.width = 320;
+  cv.height = 200;
   const c = cv.getContext('2d');
-  c.fillStyle = ch.bg;
-  c.fillRect(0, 0, 128, 80);
-  c.fillStyle = 'rgba(255,255,255,0.05)'; // soft scanlines
-  for (let y = frame ? 1 : 0; y < 80; y += 4) c.fillRect(0, y, 128, 1);
-  c.textAlign = 'center';
-  c.textBaseline = 'middle';
-  c.font = '34px serif';
-  c.fillText(ch.emoji, 64, 35 + (frame ? 2 : -1)); // a gentle bob
-  c.fillStyle = '#fff8e8';
-  c.font = 'bold 11px sans-serif';
-  c.fillText(ch.short, 64, 69);
-  if (!frame) { // a blinking ON-AIR dot
-    c.fillStyle = '#ff5a4a';
+  const W = cv.width, H = cv.height;
+
+  const dot = (x, y, r, color) => {
+    c.fillStyle = color;
     c.beginPath();
-    c.arc(113, 12, 4.5, 0, Math.PI * 2);
+    c.arc(x, y, r, 0, Math.PI * 2);
     c.fill();
+  };
+  const label = (text, wide = 132) => {
+    c.fillStyle = 'rgba(255,250,240,0.9)';
+    c.fillRect(18, 164, wide, 20);
+    c.fillStyle = '#3d3126';
+    c.font = '800 14px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.textBaseline = 'middle';
+    c.fillText(text, 26, 174);
+  };
+  const scan = () => {
+    c.fillStyle = 'rgba(255,255,255,0.05)';
+    for (let y = frame ? 1 : 0; y < H; y += 4) c.fillRect(0, y, W, 1);
+    c.fillStyle = 'rgba(30,24,20,0.08)';
+    c.fillRect(0, 0, W, 9);
+    c.fillRect(0, H - 9, W, 9);
+  };
+  const cloud = (x, y, color = '#40576d') => {
+    c.fillStyle = color;
+    for (const [ox, oy, rx, ry] of [
+      [-38, 5, 35, 15], [-12, -1, 42, 18], [22, 2, 37, 16], [54, 7, 28, 13],
+    ]) {
+      c.beginPath();
+      c.ellipse(x + ox, y + oy, rx, ry, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+  };
+  const island = (base = '#6ec45a', hill = '#57b65b') => {
+    c.fillStyle = '#4a78b0';
+    c.beginPath();
+    c.moveTo(0, H);
+    c.lineTo(0, 124);
+    c.quadraticCurveTo(72, 142, 134, 128);
+    c.quadraticCurveTo(228, 104, W, 130);
+    c.lineTo(W, H);
+    c.fill();
+    c.fillStyle = base;
+    c.beginPath();
+    c.moveTo(0, H);
+    c.lineTo(0, 154);
+    c.quadraticCurveTo(78, 102, 152, 150);
+    c.quadraticCurveTo(225, 192, W, 142);
+    c.lineTo(W, H);
+    c.fill();
+    c.fillStyle = hill;
+    c.beginPath();
+    c.moveTo(24, H);
+    c.quadraticCurveTo(98, 118, 180, 162);
+    c.lineTo(W, H);
+    c.fill();
+  };
+  const scooch = (x, y, mood = 'plain') => {
+    const body = mood === 'snow' ? '#7abf58' : '#6ab04a';
+    c.fillStyle = body;
+    c.beginPath();
+    c.ellipse(x, y, 44, 32, 0, 0, Math.PI * 2);
+    c.fill();
+    dot(x - 21, y - 25, 12, body);
+    dot(x + 21, y - 25, 12, body);
+    dot(x - 21, y - 25, 4, '#16140f');
+    dot(x + 21, y - 25, 4, '#16140f');
+    c.strokeStyle = '#fffaf0';
+    c.lineWidth = 4;
+    c.lineCap = 'round';
+    c.beginPath();
+    if (mood === 'fog') {
+      c.moveTo(x - 21, y + 3);
+      c.lineTo(x + 21, y + 3);
+    } else {
+      c.moveTo(x - 25, y + 4);
+      c.quadraticCurveTo(x, y + (mood === 'snow' ? 19 : 22) + (frame ? 2 : -1), x + 25, y + 4);
+    }
+    c.stroke();
+    if (mood === 'clear') {
+      c.strokeStyle = '#16140f';
+      c.lineWidth = 5;
+      c.beginPath();
+      c.moveTo(x - 34, y - 27);
+      c.lineTo(x - 10, y - 23);
+      c.moveTo(x + 10, y - 23);
+      c.lineTo(x + 34, y - 27);
+      c.stroke();
+      dot(x - 21, y - 24, 8, '#16140f');
+      dot(x + 21, y - 24, 8, '#16140f');
+    }
+    if (mood === 'snow') {
+      c.fillStyle = '#e8632c';
+      c.fillRect(x - 32, y - 2, 64, 8);
+      c.fillRect(x + 15, y + 6, 10, 24);
+    }
+  };
+  const drawHotdog = () => {
+    c.fillStyle = '#f2913c';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = '#ffd23e';
+    c.beginPath();
+    c.moveTo(0, 34);
+    c.lineTo(W, 12);
+    c.lineTo(W, 108);
+    c.lineTo(0, 132);
+    c.fill();
+    c.fillStyle = '#c2452c';
+    c.fillRect(0, 142, W, 58);
+    c.fillStyle = '#16140f';
+    c.font = '900 42px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('BULKO', 34, 68 + (frame ? 1 : 0));
+    c.fillStyle = '#fffaf0';
+    c.beginPath();
+    c.ellipse(172, 112, 88, 22, -0.06, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#8a4d2c';
+    c.beginPath();
+    c.ellipse(172, 110 + (frame ? 1 : -1), 75, 12, -0.06, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = '#6ec45a';
+    c.lineWidth = 5;
+    c.beginPath();
+    for (let x = 96; x < 248; x += 20) {
+      c.moveTo(x, 104);
+      c.quadraticCurveTo(x + 10, 92 + (frame ? 5 : 0), x + 20, 104);
+    }
+    c.stroke();
+    dot(270, 55, frame ? 18 : 14, '#fffaf0');
+    c.fillStyle = '#3d3126';
+    c.font = '800 20px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('1.5ᵇ', 251, 62);
+    c.font = '800 13px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('PAY 2  GET HALF BACK', 82, 137);
+    label('HOT DOG');
+  };
+
+  if (key === 'hoot') {
+    c.fillStyle = '#221a35';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = '#2e3e6d';
+    c.beginPath();
+    c.moveTo(0, 92);
+    c.bezierCurveTo(70, 42, 146, 68, 214, 34);
+    c.bezierCurveTo(256, 16, 292, 20, W, 2);
+    c.lineTo(W, H);
+    c.lineTo(0, H);
+    c.fill();
+    dot(260, 40, 22, '#ffd23e');
+    dot(269, 36, 21, '#221a35');
+    c.fillStyle = '#8a5a3a';
+    c.fillRect(0, 132, W, 68);
+    c.fillStyle = '#d9a440';
+    c.fillRect(58, 126 + (frame ? 2 : 0), 206, 16);
+    c.fillStyle = '#3c2a22';
+    c.beginPath();
+    c.ellipse(160, 102, 36, 48, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#5a3b2d';
+    c.beginPath();
+    c.moveTo(130, 70);
+    c.lineTo(108, 46);
+    c.lineTo(142, 58);
+    c.moveTo(190, 70);
+    c.lineTo(212, 46);
+    c.lineTo(178, 58);
+    c.fill();
+    dot(147, 96, 11, '#fffaf0');
+    dot(173, 96, 11, '#fffaf0');
+    dot(148, 97 + (frame ? 3 : 0), 4, '#1b1816');
+    dot(174, 97 + (frame ? 0 : 3), 4, '#1b1816');
+    c.fillStyle = '#f2913c';
+    c.beginPath();
+    c.moveTo(160, 108);
+    c.lineTo(150, 119 + (frame ? 2 : 0));
+    c.lineTo(170, 119 + (frame ? 2 : 0));
+    c.fill();
+    c.strokeStyle = '#fffaf0';
+    c.lineWidth = 5;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(105, 133);
+    c.quadraticCurveTo(96, 105, 112, 84 + (frame ? 2 : -2));
+    c.moveTo(215, 133);
+    c.quadraticCurveTo(226, 108, 214, 84 + (frame ? -2 : 2));
+    c.stroke();
+    dot(222, 128, 5, '#16140f');
+    c.fillRect(220, 130, 4, 20);
+    label('LATE NIGHT');
+  } else if (key === 'science') {
+    c.fillStyle = '#123a39';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = '#1d5a56';
+    c.fillRect(0, 126, W, 74);
+    c.strokeStyle = '#cfeeff';
+    c.lineWidth = 4;
+    c.beginPath();
+    c.arc(86, 74, 38, 0.2, Math.PI * 1.8);
+    c.moveTo(116, 98);
+    c.lineTo(150, 130);
+    c.stroke();
+    c.fillStyle = '#cfeeff';
+    c.fillRect(60, 128, 108, 9);
+    c.fillRect(105, 112, 15, 34);
+    dot(236, 58, 18 + (frame ? 2 : 0), '#ffd23e');
+    c.strokeStyle = '#fffaf0';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(236, 58, 34, 0, Math.PI * 2);
+    c.stroke();
+    c.strokeStyle = '#e8632c';
+    c.lineWidth = 5;
+    c.beginPath();
+    c.moveTo(230, 126);
+    c.lineTo(248, 82);
+    c.lineTo(266, 126);
+    c.stroke();
+    c.fillStyle = '#fffaf0';
+    c.beginPath();
+    c.moveTo(248, 78);
+    c.lineTo(238, 104);
+    c.lineTo(258, 104);
+    c.fill();
+    c.fillStyle = '#f2913c';
+    c.fillRect(216, 126, 64, 12);
+    for (let i = 0; i < 6; i++) dot(42 + i * 35, 154 + Math.sin(i + frame) * 4, 4, '#9fdcf7');
+    label('NOTBELL SCI');
+  } else if (key === 'sea') {
+    c.fillStyle = '#e8dcc8';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = '#7ec3e8';
+    c.fillRect(0, 0, W, 82);
+    c.fillStyle = '#1f6f9a';
+    c.beginPath();
+    c.moveTo(0, H);
+    c.lineTo(0, 76);
+    c.bezierCurveTo(58, 36, 130, 44, 124, 78);
+    c.bezierCurveTo(118, 104, 76, 102, 66, 92);
+    c.bezierCurveTo(132, 140, 238, 118, W, 98);
+    c.lineTo(W, H);
+    c.fill();
+    c.fillStyle = '#fffaf0';
+    for (let i = 0; i < 9; i++) dot(28 + i * 18, 58 + Math.sin(i + frame) * 6, 8 - (i % 3), '#fffaf0');
+    c.fillStyle = '#27408f';
+    c.beginPath();
+    c.moveTo(0, 150);
+    for (let x = 0; x <= W; x += 18) c.lineTo(x, 150 + Math.sin(x * 0.05 + frame) * 8);
+    c.lineTo(W, H);
+    c.lineTo(0, H);
+    c.fill();
+    c.fillStyle = '#8a6f4d';
+    c.beginPath();
+    c.ellipse(220, 136 + (frame ? 2 : -1), 42, 8, -0.12, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = '#ffd23e';
+    c.lineWidth = 5;
+    c.beginPath();
+    c.moveTo(286, 38);
+    c.quadraticCurveTo(300, 64, 282, 78);
+    c.stroke();
+    label('THE SEA');
+  } else if (key === 'weather_clear') {
+    c.fillStyle = '#9fdcf7';
+    c.fillRect(0, 0, W, H);
+    dot(76, 48, 30 + (frame ? 2 : 0), '#ffd23e');
+    c.strokeStyle = '#ffd23e';
+    c.lineWidth = 5;
+    for (let i = 0; i < 12; i++) {
+      const a = i / 12 * Math.PI * 2;
+      c.beginPath();
+      c.moveTo(76 + Math.cos(a) * 42, 48 + Math.sin(a) * 42);
+      c.lineTo(76 + Math.cos(a) * 52, 48 + Math.sin(a) * 52);
+      c.stroke();
+    }
+    island();
+    c.fillStyle = '#fffaf0';
+    for (let i = 0; i < 5; i++) {
+      c.beginPath();
+      c.ellipse(186 + i * 17, 56 + Math.sin(i + frame) * 2, 18, 7, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+    scooch(234, 130, 'clear');
+    label('WEATHER: CLEAR', 144);
+  } else if (key === 'weather_rain') {
+    c.fillStyle = '#bcd8ec';
+    c.fillRect(0, 0, W, H);
+    island();
+    cloud(118, 42, '#40576d');
+    cloud(224, 54, '#354a5d');
+    c.strokeStyle = '#fffaf0';
+    c.lineWidth = 4;
+    c.lineCap = 'round';
+    for (let x = 28; x < 294; x += 24) {
+      c.beginPath();
+      c.moveTo(x + (frame ? 8 : 0), 72);
+      c.lineTo(x - 8 + (frame ? 8 : 0), 104);
+      c.stroke();
+    }
+    c.strokeStyle = '#ffd23e';
+    c.lineWidth = 8;
+    c.beginPath();
+    c.moveTo(94, 66);
+    c.lineTo(76, 102);
+    c.lineTo(108, 94);
+    c.lineTo(90, 134);
+    c.stroke();
+    scooch(236, 130, 'rain');
+    label('WEATHER: RAIN', 144);
+  } else if (key === 'weather_snow') {
+    c.fillStyle = '#cfe8f2';
+    c.fillRect(0, 0, W, H);
+    island('#e8f0e8', '#d8e3dc');
+    cloud(102, 42, '#eef5f5');
+    cloud(230, 50, '#dfe8ec');
+    for (let i = 0; i < 42; i++) {
+      const x = (i * 37 + frame * 9) % W;
+      const y = (i * 23 + frame * 5) % 145;
+      dot(x, y, i % 3 === 0 ? 3 : 2, '#fffaf0');
+    }
+    c.fillStyle = '#fffaf0';
+    c.beginPath();
+    c.ellipse(88, 145, 28, 18, 0, 0, Math.PI * 2);
+    c.ellipse(88, 119, 21, 21, 0, 0, Math.PI * 2);
+    c.fill();
+    dot(81, 116, 3, '#16140f');
+    dot(95, 116, 3, '#16140f');
+    c.fillStyle = '#f2913c';
+    c.beginPath();
+    c.moveTo(88, 123);
+    c.lineTo(108, 128);
+    c.lineTo(88, 132);
+    c.fill();
+    scooch(238, 130, 'snow');
+    label('WEATHER: SNOW', 144);
+  } else if (key === 'weather_fog') {
+    c.fillStyle = '#aebdc2';
+    c.fillRect(0, 0, W, H);
+    island('#8fa99c', '#7f9a90');
+    c.globalAlpha = 0.82;
+    c.fillStyle = '#e8e4d8';
+    for (let i = 0; i < 6; i++) {
+      const y = 42 + i * 20 + (frame ? 3 : 0);
+      c.beginPath();
+      c.moveTo(-20, y);
+      for (let x = -20; x <= W + 20; x += 18) c.lineTo(x, y + Math.sin(x * 0.035 + i) * 5);
+      c.lineTo(W + 20, y + 14);
+      c.lineTo(-20, y + 14);
+      c.fill();
+    }
+    c.globalAlpha = 1;
+    c.fillStyle = '#5a6b72';
+    c.fillRect(64, 84, 18, 72);
+    c.fillStyle = '#6e7c82';
+    c.fillRect(52, 70, 42, 18);
+    c.fillStyle = '#ffd23e';
+    c.beginPath();
+    c.moveTo(73, 76);
+    c.quadraticCurveTo(112, 66, 152, 72 + (frame ? 3 : -3));
+    c.quadraticCurveTo(112, 84, 73, 82);
+    c.fill();
+    scooch(238, 132, 'fog');
+    label('WEATHER: FOG', 144);
+  } else if (key === 'ad_hotdog') {
+    drawHotdog();
+  } else if (key === 'ad_lantern') {
+    c.fillStyle = '#2e2540';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = '#5b3e2f';
+    c.fillRect(0, 134, W, 66);
+    c.fillStyle = '#f2b88c';
+    c.beginPath();
+    c.moveTo(0, 58);
+    c.quadraticCurveTo(82, 28, 162, 58);
+    c.quadraticCurveTo(238, 88, W, 42);
+    c.lineTo(W, 134);
+    c.lineTo(0, 134);
+    c.fill();
+    c.fillStyle = '#ffd23e';
+    c.beginPath();
+    c.ellipse(158, 76, 64 + (frame ? 4 : 0), 42 + (frame ? 2 : 0), 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#8a5a3a';
+    c.fillRect(130, 84, 56, 48);
+    c.fillStyle = '#f7ead3';
+    c.beginPath();
+    c.ellipse(158, 80, 20, 24, 0, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = '#3d3126';
+    c.lineWidth = 6;
+    c.beginPath();
+    c.arc(158, 56, 28, Math.PI, 0);
+    c.stroke();
+    c.fillStyle = '#fffaf0';
+    c.beginPath();
+    c.ellipse(76, 124 + (frame ? 1 : -1), 35, 12, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#4a2d24';
+    c.beginPath();
+    c.ellipse(76, 122 + (frame ? 1 : -1), 25, 7, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#d9a440';
+    c.beginPath();
+    c.moveTo(238, 92);
+    c.lineTo(250, 128);
+    c.lineTo(226, 128);
+    c.fill();
+    dot(238, 84, 13, '#3c2a22');
+    c.strokeStyle = '#fffaf0';
+    c.lineWidth = 4;
+    c.beginPath();
+    c.moveTo(218, 112 + frame);
+    c.quadraticCurveTo(238, 98, 258, 112 + frame);
+    c.stroke();
+    c.fillStyle = '#fffaf0';
+    c.font = '900 25px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('NOT DECAF', 38, 47);
+    label('LANTERN ROOM', 162);
+  } else if (key === 'ad_scuba') {
+    c.fillStyle = '#7ec3e8';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = '#1f6f9a';
+    c.beginPath();
+    c.moveTo(0, H);
+    c.lineTo(0, 88);
+    for (let x = 0; x <= W; x += 16) c.lineTo(x, 88 + Math.sin(x * 0.05 + frame) * 7);
+    c.lineTo(W, H);
+    c.fill();
+    c.fillStyle = '#27408f';
+    c.beginPath();
+    c.moveTo(0, H);
+    c.lineTo(0, 142);
+    for (let x = 0; x <= W; x += 20) c.lineTo(x, 142 + Math.sin(x * 0.04 + 2 + frame) * 10);
+    c.lineTo(W, H);
+    c.fill();
+    c.fillStyle = '#c9962e';
+    c.beginPath();
+    c.ellipse(158, 84 + (frame ? 2 : -1), 48, 55, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillRect(118, 88 + (frame ? 2 : -1), 80, 42);
+    c.fillStyle = '#7a5a2c';
+    c.fillRect(112, 126 + (frame ? 2 : -1), 92, 14);
+    c.fillStyle = '#bfe6f2';
+    c.beginPath();
+    c.ellipse(158, 78 + (frame ? 2 : -1), 26, 22, 0, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = '#6b4a2e';
+    c.lineWidth = 7;
+    c.beginPath();
+    c.ellipse(158, 78 + (frame ? 2 : -1), 30, 26, 0, 0, Math.PI * 2);
+    c.stroke();
+    c.fillStyle = '#fffaf0';
+    c.font = '900 28px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('SWIM', 34, 49);
+    c.fillText('WHERE FISH', 178, 49);
+    c.font = '900 20px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('GOSSIP', 203, 73);
+    c.fillStyle = '#3d3126';
+    c.beginPath();
+    c.moveTo(72, 86);
+    c.lineTo(92, 96);
+    c.lineTo(72, 106);
+    c.lineTo(76, 96);
+    c.fill();
+    c.beginPath();
+    c.moveTo(244, 122);
+    c.lineTo(266, 132);
+    c.lineTo(244, 142);
+    c.lineTo(250, 132);
+    c.fill();
+    label('PIP SUIT');
+  } else if (key === 'ad_parm') {
+    c.fillStyle = '#fff0a8';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = '#d9a440';
+    c.beginPath();
+    c.moveTo(0, 0);
+    c.lineTo(W, 0);
+    c.lineTo(W, 72);
+    c.quadraticCurveTo(180, 96, 0, 72);
+    c.fill();
+    c.fillStyle = '#e8743a';
+    c.fillRect(0, 140, W, 60);
+    for (let i = 0; i < 6; i++) {
+      const x = 82 + i * 24 - (frame ? 5 : 0);
+      c.fillStyle = i % 2 ? '#f2c94c' : '#ffd23e';
+      c.beginPath();
+      c.ellipse(x, 108 - i * 2, 31, 18, -0.08, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#c9962e';
+      c.beginPath();
+      c.ellipse(x, 108 - i * 2, 21, 10, -0.08, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.fillStyle = '#fffaf0';
+    c.beginPath();
+    c.ellipse(236, 116 + (frame ? 2 : -1), 50, 24, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#ffd23e';
+    c.beginPath();
+    c.ellipse(236, 116 + (frame ? 2 : -1), 38, 17, 0, 0, Math.PI * 2);
+    c.fill();
+    for (let i = 0; i < 9; i++) dot(215 + i * 6, 110 + (i % 3) * 5 + (frame ? 1 : 0), 2.5, '#c9962e');
+    c.fillStyle = '#16140f';
+    c.font = '900 39px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('PARM', 28, 58 + (frame ? 1 : 0));
+    c.font = '900 24px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('WHEEL', 44, 86 + (frame ? 1 : 0));
+    c.font = '800 13px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('IT IS A WHEEL', 188, 153);
+    label('PARM WHEEL', 142);
   }
+  scan();
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -159,10 +649,14 @@ const SEA_BITS = [
 ];
 
 const TV_ADS = [
-  'BULKO: the one-and-a-half-button hot dog. Pay two, get half a button back. We don’t understand it. You don’t understand it. DO NOT WORRY ABOUT IT.',
-  'The Lantern Room — Lantern Roast, NOT decaf, and Chip plays till the candle’s out. Tell Luna the TV sent you. (Luna will be confused.)',
-  'Wet feet? Cold feet? Pip’s got the scuba suit: unsellable, like a true friend. Go on — swim where the fish gossip.',
-  'BULKO Members: the parm wheel. It is a WHEEL. Of PARM. Roll one home today. (Barnaby pays extra for cousins of the parm. Don’t ask.)',
+  { key: 'ad_hotdog',
+    text: 'BULKO: the one-and-a-half-button hot dog. Pay two, get half a button back. We don’t understand it. You don’t understand it. DO NOT WORRY ABOUT IT.' },
+  { key: 'ad_lantern',
+    text: 'The Lantern Room — Lantern Roast, NOT decaf, and Chip plays till the candle’s out. Tell Luna the TV sent you. (Luna will be confused.)' },
+  { key: 'ad_scuba',
+    text: 'Wet feet? Cold feet? Pip’s got the scuba suit: unsellable, like a true friend. Go on — swim where the fish gossip.' },
+  { key: 'ad_parm',
+    text: 'BULKO Members: the parm wheel. It is a WHEEL. Of PARM. Roll one home today. (Barnaby pays extra for cousins of the parm. Don’t ask.)' },
 ];
 
 export function createBulko(player) {
@@ -657,9 +1151,16 @@ export function createBulko(player) {
     const tvBack = box(8.8, 3.2, 0.2, 0xc2c6ca); // the solid rectangle behind the screens (light grey)
     tvBack.position.set(B.x + 2.4, 2.7, B.z + 1.3);
     group.add(tvBack);
-    // each channel keeps two faceted frames; the schedule assigns them to screens
+    // each channel keeps two painted frames; the schedule assigns them to screens
     const channelFrames = {};
-    for (const ch of TV_CHANNELS) channelFrames[ch.key] = [makeScreenTex(ch, 0), makeScreenTex(ch, 1)];
+    for (const key of [
+      'hoot', 'science', 'sea',
+      ...TV_WEATHERS.map((w) => `weather_${w}`),
+      ...TV_AD_KEYS,
+    ]) {
+      channelFrames[key] = [makeScreenTex(key, 0), makeScreenTex(key, 1)];
+    }
+    const screenTexKey = (key) => key === 'weather' ? `weather_${currentWeather()}` : key;
     const tvScreens = [];
     for (let i = 0; i < 8; i++) {
       const tx = B.x + 2.4 + ((i % 4) - 1.5) * 2.1;
@@ -675,9 +1176,8 @@ export function createBulko(player) {
     }
     // TV scheduling — what's on depends on the hour. Day: weather, science, ads,
     // and the sea on one random screen. Night: Hoot's show, ads, the sea.
-    const onAir = () => (isNight() ? ['hoot', 'ads', 'sea'] : ['weather', 'science', 'ads', 'sea']);
     function scheduleScreens() {
-      const fill = isNight() ? ['hoot', 'ads'] : ['weather', 'science', 'ads'];
+      const fill = isNight() ? ['hoot', ...TV_AD_KEYS] : ['weather', 'science', ...TV_AD_KEYS];
       const seaScreen = Math.floor(rand(0, tvScreens.length)); // exactly one screen is the sea
       tvScreens.forEach((s, i) => { s.key = i === seaScreen ? 'sea' : pick(fill); });
     }
@@ -690,23 +1190,29 @@ export function createBulko(player) {
       if (isNight() !== tvNight || tvSchedT > 40) { tvNight = isNight(); tvSchedT = 0; scheduleScreens(); }
       tvFlipT += dt;
       if (tvFlipT >= 1.6) { tvFlipT = 0; tvStep ^= 1; }
-      for (const s of tvScreens) s.screen.material.map = channelFrames[s.key][tvStep];
+      for (const s of tvScreens) {
+        s.screen.material.map = channelFrames[screenTexKey(s.key)]?.[tvStep] ?? channelFrames.sea[tvStep];
+      }
     });
-    // watch from anywhere along the wall front; you get whatever's on (random, no menu)
-    const tvIdx = { hoot: 0, science: 0, sea: 0, ads: 0 };
+    // watch from anywhere along the wall front; you get one of the displayed screens
+    const tvIdx = { hoot: 0, science: 0, sea: 0 };
+    const tvAds = Object.fromEntries(TV_ADS.map((ad) => [ad.key, ad.text]));
     const tvBroadcast = {
       weather: () => ui.say(scoochWeather()),
       hoot: () => { const pool = isNight() ? [...HOOT_BITS, HOOT_NIGHT] : HOOT_BITS; ui.say(pool[tvIdx.hoot++ % pool.length]); },
       science: () => ui.say([{ speaker: NEWT, voice: NEWT_V, text: SCIENCE_FACTS[tvIdx.science++ % SCIENCE_FACTS.length] }]),
       sea: () => ui.say(SEA_BITS[tvIdx.sea++ % SEA_BITS.length]),
-      ads: () => ui.say(TV_ADS[tvIdx.ads++ % TV_ADS.length]),
+    };
+    const playTv = (key) => {
+      if (TV_AD_KEYS.includes(key)) return ui.say(tvAds[key]);
+      return tvBroadcast[key]?.();
     };
     const tvHit = new THREE.Vector3();
     register({
       getPos: () => tvHit.set(Math.max(B.x - 1.6, Math.min(B.x + 6.4, player.group.position.x)), 0, B.z + 2.3),
       r: 2.6, zone: 'bulko',
       label: 'watch the TVs',
-      use: () => { tvBroadcast[pick(onAir())](); },
+      use: () => { playTv(pick(tvScreens).key); },
     });
 
     // display couches, dared to be imagined in your cottage
