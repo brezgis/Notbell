@@ -245,6 +245,15 @@ export function createIsland6(player) {
     deck.position.set(fx, ROOF_Y - 0.07, fz);
     deck.castShadow = deck.receiveShadow = true;
     group.add(deck);
+    // support legs down onto the roof so the deck doesn't read as floating
+    for (const lx of [fx - 6, fx - 3, fx, fx + 3, fx + 6]) {
+      for (const lz of [fz - CATWALK_HALF_W + 0.2, fz + CATWALK_HALF_W - 0.2]) {
+        const leg = box(0.13, 0.66, 0.13, 0x8a93a0);
+        leg.position.set(lx, ROOF_Y - 0.44, lz);
+        leg.castShadow = leg.receiveShadow = true;
+        group.add(leg);
+      }
+    }
     for (const sz of [-1, 1]) {
       for (let i = 0; i <= 7; i++) {
         const post = box(0.08, 1.05, 0.08, 0xd9534f);
@@ -282,7 +291,7 @@ export function createIsland6(player) {
   // benches, planters, and the flag. office-park charm, frontier edition.
   {
     for (const [bx, bz, ry] of [
-      [fx - 3.4, fz + 5.6, 0.5], [fx + 3.4, fz + 5.6, -0.5], [Y.x - 6.2, Y.z + 4.8, Math.PI / 2],
+      [fx - 3.4, fz + 5.6, 0.5], [fx + 3.4, fz + 5.6, -0.5], [fx - 9.5, fz + 8, Math.PI / 2],
     ]) {
       const bench = new THREE.Group();
       const seat = box(2.0, 0.12, 0.55, 0xa97c50);
@@ -303,7 +312,7 @@ export function createIsland6(player) {
     }
     // planters: poured concrete, institutional; flowers: insubordinate
     for (const [px, pz] of [
-      [fx - 5.8, fz + 5.6], [fx + 5.8, fz + 5.6], [Y.x - 3.8, Y.z + 7.0], [Y.x - 8.6, Y.z + 6.1],
+      [fx - 7, fz + 8], [fx - 3, fz + 8], [fx - 7, fz + 12], [fx - 3, fz + 12], // the four beds, squared up
     ]) {
       const py = terrainHeight(px, pz);
       const tub = box(1.5, 0.55, 1.5, 0xb6b1a4);
@@ -892,6 +901,17 @@ export function createIsland6(player) {
     const banner = box(6, 0.9, 0.06, 0xf0e8d8);
     banner.position.set(B.x, 2.6, B.z - 1.9);
     room.add(banner);
+    // handrails along the gantry — the inside catwalk reads as one now too
+    for (const rz of [B.z - 2 - 0.62, B.z - 2 + 0.62]) {
+      const grail = box(W - 4, 0.07, 0.07, 0xd9534f);
+      grail.position.set(B.x, 3.95, rz);
+      room.add(grail);
+      for (let gx = -(W - 4) / 2 + 0.6; gx <= (W - 4) / 2 - 0.6; gx += 3.2) {
+        const gpost = box(0.07, 0.5, 0.07, 0xd9534f);
+        gpost.position.set(B.x + gx, 3.72, rz);
+        room.add(gpost);
+      }
+    }
     register({
       pos: new THREE.Vector3(B.x, 0, B.z - 1), r: 3, zone: 'labs',
       label: 'read the banner',

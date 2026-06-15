@@ -419,7 +419,7 @@ export function createIsland3() {
     group.add(nook);
     const leftNook = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 1), mat(0x5b8bc9, 0.95));
     leftNook.scale.y = 0.4;
-    leftNook.position.set(B.x - 5.5, 0.3, B.z + 2.5);
+    leftNook.position.set(B.x + 4.1, 0.3, B.z + 4.0); // beside the red cushion, a little diagonal
     leftNook.castShadow = true;
     leftNook.receiveShadow = true;
     group.add(leftNook);
@@ -443,7 +443,7 @@ export function createIsland3() {
       bounds: { x0: B.x - 7.6, x1: B.x + 7.6, z0: B.z - 4.0, z1: B.z + 5.5 },
       blockers: [
         { x: B.x - 4, z: B.z + 1, r: 1.5 },
-        { x: B.x - 5.5, z: B.z + 2.5, r: 1.0 },
+        { x: B.x + 4.1, z: B.z + 4.0, r: 1.0 }, // 2nd cushion (moved beside the red one)
         { x: B.x + 5.5, z: B.z + 2.5, r: 1.0 },
       ],
       spawn: { x: B.x, z: B.z + 4.8, rotY: Math.PI },
@@ -581,6 +581,14 @@ export function createIsland3() {
       mag.receiveShadow = true;
       group.add(mag);
     }
+    register({
+      pos: new THREE.Vector3(B.x + 5.35, 0, B.z + 3.0), r: 1.8, zone: 'clinic',
+      label: 'flip through a magazine',
+      use: () => ui.say([
+        'OYSTERS — “the periodical for the discerning bivalve.” This issue is eight years old. The cover lines: “Pearls: Are You Storing Yours Wrong?” and “Tide-Pool Minimalism — Live With Just One Rock.”',
+        'Inside: the quiz “Which Hermit Crab Are You?” (you are, every time, the one looking for a bigger shell) and a glossy spread on a clam who summers on the volcano. A subscription card flutters out. It expired six years ago.',
+      ]),
+    });
     // eye chart: descending paw prints
     const chartCv = document.createElement('canvas');
     chartCv.width = 128;
@@ -606,6 +614,11 @@ export function createIsland3() {
     const gill = buildAnimal('axolotl', { body: 0xf2b8c6, head: 0xf2b8c6 });
     gill.position.set(B.x + 2.5, 0.6, B.z - 3.4);
     group.add(gill);
+    // a stool so Dr. Gill clears his counter, the way Pip does at the shop
+    const gillStool = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.38, 0.58, 7), mat(0xa97c50));
+    gillStool.position.set(B.x + 2.5, 0.31, B.z - 3.4);
+    gillStool.castShadow = gillStool.receiveShadow = true;
+    group.add(gillStool);
     wireBob(gill, updates, 0.9);
 
     const room = collectInteriorRoot(group, roomStart);
@@ -616,6 +629,9 @@ export function createIsland3() {
       blockers: [
         { x: B.x - 4, z: B.z - 2.6, r: 1.4 },
         { x: B.x + 2.5, z: B.z - 2.4, r: 1.4 },
+        { x: B.x + 5.2, z: B.z + 0.8, r: 0.62 }, // waiting chairs
+        { x: B.x + 5.2, z: B.z + 2.0, r: 0.62 },
+        { x: B.x + 5.35, z: B.z + 3.15, r: 0.5 }, // magazine rack
       ],
       spawn: { x: B.x, z: B.z + 3.4, rotY: Math.PI },
       lighting: {
@@ -734,25 +750,25 @@ export function createIsland3() {
     }
     frog.position.set(fs.x + 0.7, terrainHeight(fs.x + 0.7, fs.z + 0.4), fs.z + 0.4);
     group.add(frog);
-    const nearestTree = forestTrees.reduce((best, tree) => {
-      const d = Math.hypot(tree.position.x - frog.position.x, tree.position.z - frog.position.z);
-      return !best || d < best.d ? { tree, d } : best;
-    }, null);
-    if (nearestTree) {
-      const dx = nearestTree.tree.position.x - frog.position.x;
-      const dz = nearestTree.tree.position.z - frog.position.z;
-      const len = Math.hypot(dx, dz) || 1;
-      const ux = dx / len;
-      const uz = dz / len;
-      for (const push of [3.4, 2.7, 4.2]) {
-        const tx = nearestTree.tree.position.x + ux * push;
-        const tz = nearestTree.tree.position.z + uz * push;
-        const th = terrainHeight(tx, tz);
-        if (th > WATER_Y + 0.2) {
-          nearestTree.tree.position.set(tx, th - 0.05, tz);
-          break;
+    // the frog only reads in a clearing — relocate every tree on top of it to a
+    // dry spot just outside, scanning ALL directions (its own bearing may face
+    // water, which is why moving it straight out used to leave the copse behind)
+    const CLEAR_R = 4.4;
+    for (const tree of forestTrees) {
+      const dx = tree.position.x - frog.position.x;
+      const dz = tree.position.z - frog.position.z;
+      if (Math.hypot(dx, dz) >= CLEAR_R) continue;
+      let moved = false;
+      for (let a = 0; a < 16 && !moved; a++) {
+        const ang = (a / 16) * Math.PI * 2;
+        for (const out of [CLEAR_R + 0.8, CLEAR_R + 2.2]) {
+          const tx = frog.position.x + Math.cos(ang) * out;
+          const tz = frog.position.z + Math.sin(ang) * out;
+          const th = terrainHeight(tx, tz);
+          if (th > WATER_Y + 0.2) { tree.position.set(tx, th - 0.05, tz); moved = true; break; }
         }
       }
+      if (!moved) tree.visible = false; // nowhere dry to move it — just clear the canopy
     }
     let hopT = rand(1, 3);
     let hop = 99;

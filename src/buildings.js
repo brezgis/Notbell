@@ -796,9 +796,9 @@ export function createBuildings() {
       ray.rotation.z = 0.18;
       group.add(ray);
     }
-    const grotto = box(4.5, 4.4, 6.2, 0x14364a);
-    grotto.material.emissive = new THREE.Color(0x071f2c);
-    grotto.material.emissiveIntensity = 0.2;
+    const grotto = box(4.5, 4.4, 6.2, 0x1a4a60);
+    grotto.material.emissive = new THREE.Color(0x0e4258);
+    grotto.material.emissiveIntensity = 0.42;
     grotto.receiveShadow = true;
     grotto.position.set(B.x + 5.6, 2.4, B.z - 11.3);
     group.add(grotto);
@@ -988,7 +988,7 @@ export function createBuildings() {
       blockers: [
         { x: B.x - 12.25, z: B.z + 7, r: 6.4 }, { x: B.x + 12.25, z: B.z + 7, r: 6.4 },
         { x: B.x - 13.9, z: B.z - 10.5, r: 5.2 }, { x: B.x + 13.9, z: B.z - 10.5, r: 5.2 },
-        { x: B.x, z: B.z - 11.2, r: 3.4 }, // the tank itself
+        { x: B.x - 5.4, z: B.z - 11.2, r: 3.6 }, { x: B.x, z: B.z - 11.2, r: 3.6 }, { x: B.x + 5.4, z: B.z - 11.2, r: 3.6 }, // the tank — full width, no walking in
         { x: B.x - 14, z: B.z + 0.2, r: 2.6 }, // the dig pit
         { x: B.x - 1.5, z: B.z - 2.2, r: 1.0 }, // Fern
       ],
