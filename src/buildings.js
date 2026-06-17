@@ -796,17 +796,28 @@ export function createBuildings() {
       ray.rotation.z = 0.18;
       group.add(ray);
     }
-    const grotto = box(4.5, 4.4, 6.2, 0x1a4a60);
-    grotto.material.emissive = new THREE.Color(0x0e4258);
-    grotto.material.emissiveIntensity = 0.42;
-    grotto.receiveShadow = true;
-    grotto.position.set(B.x + 5.6, 2.4, B.z - 11.3);
-    group.add(grotto);
-    const grottoGlow = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 0),
+    // a little rock grotto in the right corner — a cave nook for the cave
+    // species, framing a soft glow. No flat panel, so the water reads as one tank.
+    const ROCKS = [
+      [B.x + 3.9, 1.3, B.z - 12.8, 1.3, 0x4c5868],
+      [B.x + 7.1, 1.5, B.z - 12.9, 1.4, 0x556272],
+      [B.x + 5.6, 3.2, B.z - 13.4, 1.5, 0x47535f], // the overhang
+      [B.x + 4.7, 0.7, B.z - 10.6, 0.8, 0x586474],
+      [B.x + 6.7, 0.6, B.z - 10.9, 0.7, 0x505c6a],
+      [B.x + 5.7, 0.8, B.z - 12.0, 0.6, 0x5e6a78],
+    ];
+    for (const [rx, ry, rz, rr, rc] of ROCKS) {
+      const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(rr, 0), mat(rc, 0.95));
+      rock.position.set(rx, ry, rz);
+      rock.rotation.set(rand(0, 3), rand(0, 3), rand(0, 3));
+      rock.castShadow = true;
+      group.add(rock);
+    }
+    const grottoGlow = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 0),
       new THREE.MeshBasicMaterial({ color: 0x7fe8d8 }));
-    grottoGlow.position.set(B.x + 5.6, 1.2, B.z - 9.4);
+    grottoGlow.position.set(B.x + 5.6, 1.5, B.z - 12.2);
     group.add(grottoGlow);
-    group.add(warmLamp(B.x + 5.6, 2.4, B.z - 10.0, 0x7fe8d8, 28, 8));
+    group.add(warmLamp(B.x + 5.6, 1.8, B.z - 12.0, 0x9af0e0, 40, 9));
     const bubbles = [];
     for (let i = 0; i < 12; i++) {
       const bub = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0),
