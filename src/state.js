@@ -168,7 +168,7 @@ export function donatables() {
 
 const GLUT_AT = 6; // sales of one item per day before the bottom falls out
 
-function todayKey() {
+export function todayKey() {
   return new Date().toDateString();
 }
 

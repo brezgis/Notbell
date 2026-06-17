@@ -299,9 +299,17 @@ function updateHud() {
 zones.onChange(updateHud);
 updateHud();
 
-// pick up exactly where you left off — spot, zone, camera and all
-if (S.state.where && S.state.where.zone !== 'sea') {
-  const w = S.state.where;
+// Where you wake up:
+//  · first time ever → the middle of Notbell (the default spawn) + the picker
+//  · same day, just refreshed → exactly where you left off, camera and all
+//  · a new morning → home, in your own cottage, the island waiting outside
+const w = S.state.where;
+if (w && w.day !== S.todayKey()) {
+  // a new day on the island — wake up at home
+  zones.go('home')
+    .then(() => ui.toast('Good morning. The cottage is warm; the island’s waiting.', '🌅'))
+    .catch(() => {});
+} else if (w && w.zone !== 'sea') {
   camYaw = w.camYaw ?? camYaw;
   camPitch = w.camPitch ?? camPitch;
   camDist = w.camDist ?? camDist;
@@ -311,7 +319,7 @@ if (S.state.where && S.state.where.zone !== 'sea') {
 
 addEventListener('beforeunload', () => {
   S.state.where = {
-    zone: zones.current(),
+    zone: zones.current(), day: S.todayKey(),
     x: player.group.position.x, z: player.group.position.z,
     rotY: player.group.rotation.y, camYaw, camPitch, camDist,
   };
@@ -381,8 +389,8 @@ renderer.setAnimationLoop(() => {
     markVisited(player, zone); // new shores ink themselves onto the chart
     updateHud(); // place name + clock keep pace as you wander
     S.state.where = {
-      zone, x: playerPos.x, z: playerPos.z, rotY: player.group.rotation.y,
-      camYaw, camPitch, camDist,
+      zone, day: S.todayKey(), x: playerPos.x, z: playerPos.z,
+      rotY: player.group.rotation.y, camYaw, camPitch, camDist,
     };
     S.save();
   }
