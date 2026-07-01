@@ -226,6 +226,10 @@ Progress (buttons, pockets, tools, donations, story) saves to localStorage.
 
 ## Files
 
+The core cast, below. (The full module map, the contributor rules, and the
+visual/feature/lore canon live in `AGENTS.md` and `docs/` — read those before
+changing code.)
+
 ```
 index.html         shell + UI styles + import map (three → vendor/)
 vendor/            three.js r180 (module + core)
