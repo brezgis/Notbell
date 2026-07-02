@@ -333,10 +333,12 @@ export function createIsland3() {
     const walls = box(6.8, 3.4, 5.8, 0x9a8a78);
     walls.position.y = 1.7;
     ext.add(walls);
-    const roofGeo = new THREE.CylinderGeometry(2.4, 2.4, 7.2, 3, 1, false, Math.PI / 2);
+    // r sized to wall depth: a 3-cylinder spans 1.73×r across the ridge
+    // (5.8-deep walls need r≈3.7; scale.y keeps the same apex) — B18
+    const roofGeo = new THREE.CylinderGeometry(3.7, 3.7, 7.2, 3, 1, false, Math.PI / 2);
     roofGeo.rotateZ(Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, mat(0x3f7a45));
-    roof.scale.y = 0.8;
+    roof.scale.y = 0.52;
     roof.position.y = 4.2;
     roof.castShadow = true;
     ext.add(roof);

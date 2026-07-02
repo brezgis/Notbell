@@ -61,9 +61,23 @@ function buildBubble() {
   return b;
 }
 
+// the hero carries a little of her own light: a gentle self-emissive so no
+// facet ever goes fully dark. Those "shadows" on the front/lower body were
+// never shadow maps — just faces the sun wasn't talking to. Now the player
+// reads from every side, and the facets still facet.
+function warmUp(g) {
+  g.traverse((o) => {
+    if (o.isMesh && !o.material.transparent && o.material.emissive) {
+      o.material.emissive.copy(o.material.color);
+      o.material.emissiveIntensity = 0.16;
+    }
+  });
+}
+
 export function createPlayer() {
   const avatar = state.avatar || { kind: 'cat', body: 0xf0c98f };
   const group = buildAnimal(avatar.kind, { body: avatar.body });
+  warmUp(group);
 
   group.position.set(
     PLAYER_SPAWN.x,
@@ -210,6 +224,7 @@ export function createPlayer() {
 
   function swapBody(kind, bodyColor) {
     const fresh = buildAnimal(kind, { body: bodyColor });
+    warmUp(fresh); // every body arrives pre-warmed
     // keep the group (everyone holds a reference to it), swap the animal
     for (const child of [...group.children]) {
       if (child !== lantern) group.remove(child);

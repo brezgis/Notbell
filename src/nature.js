@@ -753,18 +753,66 @@ export function scatterNature() {
     const speed = step / Math.max(dt, 1e-4);
     if (speed < 6.4) return; // walking (even caffeinated) is polite enough
     for (const s of skittish) {
-      if (!s.mesh.visible) continue;
+      if (!s.mesh.visible || s.fleeing) continue;
       const dx = s.mesh.position.x - playerPos.x;
       const dz = s.mesh.position.z - playerPos.z;
       const d = Math.hypot(dx, dz);
       if (d > s.wary) continue;
       if (moved.x * dx + moved.z * dz <= 0) continue; // running away is fine
-      s.spook();
+      startFlee(s, playerPos);
+    }
+  }
+
+  // startled things don't blink out of existence — they LEAVE: a short
+  // indignant arc away from the thundering paws, fading as they go, and
+  // only then does the respawn clock start. the leaving is the comment.
+  const fleeing = [];
+
+  function startFlee(s, playerPos) {
+    const dx = s.mesh.position.x - playerPos.x;
+    const dz = s.mesh.position.z - playerPos.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const mats = [];
+    s.mesh.traverse((o) => {
+      if (o.isMesh) {
+        o.material.transparent = true;
+        mats.push(o.material);
+      }
+    });
+    s.fleeing = {
+      t: 0, dur: 0.85,
+      dir: { x: dx / d, z: dz / d },
+      home: s.mesh.position.clone(),
+      mats,
+    };
+    fleeing.push(s);
+  }
+
+  function updateFleeing(dt) {
+    for (const s of [...fleeing]) {
+      const f = s.fleeing;
+      f.t += dt;
+      const k = Math.min(1, f.t / f.dur);
+      s.mesh.position.x += f.dir.x * dt * 3.4;
+      s.mesh.position.z += f.dir.z * dt * 3.4;
+      s.mesh.position.y = f.home.y + Math.sin(k * Math.PI) * 0.9;
+      for (const m of f.mats) m.opacity = 1 - k;
+      if (k >= 1) {
+        s.spook(); // hides + starts the respawn clock, as before
+        s.mesh.position.copy(f.home);
+        for (const m of f.mats) {
+          m.opacity = 1;
+          m.transparent = false;
+        }
+        s.fleeing = null;
+        fleeing.splice(fleeing.indexOf(s), 1);
+      }
     }
   }
 
   function update(dt, t, playerPos) {
     spookCheck(dt, playerPos);
+    updateFleeing(dt);
     const night = isNight();
     for (const f of fireflies) {
       const u = f.userData;

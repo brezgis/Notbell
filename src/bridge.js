@@ -488,12 +488,23 @@ export function createBridge(player, animals = []) {
     const sp = pointAt(here.t, RAIL_OFFSET);
     const inland = end === 'A' ? -3 : 3; // pull the platform onto land a bit
     const px = sp.x + along.x * inland * 1.4, pz = sp.z + along.z * inland * 1.4;
-    const py = Math.max(terrainHeight(px, pz), here.h);
+    // the deck clears the HIGHEST corner of its footprint — center-sampling
+    // let the inland grass grow up through the boards (B18/B2)
+    const dcx = px - perp.x * 1.8, dcz = pz - perp.z * 1.8;
+    let py = here.h;
+    for (const [oa, oo] of [[0, 0], [2.1, 0], [-2.1, 0], [0, 1.6], [0, -1.6]]) {
+      py = Math.max(py, terrainHeight(dcx + along.x * oa + perp.x * oo, dcz + along.z * oa + perp.z * oo));
+    }
 
     const platform = box(3.4, 0.5, 4.2, 0xb9c0b9);
-    platform.position.set(px - perp.x * 1.8, py + 0.25, pz - perp.z * 1.8);
+    platform.position.set(dcx, py + 0.25, dcz);
     platform.rotation.y = Math.atan2(along.x, along.z);
     group.add(platform);
+    // and a skirt below, so the raised deck never shows daylight either
+    const skirt = box(3.2, 1.6, 4.0, 0xa8afa8);
+    skirt.position.set(dcx, py - 0.55, dcz);
+    skirt.rotation.y = platform.rotation.y;
+    group.add(skirt);
     for (const o of [-1.4, 1.4]) {
       const post = box(0.14, 2.2, 0.14, 0x8a5a3a);
       post.position.set(px - perp.x * 1.8 + along.x * o, py + 1.35, pz - perp.z * 1.8 + along.z * o);

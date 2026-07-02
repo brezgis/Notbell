@@ -190,10 +190,11 @@ export function createIsland5(player) {
       wingRoof.castShadow = true;
       ext.add(wingRoof);
     }
-    const roofGeo = new THREE.CylinderGeometry(3.2, 3.2, 11.4, 3, 1, false, Math.PI / 2);
+    // r sized to wall depth (7-deep walls → r≈4.4; same apex via scale.y) — B18
+    const roofGeo = new THREE.CylinderGeometry(4.4, 4.4, 11.4, 3, 1, false, Math.PI / 2);
     roofGeo.rotateZ(Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, mat(0x4a5a70));
-    roof.scale.y = 0.7;
+    roof.scale.y = 0.51;
     roof.position.y = 5.9;
     roof.castShadow = true;
     ext.add(roof);

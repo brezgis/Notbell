@@ -75,6 +75,10 @@ await browser.close();
 
 - `lib.mjs` — the harness (tracked)
 - `smoke.mjs`, `canon.mjs` — canonical probes (tracked)
+- `audit_b18.mjs` — computed geometry audit (tracked): flags floating walls,
+  buried decks, and undersized prism/cone roofs island-wide, with positions
+  and gap sizes. Run after any build work. Note: plinths and stilts are
+  legitimate gap-fillers it can't see — triage its floaters list by eye.
 - `out/` — screenshot output, per LABEL (ignored)
 - `archive/` — retired one-off probes and their outputs, kept for reference
   (ignored); `audit/` — an older self-contained audit generation (ignored)
