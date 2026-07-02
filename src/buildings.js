@@ -67,9 +67,14 @@ export function makeRectWindow(w = 0.8, h = 1.3) {
 
 function makeShopExterior() {
   const g = new THREE.Group();
+  // a low stone footing — the plaza's edge slopes just enough to show
+  // daylight under a proud mustard box, and Pip would never stand for it
+  const plinth = box(7.3, 1.2, 6.3, 0xc9bda6);
+  plinth.position.y = -0.42;
+  g.add(plinth);
   const walls = box(7, 3.4, 6, 0xe8b84b);
   walls.userData.occlude = true;
-  walls.position.y = 1.7;
+  walls.position.y = 1.7 + 0.18;
   g.add(walls);
   const roof = new THREE.Mesh(new THREE.ConeGeometry(5.6, 2.6, 4), mat(0x4f8f6a));
   roof.position.y = 4.6;
@@ -158,24 +163,31 @@ function makeCafeExterior() {
 // is still being sorted (C8) — but the building stands, patient as a mailbox.
 function makePostOfficeExterior() {
   const g = new THREE.Group();
+  // a foundation first — the ground near the dock has opinions, and a post
+  // office should look like it plans to stay
+  const plinth = box(6.4, 1.6, 5.4, 0xd8cbb2);
+  plinth.position.y = -0.55; // sunk well below the downhill side
+  g.add(plinth);
   const walls = box(6, 3.1, 5, 0xf0e2c8);
   walls.userData.occlude = true;
-  walls.position.y = 1.55;
+  walls.position.y = 1.55 + 0.25;
   g.add(walls);
-  // prism ridge roof in postal blue (thetaStart π/2 BEFORE rotateZ — the gotcha)
-  const roofGeo = new THREE.CylinderGeometry(2.1, 2.1, 6.6, 3, 1, false, Math.PI / 2);
+  // prism ridge roof in postal blue. TWO gotchas: thetaStart π/2 BEFORE
+  // rotateZ (or the ridge skews), and a 3-cylinder only spans 1.73×radius
+  // across the ridge — size r to the WALL DEPTH, not to instinct
+  const roofGeo = new THREE.CylinderGeometry(3.3, 3.3, 6.6, 3, 1, false, Math.PI / 2);
   roofGeo.rotateZ(Math.PI / 2);
   const roof = new THREE.Mesh(roofGeo, mat(0x4a6a9c));
-  roof.scale.y = 0.75;
-  roof.position.y = 3.85;
+  roof.scale.y = 0.42;
+  roof.position.y = 3.75;
   roof.castShadow = true;
   g.add(roof);
   const door = makeDoor(0x5a3d22);
-  door.position.z = 2.51;
+  door.position.set(0, 0.25, 2.51);
   g.add(door);
   for (const sx of [-1, 1]) {
     const w = makeWindow();
-    w.position.set(sx * 1.9, 2.0, 2.5);
+    w.position.set(sx * 1.9, 2.25, 2.5);
     g.add(w);
   }
   // the sign is a bottle with a letter rolled inside — how mail has always
@@ -189,7 +201,7 @@ function makePostOfficeExterior() {
   const letter = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.5, 6), mat(0xfff6e0, 0.9));
   bottle.add(glassB, neck, cork, letter);
   bottle.rotation.z = 1.15; // adrift, as received
-  bottle.position.set(0, 3.55, 2.62);
+  bottle.position.set(0, 2.72, 2.66); // hung over the door, tucked under the eave
   bottle.traverse((o) => { o.castShadow = true; });
   g.add(bottle);
   // the pillar box: BULKO-buoy red, slot like a buttonhole
@@ -204,7 +216,7 @@ function makePostOfficeExterior() {
   pillar.position.set(1.9, 0, 3.4);
   pillar.traverse((o) => { o.castShadow = true; });
   g.add(pillar);
-  g.rotation.y = Math.PI / 2; // the door greets the well, not the sea
+  g.rotation.y = -Math.PI / 2; // the door greets the pier path — mail comes by sea
   return g;
 }
 
@@ -214,11 +226,13 @@ function makeMuseumExterior() {
   walls.position.y = 1.8;
   g.add(walls);
   // prism roof — thetaStart phases one vertex to +X, so rotateZ lands it
-  // straight up: a true ridge, at last
-  const roofGeo = new THREE.CylinderGeometry(2.4, 2.4, 9.6, 3, 1, false, Math.PI / 2);
+  // straight up: a true ridge, at last. r sized to the WALL DEPTH: a
+  // 3-cylinder spans 1.73×r across the ridge (6.5-deep walls need r≈4,
+  // squashed back down with scale.y — same apex, honest eaves)
+  const roofGeo = new THREE.CylinderGeometry(4.0, 4.0, 9.6, 3, 1, false, Math.PI / 2);
   roofGeo.rotateZ(Math.PI / 2);
   const roof = new THREE.Mesh(roofGeo, mat(0x7c8894));
-  roof.scale.y = 0.7;
+  roof.scale.y = 0.42;
   roof.position.y = 4.15;
   roof.castShadow = true;
   g.add(roof);
@@ -387,7 +401,11 @@ export function createBuildings() {
     shop: { x: C.x - 8, z: C.z - 3.5, w: 7, d: 6 },
     cafe: { x: C.x + 8, z: C.z - 3.5, w: 6.4, d: 5.6 },
     museum: { x: C.x, z: C.z - 7.5, w: 9, d: 6.5 },
-    post: { x: C.x - 9, z: C.z + 6, w: 6, d: 5 }, // the plaza's fourth side
+    // the post office lives by the dock road, not the plaza — the mail
+    // arrives by sea, and the sorting should happen where it lands.
+    // (absolute coords: flattest unblocked patch between pier and cottage,
+    // found by survey 2026-07-01 — the seeded terrain keeps it true)
+    post: { x: -11.6, z: 19.7, w: 6, d: 5 },
   };
 
   const exteriors = {
@@ -406,8 +424,9 @@ export function createBuildings() {
   }
 
   // the post office isn't open yet — but the notice is, and so is the slot
+  // (offsets follow the westward facing: door at -x, pillar box toward the pier)
   register({
-    pos: new THREE.Vector3(spots.post.x + 2.6, 0, spots.post.z), r: 2.4,
+    pos: new THREE.Vector3(spots.post.x - 2.6, 0, spots.post.z), r: 2.4,
     label: 'read the notice',
     use: () => ui.say([
       'A card in the window, in careful pawwriting: “NOTBELL POST — OPENING SOON. The mail has been arriving for years; we felt it was time somebody sorted it.”',
@@ -415,7 +434,7 @@ export function createBuildings() {
     ]),
   });
   register({
-    pos: new THREE.Vector3(spots.post.x + 3.4, 0, spots.post.z - 1.9), r: 2.0,
+    pos: new THREE.Vector3(spots.post.x - 3.4, 0, spots.post.z + 1.9), r: 2.0,
     label: 'inspect the pillar box',
     use: () => ui.say('A red pillar box with a slot exactly the width of a folded letter, or one very determined button. The paint is new. The idea is older than the paint.'),
   });

@@ -1010,6 +1010,54 @@ export function createIsland5(player) {
       },
     });
   }
+  // ---- the permanent residents: the springs are never unattended ----
+  // the soak dialogue has always claimed a capybara across the pool.
+  // now it's load-bearing: two capybaras on permanent assignment, one
+  // crocodile off duty, and the orchard's dropped oranges adrift.
+  const bigPool = springPools[0], midPool = springPools[1];
+  const soakers = [];
+  const placeSoaker = (kind, colors, pool, ox, oz, ry, sink) => {
+    const a = buildAnimal(kind, colors);
+    const y0 = pool.y - sink;
+    a.position.set(pool.x + ox, y0, pool.z + oz);
+    a.rotation.y = ry;
+    a.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    group.add(a);
+    zones.addBlocker(pool.x + ox, pool.z + oz, 0.55);
+    soakers.push({ g: a, y0, ph: rand(0, 9) });
+    return a;
+  };
+  const capyA = placeSoaker('capybara', { body: 0xb08a5a, head: 0xb08a5a }, bigPool, -0.8, 0.5, 2.3, 0.24);
+  placeSoaker('capybara', { body: 0xa8835e, head: 0xa8835e }, bigPool, 0.9, -0.6, -0.9, 0.2);
+  const crocSoaker = placeSoaker('croc', { body: 0x4a6a2a, head: 0x4a6a2a }, midPool, 0.2, 0.3, 1.1, 0.34);
+
+  const springOranges = [];
+  for (let i = 0; i < 5; i++) {
+    const pool = springPools[i % springPools.length];
+    const orange = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), mat(0xff9430, 0.6));
+    orange.userData = { pool, a: rand(0, Math.PI * 2), rr: rand(0.35, 0.7), sp: rand(0.08, 0.2), ph: rand(0, 9) };
+    group.add(orange);
+    springOranges.push(orange);
+  }
+
+  register({
+    pos: new THREE.Vector3(capyA.position.x, 0, capyA.position.z), r: 2.4,
+    label: 'greet the soakers',
+    use: () => ui.say(pick([
+      '(Neither capybara opens its eyes. Warmth, they have found, is a full-time position, and they are career professionals.)',
+      'One capybara exhales, very slowly. It is either a greeting or an entire philosophy. Possibly both.',
+      '“Mm,” says the nearer capybara, without moving anything else. High praise, from management.',
+    ])),
+  });
+  register({
+    pos: new THREE.Vector3(crocSoaker.position.x, 0, crocSoaker.position.z), r: 2.4,
+    label: 'nod to the crocodile',
+    use: () => ui.say(pick([
+      '(You nod. The crocodile nods back — exactly once, conserving everything else for later.)',
+      'The crocodile watches the steam the way some folks watch television. Nothing is on. That’s the good part.',
+    ])),
+  });
+
   updates.push((dt, t) => {
     for (const pool of springPools) {
       for (const wisp of pool.wisps) {
@@ -1022,6 +1070,18 @@ export function createIsland5(player) {
         wisp.scale.setScalar(0.6 + k * 1.2);
         wisp.material.opacity = 0.35 * (1 - k);
       }
+    }
+    for (const s of soakers) {
+      s.g.position.y = s.y0 + Math.sin(t * 0.8 + s.ph) * 0.035; // spa physics
+    }
+    for (const o of springOranges) {
+      const u = o.userData;
+      u.a += dt * u.sp;
+      o.position.set(
+        u.pool.x + Math.cos(u.a) * u.pool.r * u.rr,
+        u.pool.y + 0.46 + Math.sin(t * 1.3 + u.ph) * 0.03,
+        u.pool.z + Math.sin(u.a) * u.pool.r * u.rr);
+      o.rotation.y = u.a;
     }
   });
 

@@ -87,9 +87,15 @@ a door is ~1.6–2.2 units; prefer one bold shape over three small ones.
 Slight asymmetry and hand-wobble are features — don't straighten, center,
 or grid-snap the village.
 
-Geometry gotcha, learned twice: prism/wedge roofs are
+Geometry gotchas, learned repeatedly: prism/wedge roofs are
 `CylinderGeometry(r, r, len, 3, 1, false, Math.PI/2)` **then** `rotateZ` —
-other phase values skew the ridge.
+other phase values skew the ridge. And a 3-segment cylinder only spans
+**1.73 × r** across the ridge: size `r ≈ (wall depth + eaves) / 1.73` and
+squash the height back down with `scale.y`, or the roof won't cover the
+walls (this is how the museum wore a too-small hat for weeks). Buildings on
+any slope need a **foundation plinth** (a box sunk ~1 unit below grade) or
+they show daylight underneath — flat `terrainHeight` at the center is not
+flat at the corners.
 
 ## Charm rules (things that have actually been reverted)
 
