@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { terrainHeight, clearOfSites, SITES, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND5, WATER_Y } from './terrain.js';
-import { islandCanWalk } from './zones.js';
+import { islandCanWalk, nearBlocker } from './zones.js';
 import { rand, pick, turnToward } from './utils.js';
 
 function mat(color) {
@@ -746,8 +746,9 @@ export function createAnimals() {
         } else {
           const nx = g.position.x + (dx / dist) * a.speed * dt;
           const nz = g.position.z + (dz / dist) * a.speed * dt;
-          // ducks may swim where walkers can't; walkers respect buildings
-          if (a.swims || islandCanWalk(nx, nz)) {
+          // ducks may swim where walkers can't — but nobody walks through
+          // a building: swimmers skip the water rule, not the blockers
+          if (a.swims ? !nearBlocker(nx, nz) : islandCanWalk(nx, nz)) {
             g.rotation.y = turnToward(g.rotation.y, Math.atan2(dx, dz), dt, 6);
             g.position.x = nx;
             g.position.z = nz;

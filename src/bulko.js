@@ -776,7 +776,10 @@ export function createBulko(player) {
   group.add(cart);
 
   // ---------------------------------------------------------- ferry dock ----
-  const dockA = Math.atan2(0 - C.x, 0 - C.z); // pier points home, like all piers
+  // every other pier points home — but home is BEHIND the warehouse here, and
+  // ferry passengers deserve to step off on the door side, not orienteer the
+  // long way around a big box. the pier points west; the entrance agrees.
+  const dockA = -Math.PI / 2;
   const dox = Math.sin(dockA), doz = Math.cos(dockA);
   let shoreT = C.r - 6;
   while (terrainHeight(C.x + dox * (shoreT + 0.5), C.z + doz * (shoreT + 0.5)) >= 0.15) shoreT += 0.5;
@@ -955,11 +958,17 @@ export function createBulko(player) {
         strip.position.set(dx + 0.3, 1.7, dz - hw + 0.35 + i * ((hw * 2 - 0.7) / 10));
         group.add(strip);
       }
-      // cold breath spilling into the aisle
+      // cold breath spilling into the aisle — and it BREATHES: the cooler
+      // exhales, reconsiders, exhales again. tide mechanics, dairy scale.
       const leak = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, hw * 2),
         new THREE.MeshBasicMaterial({ color: 0xbfe6f2, transparent: true, opacity: 0.12, depthWrite: false }));
       leak.position.set(dx + 1.1, 0.3, dz);
       group.add(leak);
+      updates.push((dt, t) => {
+        if (zones.current() !== 'bulko') return;
+        leak.material.opacity = 0.09 + Math.sin(t * 0.55) * 0.05;
+        leak.position.x = dx + 1.1 + (Math.sin(t * 0.3) + 1) * 0.22;
+      });
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 1.0),
         textPanel([['❄  THE MILK COOLER  ❄', 64, 40]], 768, 128, '#2f5a6e', '#eaf6fb'));
       sign.position.set(dx + 0.35, 4.5, dz);
@@ -1005,15 +1014,22 @@ export function createBulko(player) {
       group.add(bigSign);
       // the carton wall (north), long
       const tops = [0x6b4a2e, 0xe89ab0, 0xd9c08f];
+      // a milk carton wears a RIDGE, not a peak — a little gable prism, seated
+      // flush on the box (build the 3-cylinder with thetaStart π/2 BEFORE
+      // rotateZ, or the ridge skews — see VISUAL_CANON)
+      const gableGeo = (len, r) => {
+        const g = new THREE.CylinderGeometry(r, r, len, 3, 1, false, Math.PI / 2);
+        g.rotateZ(Math.PI / 2); // ridge runs along x
+        return g;
+      };
       for (let i = 0; i < 56; i++) {
         const col = i % 14, row = Math.floor(i / 14);
         const cxn = MC.x - 6.5 + col * 1.0, cyn = 0.95 + row * 0.74, czn = MC.z - 7.4;
         const carton = box(0.6, 0.66, 0.6, 0xfbf7ef);
         carton.position.set(cxn, cyn, czn);
         group.add(carton);
-        const top = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.28, 4), mat(tops[(i + row) % 3], 0.7));
-        top.rotation.y = Math.PI / 4;
-        top.position.set(cxn, cyn + 0.47, czn);
+        const top = new THREE.Mesh(gableGeo(0.56, 0.2), mat(tops[(i + row) % 3], 0.7));
+        top.position.set(cxn, cyn + 0.43, czn); // gable bottom kisses the carton top
         group.add(top);
       }
       // dairy island cases full of cartons (the Costco aisle)
@@ -1029,14 +1045,43 @@ export function createBulko(player) {
           const carton = box(0.5, 0.7, 0.5, 0xfbf7ef);
           carton.position.set(ccx, 1.45, ccz);
           group.add(carton);
-          const ctop = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.26, 4), mat(tops[i % 3], 0.7));
-          ctop.rotation.y = Math.PI / 4;
-          ctop.position.set(ccx, 1.88, ccz);
+          const ctop = new THREE.Mesh(gableGeo(0.46, 0.17), mat(tops[i % 3], 0.7));
+          ctop.position.set(ccx, 1.89, ccz);
           group.add(ctop);
         }
       };
       dairyCase(MC.x - 5, MC.z - 2);
       dairyCase(MC.x + 5, MC.z - 2);
+
+      // and yes, you can buy the milk. it's a store. mostly.
+      const MILKS = [
+        { id: 'milk_choco', label: '🍫 Chocolate milk', name: 'Chocolate Milk', emoji: '🍫', price: 8 },
+        { id: 'milk_straw', label: '🍓 Strawberry milk', name: 'Strawberry Milk', emoji: '🍓', price: 8 },
+        { id: 'milk_oat', label: '🌾 Oat beverage', name: 'Oat Beverage', emoji: '🌾', price: 9 },
+        { id: 'milk_plain', label: '🥛 Milk', name: 'Milk', emoji: '🥛', price: 6 },
+      ];
+      for (const caseX of [MC.x - 5, MC.x + 5]) {
+        register({
+          pos: new THREE.Vector3(caseX, 0, MC.z - 2), r: 2.8, zone: 'milkroom',
+          label: 'browse the dairy case',
+          use: async () => {
+            const picked = await ui.ask('The case hums its one cold note. Cartons stand in ranks, capped by flavor.', [
+              ...MILKS.map((m) => ({
+                label: m.label, value: m.id, hint: `${m.price}🔘`,
+                disabled: S.state.buttons < m.price,
+              })),
+              { label: 'Stay cool', value: null },
+            ]);
+            const m = MILKS.find((x) => x.id === picked);
+            if (!m) return;
+            S.spend(m.price);
+            S.addItem(m.id);
+            kaching();
+            ui.updateHUD();
+            ui.toast(`You bought <b>${m.name}</b>. The cold clings to the carton like it wants to come along.`, m.emoji);
+          },
+        });
+      }
 
       // the cows, spread across the hall
       const makeCow = (body, x, z, ry) => {
@@ -1050,7 +1095,9 @@ export function createBulko(player) {
       };
       const cocoa = makeCow(0x6b4a2e, MC.x - 7, MC.z + 2.6, 0.4);
       const sundae = makeCow(0xe6a6bc, MC.x + 7, MC.z + 2.6, -0.4);
-      const barley = makeCow(0xece3d0, MC.x - 4.5, MC.z + 3.4, 0);
+      // Barley holds the oat end of the west case — off the center line, the
+      // way he'd stand at a party. near the exit, in case the party is too much
+      const barley = makeCow(0xece3d0, MC.x - 6.3, MC.z - 0.5, 0.35);
       { // Barley's beret, naturally
         const beret = new THREE.Group();
         const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.37, 0.12, 10), mat(0x2f3a4a, 0.6));
@@ -1258,6 +1305,37 @@ export function createBulko(player) {
     const menuBoard = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 1.5), menuMat);
     menuBoard.position.set(B.x + 12, 3.6, B.z + 5.95);
     group.add(menuBoard);
+
+    // the apparatus, on the counter where you can watch it work: a roller
+    // grill (four dogs, geologically patient) and the fizz machine
+    const grill = box(1.3, 0.16, 0.66, 0x4a4f55);
+    grill.position.set(B.x + 10.9, 1.19, B.z + 6.5);
+    group.add(grill);
+    const dogGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.5, 6);
+    dogGeo.rotateX(Math.PI / 2); // lie along the rollers
+    const rollerDogs = [];
+    for (let i = 0; i < 4; i++) {
+      const dog = new THREE.Mesh(dogGeo, mat(0xc2703a, 0.7));
+      dog.position.set(B.x + 10.45 + i * 0.3, 1.34, B.z + 6.5);
+      dog.castShadow = true;
+      group.add(dog);
+      rollerDogs.push(dog);
+    }
+    const fizz = box(0.72, 1.05, 0.6, 0xb0453a); // BULKO red, of course
+    fizz.position.set(B.x + 13.35, 1.62, B.z + 6.3);
+    group.add(fizz);
+    for (let i = 0; i < 3; i++) { // one tap per fizz, no labels, know your fizz
+      const tap = box(0.12, 0.12, 0.06, [0xf2cf5b, 0x5b8bc9, 0x4f8f6a][i]);
+      tap.position.set(B.x + 13.15 + i * 0.2, 1.9, B.z + 6.62);
+      group.add(tap);
+    }
+    const tray = box(0.5, 0.05, 0.24, 0x8da0aa);
+    tray.position.set(B.x + 13.35, 1.17, B.z + 6.74);
+    group.add(tray);
+    updates.push((dt) => {
+      if (zones.current() !== 'bulko') return;
+      for (const dog of rollerDogs) dog.rotation.z += dt * 0.7; // the roller turns
+    });
 
     // the staff: a frog vendor. makeFrog — same idea as makeCow up in the milk
     // room: build the body, recolor, scale, place. (modeled on the North Isle's

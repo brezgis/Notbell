@@ -64,8 +64,9 @@ export function createOceanLife() {
     back.position.y = 0.05;
     shark.add(back);
     const tail = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.58, 4), mat(0x6e7e8e));
-    tail.scale.z = 0.18;
-    tail.position.set(0, -0.18, -1.25);
+    tail.scale.x = 0.18; // thin side-to-side — a caudal fin, not a paddle
+    tail.position.set(0, 0.1, -1.35); // lifted so its corner meets the torso's rear
+    tail.rotation.x = -0.25; // swept back, the way a tail that means it is
     tail.receiveShadow = true;
     shark.add(tail);
     // a face, so everyone can see the friendliness

@@ -310,16 +310,21 @@ export function createIsland6(player) {
       group.add(bench);
       zones.addBlocker(bx, bz, 0.8);
     }
-    // planters: poured concrete, institutional; flowers: insubordinate
-    for (const [px, pz] of [
-      [fx - 7, fz + 8], [fx - 3, fz + 8], [fx - 7, fz + 12], [fx - 3, fz + 12], // the four beds, squared up
+    // planters: poured concrete, institutional; flowers: insubordinate.
+    // a square, but a square somebody laid out by eye on a Friday — each bed
+    // a half-step off true, which is as aligned as gardens ever agree to be
+    for (const [px, pz, ry] of [
+      [fx - 7.3, fz + 7.8, 0.07], [fx - 2.9, fz + 8.2, -0.1],
+      [fx - 7.1, fz + 12.2, -0.06], [fx - 3.2, fz + 11.9, 0.12],
     ]) {
       const py = terrainHeight(px, pz);
       const tub = box(1.5, 0.55, 1.5, 0xb6b1a4);
       tub.position.set(px, py + 0.28, pz);
+      tub.rotation.y = ry;
       group.add(tub);
       const soil = box(1.3, 0.1, 1.3, 0x5a4632);
       soil.position.set(px, py + 0.56, pz);
+      soil.rotation.y = ry;
       group.add(soil);
       for (let f = 0; f < 5; f++) {
         const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.45, 4), mat(0x3f9747));

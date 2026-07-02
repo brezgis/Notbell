@@ -255,6 +255,23 @@ export const ITEMS = {
     kind: 'keepsake', name: 'Half a Button', emoji: '🌗', price: 0,
     blurb: 'Change from a 1.5ᵇ hot dog. Legal tender nowhere. Treasured forever.',
   },
+  // the milk cooler's wares — keepsakes, because Pip does not deal dairy
+  milk_choco: {
+    kind: 'keepsake', name: 'Chocolate Milk', emoji: '🍫', price: 0,
+    blurb: 'Cocoa’s. Chocolate milk isn’t a flavor, it’s a feeling. The feeling is being eight.',
+  },
+  milk_straw: {
+    kind: 'keepsake', name: 'Strawberry Milk', emoji: '🍓', price: 0,
+    blurb: 'Sundae’s. Pink all the way through. She barely makes the strawberry.',
+  },
+  milk_oat: {
+    kind: 'keepsake', name: 'Oat Beverage', emoji: '🌾', price: 0,
+    blurb: 'Barley’s. It is not milk, it is a beverage. There is a difference. He won’t explain it.',
+  },
+  milk_plain: {
+    kind: 'keepsake', name: 'Milk', emoji: '🥛', price: 0,
+    blurb: 'Regular milk, from the most relaxed employees BULKO has ever had.',
+  },
   parcel: {
     kind: 'keepsake', name: 'A Small Parcel', emoji: '🎁', price: 0,
     blurb: 'Addressed in careful pawwriting. It is not for you, and it is not heavy, and you may not shake it.',
