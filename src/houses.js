@@ -10,10 +10,11 @@ import * as S from './state.js';
 import { ITEMS, GROWTH } from './catalog.js';
 import { jingle, doorChime, thud } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
-import { hourNow } from './calendar.js';
+import { hourNow, HOLIDAY } from './calendar.js';
 import { MOUSEBOAT } from './island3.js';
 import { makeWindow, makeHangingLamp } from './buildings.js';
 import { currentWeather } from './almanac.js';
+import { BIRTHDAYS, birthdayTalk } from './villagers.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -454,6 +455,45 @@ function buildVillagerInterior(group, B, name, style) {
 
 // ------------------------------------------------------------- the works ----
 
+// ---- the Morning Signal ----------------------------------------------
+// The cottage radio's daily bulletin: never more than three items, because
+// mornings deserve mercy. Birthdays and holidays outrank the news desk.
+const SIGNAL_WEATHER = {
+  clear: 'Weather: clear. The sky has committed to it.',
+  rain: 'Weather: rain. The fish approve. The Labs flag does not fly; it is wool, and it knows.',
+  snow: 'Weather: snow, gently. Wear the knit one.',
+  fog: 'Weather: fog. If you hear a bell out there, that is between you and the fog.',
+};
+const SIGNAL_NEWS = [
+  'Notbell Labs reports the moon is still there. Verification continues nightly.',
+  'The tide brought in forty-one bottles yesterday. Moss has sorted nine, and described the pace as ambitious.',
+  'BULKO confirms the hot dog remains one and a half buttons. The economy observed a moment of appreciative silence.',
+  'The lighthouse hook was polished again overnight. Nobody saw anything. The hook, reportedly, gleams.',
+  'Pip has denied that the Buttonwagon is for sale. Pip has also denied knowing what the Buttonwagon is.',
+  'A whale was heard practicing offshore. Early reviews: sincere.',
+  'The Grove Line reports every train ran on time, for the local definition of time.',
+  'The volcano remains comfortable. Cinder thanks everyone for asking.',
+];
+
+export function playMorningSignal() {
+  const d = new Date();
+  const items = [];
+  const bd = Object.entries(BIRTHDAYS)
+    .find(([, [m, day]]) => d.getMonth() + 1 === m && d.getDate() === day);
+  if (bd) items.push(`It is ${bd[0]}’s birthday today. Gifts are not required. Gifts are, we are told, accepted.`);
+  if (HOLIDAY) items.push(`Today is ${HOLIDAY.name}. The bunting is up. The bunting committee thanks the bunting committee.`);
+  items.push(SIGNAL_WEATHER[currentWeather()] ?? SIGNAL_WEATHER.clear);
+  if (items.length < 3) {
+    const doy = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+    items.push(SIGNAL_NEWS[doy % SIGNAL_NEWS.length]);
+  }
+  ui.say([
+    '🎙 “Good morning. This is the Morning Signal, on the air since whenever you turned it on.”',
+    ...items.slice(0, 3).map((t) => `“${t}”`),
+    '“That’s the Signal. Go gently.”',
+  ], { speaker: 'The Morning Signal', voice: 330 });
+}
+
 export function createHouses(animals, obstacles = []) {
   const group = new THREE.Group();
   const updates = [];
@@ -551,6 +591,31 @@ export function createHouses(animals, obstacles = []) {
     const lamp = makeHangingLamp(0x5b8bc9); // home is a warm bulb over your own table
     lamp.position.set(B.x, 2.9, B.z + 0.6);
     group.add(lamp);
+
+    // the radio: wood, one dial, one antenna, complete trust
+    const radio = new THREE.Group();
+    const radioBody = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.2), mat(0x8a5a3a));
+    radioBody.castShadow = true;
+    radio.add(radioBody);
+    const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 8), mat(0xf2cf5b, 0.4));
+    dial.rotation.x = Math.PI / 2;
+    dial.position.set(0.12, 0, 0.11);
+    radio.add(dial);
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 0.02), mat(0x5a4a38));
+    grille.position.set(-0.08, 0, 0.11);
+    radio.add(grille);
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.5, 4), mat(0x9aa0a6, 0.5));
+    antenna.rotation.z = -0.5;
+    antenna.position.set(0.2, 0.32, 0);
+    radio.add(antenna);
+    radio.position.set(B.x + 0.4, 1.15, B.z + 0.4);
+    group.add(radio);
+
+    register({
+      pos: new THREE.Vector3(B.x + 0.4, 0, B.z + 0.4), r: 1.8, zone: 'home',
+      label: 'listen to the Morning Signal',
+      use: () => playMorningSignal(),
+    });
     const winFrame = box(1.8, 1.3, 0.18, 0x8a5a3a);
     winFrame.position.set(B.x - 1.5, 2.2, B.z - 4.85);
     const winSea = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.0),
@@ -802,7 +867,8 @@ export function createHouses(animals, obstacles = []) {
       getPos: () => a.g.position, r: 2.6, zone: zoneId,
       enabled: () => vh.home && !vh.inCave,
       label: `talk to ${name}`,
-      use: () => {
+      use: async () => {
+        if (await birthdayTalk(name, a.identity.voice)) return; // it follows you home
         const lines = HOME_LINES[name];
         ui.say(lines[homeLineIdx++ % lines.length], { speaker: name, voice: a.identity.voice });
       },

@@ -11,7 +11,7 @@ import { createFishing } from './fishing.js';
 import { createDigging } from './digging.js';
 import { createTidePools } from './tidepools.js';
 import { nameVillagers } from './villagers.js';
-import { createHouses } from './houses.js';
+import { createHouses, playMorningSignal } from './houses.js';
 import { createBridge } from './bridge.js';
 import { createIsland2 } from './island2.js';
 import { createAmbient } from './ambient.js';
@@ -305,9 +305,12 @@ updateHud();
 //  · a new morning → home, in your own cottage, the island waiting outside
 const w = S.state.where;
 if (w && w.day !== S.todayKey()) {
-  // a new day on the island — wake up at home
+  // a new day on the island — wake up at home, and the radio knows you're up
   zones.go('home')
-    .then(() => ui.toast('Good morning. The cottage is warm; the island’s waiting.', '🌅'))
+    .then(() => {
+      ui.toast('Good morning. The cottage is warm; the island’s waiting.', '🌅');
+      playMorningSignal();
+    })
     .catch(() => {});
 } else if (w && w.zone !== 'sea') {
   camYaw = w.camYaw ?? camYaw;

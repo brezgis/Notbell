@@ -8,6 +8,53 @@ import { applyHat } from './hats.js';
 import { HOLIDAY, HOLIDAY_LINES } from './calendar.js';
 import { jingle } from './audio.js';
 import * as S from './state.js';
+import { ITEMS } from './catalog.js';
+
+// birthdays — one date each, no ages; the archipelago counts occasions,
+// not years. (Howell's is the day after Bell Day. He says he heard it.)
+export const BIRTHDAYS = {
+  Clover: [5, 1], Biscuit: [11, 12], Saffron: [9, 22], Howell: [6, 22],
+  Bramble: [7, 19], Puddle: [4, 14], 'Admiral Greenbean': [2, 8],
+  Marigold: [8, 30], Ember: [1, 17], Tusk: [12, 1], Butterpat: [6, 3],
+  Crumb: [9, 9], Mochi: [1, 2], Pondo: [1, 3], Sol: [7, 7], Brook: [3, 20],
+};
+
+export function birthdayToday(name, d = new Date()) {
+  const b = BIRTHDAYS[name];
+  return !!b && d.getMonth() + 1 === b[0] && d.getDate() === b[1];
+}
+
+// The whole birthday exchange — greeting, the gift offer, the thanks — shared
+// by the wander-talk and the at-home visit (a birthday follows you home).
+// Returns true if today was, in fact, the whole day.
+export async function birthdayTalk(name, voice) {
+  if (!birthdayToday(name)) return false;
+  const year = new Date().getFullYear();
+  if (S.hasFlag(`bgift_${name}_${year}`)) {
+    ui.say('Best birthday in recent memory. Recent memory is generous. Still.', { speaker: name, voice });
+    return true;
+  }
+  const pocket = Object.entries(S.state.inv)
+    .filter(([iid]) => ITEMS[iid])
+    .slice(0, 5)
+    .map(([iid]) => ({ label: `${ITEMS[iid].emoji} ${ITEMS[iid].name}`, value: iid }));
+  const choice = await ui.ask(
+    'It’s my birthday, you know. The whole day. I’m being extremely calm about it.',
+    [...pocket, { label: '🎉 Just warm wishes', value: null }],
+    { speaker: name, voice });
+  if (choice) {
+    S.removeItem(choice);
+    S.setFlag(`bgift_${name}_${year}`);
+    jingle();
+    await ui.say(
+      `“For ME?” They hold the ${ITEMS[choice].name} like it might hatch. “This is the best one so far. Don’t tell the other years.”`,
+      { speaker: name, voice });
+    ui.toast(`${name} will remember this.`, '🎂');
+  } else {
+    ui.say('Warm wishes received and archived. The calm continues.', { speaker: name, voice });
+  }
+  return true;
+}
 
 const IDENTITIES = [
   {
@@ -317,6 +364,8 @@ export function nameVillagers(animals) {
       enabled: () => !a.away, // when they're home, houses.js hosts the chat
       label: `talk to ${id.name}`,
       use: async () => {
+        // a birthday outranks everything, including the holiday calendar
+        if (await birthdayTalk(id.name, id.voice)) return;
         if (HOLIDAY && !saidHoliday) {
           saidHoliday = true;
           ui.say(HOLIDAY_LINES[HOLIDAY.id], { speaker: id.name, voice: id.voice });
