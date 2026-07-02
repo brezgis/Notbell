@@ -502,6 +502,9 @@ export function createIsland3() {
   {
     const cy = terrainHeight(clinSpot.x, clinSpot.z);
     const ext = new THREE.Group();
+    const plinth = box(5.9, 1.3, 5.3, 0xd6d2c8); // footing against the hillside (B18)
+    plinth.position.y = -0.45;
+    ext.add(plinth);
     const walls = box(5.6, 3.0, 5.0, 0xf0ece4);
     walls.userData.occlude = true;
     walls.position.y = 1.5;

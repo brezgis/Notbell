@@ -156,6 +156,11 @@ const HOUSE_STYLES = {
 
 function makeCottage({ wall, roof, door }, scale = 1) {
   const g = new THREE.Group();
+  // a stone footing first — cottages sit on real slopes, and a floor you can
+  // see daylight under is a porch, not a home (B18)
+  const plinth = box(4.9 * scale, 2.0, 4.3 * scale, 0xc9bda6);
+  plinth.position.y = -0.65; // deep enough for the steepest yard on the isle
+  g.add(plinth);
   const walls = box(4.6 * scale, 2.6 * scale, 4 * scale, wall);
   walls.position.y = 1.3 * scale;
   g.add(walls);

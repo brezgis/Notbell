@@ -669,6 +669,10 @@ export function createBulko(player) {
   const wx = C.x, wz = C.z - 7;
   {
     const ext = new THREE.Group();
+    // the slab: big boxes get poured foundations, even legally distinct ones (B18)
+    const slab = box(20.4, 1.4, 10.4, 0x7d8288);
+    slab.position.y = -0.5;
+    ext.add(slab);
     const hull = box(20, 7, 10, 0x9aa0a6);
     hull.position.y = 3.5;
     ext.add(hull);

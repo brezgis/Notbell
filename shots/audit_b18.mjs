@@ -6,7 +6,7 @@ const report = await page.evaluate(() => {
   const N = window.__notbell;
   const th = N.terrainHeight;
   const scene = N.player.group.parent;
-  const walls = [], decks = [], roofs = [];
+  const walls = [], decks = [], roofs = [], supports = [];
   const v = new (N.player.group.position.constructor)();
 
   scene.updateMatrixWorld(true);
@@ -24,6 +24,11 @@ const report = await page.evaluate(() => {
       const rec = { x: +v.x.toFixed(1), y: +v.y.toFixed(2), z: +v.z.toFixed(1), w, h, d };
       if (h >= 1.8 && w >= 2.5 && d >= 2.5) walls.push(rec);
       else if (h <= 0.7 && w * d >= 8) decks.push(rec);
+      supports.push({ x: v.x, z: v.z, top: v.y + h / 2, bot: v.y - h / 2, r: Math.max(w, d) / 2 });
+    } else if (t === 'CylinderGeometry' && p.radialSegments > 4) {
+      // plain cylinders (stilts, piles, plinth posts) count as gap-fillers
+      supports.push({ x: v.x, z: v.z, top: v.y + p.height / 2, bot: v.y - p.height / 2,
+        r: Math.max(p.radiusTop, p.radiusBottom) });
     } else if ((t === 'CylinderGeometry' && p.radialSegments === 3) ||
                (t === 'ConeGeometry' && p.radialSegments === 4)) {
       if (p.radiusTop > 1 || p.radius > 1.5 || (p.height ?? 0) > 1) {
@@ -42,8 +47,15 @@ const report = await page.evaluate(() => {
     const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]]
       .map(([cx, cz]) => th(b.x + cx * b.w / 2, b.z + cz * b.d / 2));
     if (corners.some((c) => c < 0.25)) continue; // over water/shore: piers etc.
-    const gap = bottom - Math.min(...corners);
-    if (gap > 0.18) floaters.push({ ...b, gap: +gap.toFixed(2) });
+    const minTh = Math.min(...corners);
+    const gap = bottom - minTh;
+    if (gap <= 0.18) continue;
+    // a plinth, skirt, or stilt that spans the gap clears the charge
+    const covered = supports.some((s) =>
+      Math.hypot(s.x - b.x, s.z - b.z) < Math.max(b.w, b.d) / 2 + 0.4 &&
+      !(s.top === b.y + b.h / 2 && s.bot === bottom) && // not the wall itself
+      s.top >= bottom - 0.05 && s.bot <= minTh + 0.2);
+    if (!covered) floaters.push({ ...b, gap: +gap.toFixed(2) });
   }
   for (const dk of decks) {
     const top = dk.y + dk.h / 2;
