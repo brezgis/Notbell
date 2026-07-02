@@ -11,7 +11,7 @@ import * as S from './state.js';
 import { buildAnimal } from './animals.js';
 import { jingle, sip, kaching } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
-import { makeWindow, makeRectWindow } from './buildings.js';
+import { makeWindow, makeRectWindow, makeHangingLamp, makeCeilingTube } from './buildings.js';
 import { glowWindow } from './nightglow.js';
 
 // where the MouseBoat is moored — houses.js puts Crumb to bed on its deck
@@ -428,6 +428,9 @@ export function createIsland3() {
     const desk = box(2.6, 1.0, 1.2, 0x6b4a2e);
     desk.position.set(B.x - 4, 0.5, B.z + 1);
     group.add(desk);
+    const deskLamp = makeHangingLamp(0x3f7a45); // library green, low over the good chair
+    deskLamp.position.set(B.x - 4, 2.85, B.z + 1);
+    group.add(deskLamp);
     const openBook = box(0.7, 0.06, 0.5, 0xfff6e8);
     openBook.position.set(B.x - 4, 1.06, B.z + 1);
     openBook.rotation.y = 0.3;
@@ -537,6 +540,9 @@ export function createIsland3() {
     floor.position.set(B.x, -0.2, B.z);
     floor.receiveShadow = true;
     group.add(floor);
+    const clinicTube = makeCeilingTube(3.4); // clinical candor, evenly distributed
+    clinicTube.position.set(B.x + 1, 3.3, B.z + 0.5);
+    group.add(clinicTube);
     for (const [w, h, d, x, y, z] of [
       [12, 4.2, 0.4, B.x, 2.1, B.z - 4.5],
       [0.4, 4.2, 9, B.x - 6, 2.1, B.z],

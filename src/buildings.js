@@ -65,6 +65,49 @@ export function makeRectWindow(w = 0.8, h = 1.3) {
   return g;
 }
 
+// A hanging lamp: warm bulb under a tin shade, on a cord that rises out of
+// frame — dollhouse rooms have no ceilings, but light has to come from
+// somewhere, and "somewhere" is up. The bulb is emissive and always on
+// (interiors are always lit; no new lights — see the budget).
+export function makeHangingLamp(shadeColor = 0xc2703a) {
+  const g = new THREE.Group();
+  const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 4.5, 5), mat(0x3a342c, 0.9));
+  cord.position.y = 2.25;
+  g.add(cord);
+  const shade = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.4, 7, 1, true), mat(shadeColor, 0.6));
+  shade.position.y = 0.1;
+  shade.castShadow = true;
+  g.add(shade);
+  const bulb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.13, 0),
+    new THREE.MeshStandardMaterial({
+      color: 0xfff2cc, emissive: 0xffdfa0, emissiveIntensity: 0.95, flatShading: true,
+    }));
+  bulb.position.y = -0.08;
+  g.add(bulb);
+  return g; // hang at ~3.0 over whatever deserves the light
+}
+
+// The office cousin: a fluorescent tube in a grey tray, hung on thin rods
+// toward an implied ceiling. BULKO, the clinic, and the Labs run on this —
+// light with a work ethic and no warmth to spare.
+export function makeCeilingTube(len = 3.2) {
+  const g = new THREE.Group();
+  const tray = box(len + 0.3, 0.12, 0.5, 0x8a9098);
+  tray.position.y = 0.1;
+  g.add(tray);
+  const tube = new THREE.Mesh(new THREE.BoxGeometry(len, 0.1, 0.3),
+    new THREE.MeshStandardMaterial({
+      color: 0xf4f8fa, emissive: 0xe8f2f6, emissiveIntensity: 0.85, flatShading: true,
+    }));
+  g.add(tube);
+  for (const sx of [-len / 2 + 0.2, len / 2 - 0.2]) {
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.6, 5), mat(0x8a9098, 0.8));
+    rod.position.set(sx, 0.85, 0);
+    g.add(rod);
+  }
+  return g; // hang at ~3.4+
+}
+
 function makeShopExterior() {
   const g = new THREE.Group();
   // a low stone footing — the plaza's edge slopes just enough to show
@@ -482,6 +525,9 @@ export function createBuildings() {
     const counter = box(5, 1.1, 1.2, 0x8a5a3a);
     counter.position.set(B.x, 0.55, B.z - 2.5);
     group.add(counter);
+    const shopLamp = makeHangingLamp(0xd9a440); // shelf-gold, Pip approved the invoice
+    shopLamp.position.set(B.x, 2.85, B.z - 1.6); // over the counter, clear of the wares
+    group.add(shopLamp);
 
     // shelves of mysterious wares
     for (const [sx, y] of [[-5.5, 1.4], [-5.5, 2.4], [5.5, 1.4], [5.5, 2.4]]) {
@@ -551,6 +597,9 @@ export function createBuildings() {
     const counter = box(4.6, 1.1, 1.2, 0x6b4a2e);
     counter.position.set(B.x - 2, 0.55, B.z - 2.8);
     group.add(counter);
+    const cafeLamp = makeHangingLamp(0xc2452c); // low over the bar, Lantern Room warm
+    cafeLamp.position.set(B.x - 2, 2.8, B.z - 2.8);
+    group.add(cafeLamp);
 
     // the espresso rig: tank, tower, tiny important levers
     const machine = new THREE.Group();

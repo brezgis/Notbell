@@ -13,6 +13,7 @@ import { kaching, jingle, sip } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { currentWeather } from './almanac.js';
 import { isNight } from './calendar.js';
+import { makeCeilingTube } from './buildings.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -866,6 +867,12 @@ export function createBulko(player) {
     floor.position.set(B.x, -0.2, B.z);
     floor.receiveShadow = true;
     group.add(floor);
+    // fluorescent honesty, made visible: a row of tubes over the aisles
+    for (const tx of [-9, 0, 9]) {
+      const tube = makeCeilingTube(4.2);
+      tube.position.set(B.x + tx, 4.6, B.z - 1);
+      group.add(tube);
+    }
     for (const [w, d, x, z] of [
       [34, 0.4, B.x, B.z - 11], [0.4, 22, B.x - 17, B.z], [0.4, 22, B.x + 17, B.z],
     ]) {

@@ -12,7 +12,7 @@ import { jingle, doorChime, thud } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { hourNow } from './calendar.js';
 import { MOUSEBOAT } from './island3.js';
-import { makeWindow } from './buildings.js';
+import { makeWindow, makeHangingLamp } from './buildings.js';
 import { currentWeather } from './almanac.js';
 
 function mat(color, rough = 0.9) {
@@ -548,6 +548,9 @@ export function createHouses(animals, obstacles = []) {
     const tLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.9, 6), mat(0x6b4a2e));
     tLeg.position.set(B.x, 0.45, B.z + 0.6);
     group.add(table, tLeg);
+    const lamp = makeHangingLamp(0x5b8bc9); // home is a warm bulb over your own table
+    lamp.position.set(B.x, 2.9, B.z + 0.6);
+    group.add(lamp);
     const winFrame = box(1.8, 1.3, 0.18, 0x8a5a3a);
     winFrame.position.set(B.x - 1.5, 2.2, B.z - 4.85);
     const winSea = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.0),

@@ -17,6 +17,7 @@ import { addIslandInfo } from './fieldguide.js';
 import { HOLIDAY } from './calendar.js';
 import { currentWeather, setSpaceFade } from './almanac.js';
 import { setLaunchNight } from './sky.js';
+import { makeCeilingTube } from './buildings.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -872,6 +873,12 @@ export function createIsland6(player) {
     const room = new THREE.Group();
     const W = 36, D = 24; // x: 282..318, z: 1688..1712
     const wallMat = mat(0xe8e6da, 0.95);
+    // institutional light, institutionally spaced (above the gantry rails)
+    for (const tx of [-8, 6]) {
+      const tube = makeCeilingTube(4.6);
+      tube.position.set(B.x + tx, 4.4, B.z + 2);
+      room.add(tube);
+    }
     const floor = new THREE.Mesh(new THREE.BoxGeometry(W + 2, 0.3, D + 2), mat(0xcfd2cc, 1));
     floor.position.set(B.x, -0.15, B.z);
     floor.receiveShadow = true;
