@@ -180,12 +180,21 @@ export function createNorthline(player, animals = null) {
     group.add(puff);
   }
 
-  // ----- stations: a platform, posts, a green-roofed canopy at each stop
+  // ----- stations: a platform, posts, a green-roofed canopy at each stop.
+  // the deck clears the HIGHEST corner of its footprint — center-sampling
+  // let the grass grow up through the boards (B18/B2) — and wears a skirt
+  // so the raised deck never shows daylight either.
   for (const st of STOPS) {
-    const py = terrainHeight(st.p.x, st.p.z);
+    let py = terrainHeight(st.p.x, st.p.z);
+    for (const [ox, oz] of [[1.8, 2.1], [1.8, -2.1], [-1.8, 2.1], [-1.8, -2.1]]) {
+      py = Math.max(py, terrainHeight(st.p.x + ox, st.p.z + oz));
+    }
     const platform = box(3.6, 0.5, 4.2, 0xb9c0b9);
     platform.position.set(st.p.x, py + 0.25, st.p.z);
     group.add(platform);
+    const skirt = box(3.4, 1.6, 4.0, 0xa8afa8);
+    skirt.position.set(st.p.x, py - 0.55, st.p.z);
+    group.add(skirt);
     for (const o of [-1.5, 1.5]) {
       const post = box(0.14, 2.3, 0.14, 0x8a5a3a);
       post.position.set(st.p.x + o, py + 1.4, st.p.z);

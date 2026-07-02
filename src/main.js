@@ -194,7 +194,7 @@ const island6 = createIsland6(player); // ditto — the Persistent calls at the 
 const moon = createMoon(player); // 384,000 km up and to the right
 const boats = createBoats(player);
 const island5 = createIsland5(player);
-const northline = createNorthline(player);
+const northline = createNorthline(player, animals.animals);
 const volcano = createVolcano();
 const ghost = createGhost(player);
 const beachBall = createBeachBall(player);
@@ -408,7 +408,7 @@ renderer.setAnimationLoop(() => {
 document.getElementById('loading')?.remove();
 
 // debug/testing hook (used by shots/shoot.js)
-window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge };
+window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline };
 
 // a small welcome the first time — and everyone gets to choose who they are
 (async () => {
