@@ -154,6 +154,60 @@ function makeCafeExterior() {
   return g;
 }
 
+// The post office closes the plaza's fourth side. No interior yet — the mail
+// is still being sorted (C8) — but the building stands, patient as a mailbox.
+function makePostOfficeExterior() {
+  const g = new THREE.Group();
+  const walls = box(6, 3.1, 5, 0xf0e2c8);
+  walls.userData.occlude = true;
+  walls.position.y = 1.55;
+  g.add(walls);
+  // prism ridge roof in postal blue (thetaStart π/2 BEFORE rotateZ — the gotcha)
+  const roofGeo = new THREE.CylinderGeometry(2.1, 2.1, 6.6, 3, 1, false, Math.PI / 2);
+  roofGeo.rotateZ(Math.PI / 2);
+  const roof = new THREE.Mesh(roofGeo, mat(0x4a6a9c));
+  roof.scale.y = 0.75;
+  roof.position.y = 3.85;
+  roof.castShadow = true;
+  g.add(roof);
+  const door = makeDoor(0x5a3d22);
+  door.position.z = 2.51;
+  g.add(door);
+  for (const sx of [-1, 1]) {
+    const w = makeWindow();
+    w.position.set(sx * 1.9, 2.0, 2.5);
+    g.add(w);
+  }
+  // the sign is a bottle with a letter rolled inside — how mail has always
+  // arrived here; the post office is just the part where somebody admits it
+  const bottle = new THREE.Group();
+  const glassB = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.85, 7), mat(0x9fd4d4, 0.3));
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.3, 7), mat(0x9fd4d4, 0.3));
+  neck.position.y = 0.55;
+  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.14, 6), mat(0xb08a5a, 0.8));
+  cork.position.y = 0.75;
+  const letter = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.5, 6), mat(0xfff6e0, 0.9));
+  bottle.add(glassB, neck, cork, letter);
+  bottle.rotation.z = 1.15; // adrift, as received
+  bottle.position.set(0, 3.55, 2.62);
+  bottle.traverse((o) => { o.castShadow = true; });
+  g.add(bottle);
+  // the pillar box: BULKO-buoy red, slot like a buttonhole
+  const pillar = new THREE.Group();
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 1.5, 8), mat(0xb0453a));
+  drum.position.y = 0.75;
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.35, 8), mat(0x8f3831));
+  cap.position.y = 1.65;
+  const slot = box(0.5, 0.08, 0.06, 0x2a2a2a);
+  slot.position.set(0, 1.25, 0.42);
+  pillar.add(drum, cap, slot);
+  pillar.position.set(1.9, 0, 3.4);
+  pillar.traverse((o) => { o.castShadow = true; });
+  g.add(pillar);
+  g.rotation.y = Math.PI / 2; // the door greets the well, not the sea
+  return g;
+}
+
 function makeMuseumExterior() {
   const g = new THREE.Group();
   const walls = box(9, 3.6, 6.5, 0xcfd6cf);
@@ -333,12 +387,14 @@ export function createBuildings() {
     shop: { x: C.x - 8, z: C.z - 3.5, w: 7, d: 6 },
     cafe: { x: C.x + 8, z: C.z - 3.5, w: 6.4, d: 5.6 },
     museum: { x: C.x, z: C.z - 7.5, w: 9, d: 6.5 },
+    post: { x: C.x - 9, z: C.z + 6, w: 6, d: 5 }, // the plaza's fourth side
   };
 
   const exteriors = {
     shop: makeShopExterior(),
     cafe: makeCafeExterior(),
     museum: makeMuseumExterior(),
+    post: makePostOfficeExterior(),
   };
 
   for (const [name, spot] of Object.entries(spots)) {
@@ -348,6 +404,21 @@ export function createBuildings() {
     group.add(ext);
     zones.addBlocker(spot.x, spot.z, Math.max(spot.w, spot.d) / 2 + 0.9);
   }
+
+  // the post office isn't open yet — but the notice is, and so is the slot
+  register({
+    pos: new THREE.Vector3(spots.post.x + 2.6, 0, spots.post.z), r: 2.4,
+    label: 'read the notice',
+    use: () => ui.say([
+      'A card in the window, in careful pawwriting: “NOTBELL POST — OPENING SOON. The mail has been arriving for years; we felt it was time somebody sorted it.”',
+      'Smaller, underneath: “Bottle deliveries continue as usual. Thank the tide.”',
+    ]),
+  });
+  register({
+    pos: new THREE.Vector3(spots.post.x + 3.4, 0, spots.post.z - 1.9), r: 2.0,
+    label: 'inspect the pillar box',
+    use: () => ui.say('A red pillar box with a slot exactly the width of a folded letter, or one very determined button. The paint is new. The idea is older than the paint.'),
+  });
 
   // café smoke drifts up and fades, forever
   const puffs = exteriors.cafe.userData.puffs;
