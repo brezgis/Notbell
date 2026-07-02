@@ -24,6 +24,7 @@ import { createGhost } from './ghost.js';
 import { createBeachBall } from './beachball.js';
 import { createBulko } from './bulko.js';
 import { createNorthline } from './northline.js';
+import { createFarline } from './farline.js';
 import { createIsland5 } from './island5.js';
 import { createIsland6 } from './island6.js';
 import { createFold } from './fold.js';
@@ -198,6 +199,7 @@ const moon = createMoon(player); // 384,000 km up and to the right
 const boats = createBoats(player);
 const island5 = createIsland5(player);
 const northline = createNorthline(player, animals.animals);
+const farline = createFarline(player, animals.animals);
 const volcano = createVolcano();
 const ghost = createGhost(player);
 const beachBall = createBeachBall(player);
@@ -217,7 +219,7 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, northline.group, island6.group, fold.group, farther.group, moon.group
+  island5.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group
 );
 
 camera.position.copy(player.group.position).add(camOffset);
@@ -359,6 +361,7 @@ renderer.setAnimationLoop(() => {
     texas.update(dt, t, playerPos);
     island5.update(dt, t, playerPos);
     northline.update(dt, t);
+    farline.update(dt, t);
   }
   bulko.update(dt, t, playerPos);
   island6.update(dt, t, playerPos); // gates itself by zone (labs life is indoors too)
@@ -418,7 +421,7 @@ renderer.setAnimationLoop(() => {
 document.getElementById('loading')?.remove();
 
 // debug/testing hook (used by shots/shoot.js)
-window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline };
+window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline, farline };
 
 // a small welcome the first time — and everyone gets to choose who they are
 (async () => {

@@ -24,8 +24,8 @@ foundation  terrain   state   ui   interact   zones
 world kit   animals  nature  art  hats  nightglow  almanac  sky  fieldguide
 features    buildings houses cave fishing digging tidepools player ocean
             bridge island2 island3 island5 island6 fold farther bulko moon
-            boats northline volcano texas ghost beachball oceanlife ambient
-            villagers multiplayer settings
+            boats northline farline volcano texas ghost beachball oceanlife
+            ambient villagers multiplayer settings
 conductor   main.js
 ```
 

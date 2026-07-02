@@ -152,6 +152,11 @@ none. New villagers need a hat decision (including "no").
   come back Thursday — the tide usually brings one in." Sells marshmallows
   (the campfire toasts them), the enamel mug, and the postcard. The third
   bean is never identified. Keep it that way.
+- **The Farther Line** (`farline.js`) — the third railway, salt-teal
+  livery, Far Isle south shore → Farther Isle, over open water. An engine
+  on EACH end (the B2 two-engine doctrine, first implemented here): no
+  turntable, no turn-around — the one in front pulls, the one behind takes
+  half the credit. Never give it a turntable.
 
 ## Other future hooks on the shelf
 
