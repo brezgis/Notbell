@@ -628,6 +628,85 @@ export function createHouses(animals, obstacles = []) {
       use: () => ui.say('The window faces the sea. The sea, as far as you can tell, faces back.'),
     });
 
+    // the wardrobe: upright, patient, and deeper than it looks.
+    // pockets go in, pockets come out; the wardrobe holds the difference.
+    {
+      const W = new THREE.Group();
+      const bodyW = box(1.5, 2.5, 0.7, 0x8a5a3a);
+      bodyW.position.y = 1.35;
+      W.add(bodyW);
+      const cornice = box(1.64, 0.14, 0.8, 0x6b4a2e);
+      cornice.position.y = 2.66;
+      W.add(cornice);
+      for (const sx of [-0.37, 0.37]) {
+        const doorW = box(0.66, 2.2, 0.06, 0x96703f);
+        doorW.position.set(sx, 1.32, 0.37);
+        W.add(doorW);
+        const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), mat(0xf2cf5b, 0.4));
+        knob.position.set(sx - Math.sign(sx) * 0.24, 1.32, 0.42);
+        W.add(knob);
+      }
+      for (const [fx, fz] of [[-0.6, 0.25], [0.6, 0.25], [-0.6, -0.25], [0.6, -0.25]]) {
+        const foot = box(0.12, 0.2, 0.12, 0x6b4a2e);
+        foot.position.set(fx, 0.1, fz);
+        W.add(foot);
+      }
+      W.rotation.y = -Math.PI / 2; // doors face into the room
+      W.position.set(B.x + 5.35, 0, B.z + 1.4);
+      group.add(W);
+
+      const stowMenu = async () => {
+        const stock = Object.entries(S.state.inv).filter(([, n]) => n > 0);
+        if (!stock.length) return wardrobeMenu();
+        const choice = await ui.ask('Pockets, meet wardrobe.', [
+          ...stock.map(([id, n]) => ({
+            label: `${ITEMS[id]?.emoji ?? '❔'} ${ITEMS[id]?.name ?? id} ×${n}`,
+            value: id,
+          })),
+          { label: 'Done', value: null },
+        ]);
+        if (!choice) return wardrobeMenu();
+        const n = S.countItem(choice);
+        S.stow(choice, n);
+        ui.toast(`Put away ${n} × <b>${ITEMS[choice]?.name ?? choice}</b>. The wardrobe approves of tidy pockets.`, '🗄️');
+        ui.updateHUD();
+        return stowMenu();
+      };
+      const unstowMenu = async () => {
+        const stored = Object.entries(S.state.storage).filter(([, n]) => n > 0);
+        if (!stored.length) return wardrobeMenu();
+        const choice = await ui.ask('The wardrobe opens with a small ceremonial creak.', [
+          ...stored.map(([id, n]) => ({
+            label: `${ITEMS[id]?.emoji ?? '❔'} ${ITEMS[id]?.name ?? id} ×${n}`,
+            value: id,
+          })),
+          { label: 'Done', value: null },
+        ]);
+        if (!choice) return wardrobeMenu();
+        const n = S.state.storage[choice] || 0;
+        S.unstow(choice, n);
+        ui.toast(`Took out ${n} × <b>${ITEMS[choice]?.name ?? choice}</b>. Everything kept beautifully.`, '🗄️');
+        ui.updateHUD();
+        return unstowMenu();
+      };
+      const wardrobeMenu = async () => {
+        const held = Object.values(S.state.inv).reduce((a, b) => a + b, 0);
+        const kept = Object.values(S.state.storage).reduce((a, b) => a + b, 0);
+        const choice = await ui.ask('The wardrobe stands ready. It has survived winters, movings-in, and one decorative-gourd phase.', [
+          { label: '📥 Put something away', value: 'stow', hint: `${held} in pockets`, disabled: !held },
+          { label: '📤 Take something out', value: 'unstow', hint: `${kept} kept`, disabled: !kept },
+          { label: 'Close it gently', value: null },
+        ]);
+        if (choice === 'stow') return stowMenu();
+        if (choice === 'unstow') return unstowMenu();
+      };
+      register({
+        pos: new THREE.Vector3(B.x + 4.5, 0, B.z + 1.4), r: 1.7, zone: 'home',
+        label: 'open the wardrobe',
+        use: wardrobeMenu,
+      });
+    }
+
     const room = collectInteriorRoot(group, roomStart);
     zones.registerInterior('home', {
       root: room,
@@ -636,6 +715,7 @@ export function createHouses(animals, obstacles = []) {
       blockers: [
         { x: B.x - 4.6, z: B.z - 3.2, r: 1.5 }, // bed
         { x: B.x, z: B.z + 0.6, r: 0.8 },       // table
+        { x: B.x + 5.35, z: B.z + 1.4, r: 0.95 }, // the wardrobe
       ],
       spawn: { x: B.x, z: B.z + 3.8, rotY: Math.PI },
       lighting: {

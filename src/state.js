@@ -8,6 +8,7 @@ const SAVE_KEY = 'notbell-isle-save-v1';
 export const state = {
   buttons: 100,
   inv: {},            // itemId -> count
+  storage: {},        // itemId -> count, put away in the cottage wardrobe
   tools: { rod: false, net: false, shovel: false },
   donations: [],      // itemIds donated to the museum (unique)
   bottlesRead: 0,     // how many of Tansy's letters have been found
@@ -68,6 +69,7 @@ export function load() {
         tools: { ...state.tools, ...(data.tools || {}) },
         flags: { ...(data.flags || {}) },
         inv: { ...(data.inv || {}) },
+        storage: { ...(data.storage || {}) },
         donations: Array.isArray(data.donations) ? data.donations : [],
         hats: Array.isArray(data.hats) ? data.hats : [],
         garden: { ...(data.garden || {}) },
@@ -103,6 +105,26 @@ export function removeItem(id, n = 1) {
 
 export function countItem(id) {
   return state.inv[id] || 0;
+}
+
+// the cottage wardrobe: pockets <-> storage. no re-tracking in `seen` —
+// taking your own sea bass back out of a drawer is not a second catch.
+export function stow(id, n = 1) {
+  if (!validItemCount(n) || (state.inv[id] || 0) < n) return false;
+  state.inv[id] -= n;
+  if (state.inv[id] <= 0) delete state.inv[id];
+  state.storage[id] = (state.storage[id] || 0) + n;
+  save();
+  return true;
+}
+
+export function unstow(id, n = 1) {
+  if (!validItemCount(n) || (state.storage[id] || 0) < n) return false;
+  state.storage[id] -= n;
+  if (state.storage[id] <= 0) delete state.storage[id];
+  state.inv[id] = (state.inv[id] || 0) + n;
+  save();
+  return true;
 }
 
 export function earn(n) {
