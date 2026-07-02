@@ -34,6 +34,11 @@ export const ISLAND4 = { x: 8, z: 96, r: 22 };
 // (room to grow westward; the Labs have plans. the Labs always have plans.)
 export const ISLAND6 = { x: -150, z: -58, r: 38 };
 
+// and past the Labs, past the chart entirely: the west lobe, where the
+// plain folk farm. they were offered a spot on the chart, very politely.
+// they declined, very politely. everyone waves.
+export const ISLAND6_WEST = { x: -194, z: -48, r: 19 };
+
 const TERRACE = 2.4; // height of each AC-style terrace step
 
 function maskAt(x, z, cx, cz, R, wobbleAmp) {
@@ -54,7 +59,8 @@ function islandMask(x, z) {
     maskAt(x, z, ISLAND5_HAND[0].x, ISLAND5_HAND[0].z, ISLAND5_HAND[0].r, 4),
     maskAt(x, z, ISLAND5_HAND[1].x, ISLAND5_HAND[1].z, ISLAND5_HAND[1].r, 4),
     maskAt(x, z, ISLAND5_SOUTH.x, ISLAND5_SOUTH.z, ISLAND5_SOUTH.r, 7),
-    maskAt(x, z, ISLAND6.x, ISLAND6.z, ISLAND6.r, 9)
+    maskAt(x, z, ISLAND6.x, ISLAND6.z, ISLAND6.r, 9),
+    maskAt(x, z, ISLAND6_WEST.x, ISLAND6_WEST.z, ISLAND6_WEST.r, 7)
   );
 }
 
@@ -232,6 +238,12 @@ const bigbox = { x: ISLAND4.x, z: ISLAND4.z, r: 17, h: 0.8 };
 const labsYard = { x: -124, z: -58, r: 14, h: 1.6 };
 const labsPad = { x: -134, z: -78, r: 10, h: 1.6 };
 
+// the Fold: a green, a field, and a small hill of well-kept stones.
+// plain folk like their ground the way the Cod made it — mostly.
+const steading = { x: -193, z: -50, r: 12, h: 1.5 };
+const foldFields = { x: -180, z: -64, r: 9, h: 1.3 };
+const kirkyard = { x: -201, z: -41, r: 6, h: 2.2 };
+
 // Grove Isle's three clearings: the manor court, the springs, the orchard
 const manor = scanAround(ISLAND5.x, ISLAND5.z, (x, z) => {
   const avg = flatEnough(x, z, 7, 1.0, 6, 2.8);
@@ -261,13 +273,13 @@ const town3 = scanAround(ISLAND3.x, ISLAND3.z, (x, z) => {
 // the cave mound's dark opening faces the village so you approach it head-on
 cave.facing = Math.atan2(village.x - cave.x, village.z - cave.z);
 
-export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad };
+export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard };
 
 // Player begins at the south edge of the plaza, looking at the village.
 export const PLAYER_SPAWN = { x: village.x, z: village.z + 9 };
 
 export function clearOfSites(x, z, margin = 2) {
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard]) {
     if (Math.hypot(x - s.x, z - s.z) < s.r + margin) return false;
   }
   return true;
@@ -277,7 +289,7 @@ export function clearOfSites(x, z, margin = 2) {
 // so nothing needs raycasts to stand on the ground.
 export function terrainHeight(x, z) {
   let h = baseHeight(x, z);
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard]) {
     const d = Math.hypot(x - s.x, z - s.z);
     if (d < s.r) {
       const w = smoothstep(s.r, s.r * 0.45, d);
@@ -321,6 +333,7 @@ const COL_MOSS_A = new THREE.Color(0x4f8a52);
 const COL_MOSS_B = new THREE.Color(0x5e975e);
 const COL_ASPHALT = new THREE.Color(0x595a5e);
 const COL_CONCRETE = new THREE.Color(0xb6b1a4);
+const COL_TILLED = new THREE.Color(0x9a7b52);
 
 export function createTerrain() {
   // wider than tall: the west got longer when the Labs moved in
@@ -368,6 +381,8 @@ export function createTerrain() {
     } else if (Math.hypot(va.x - labsYard.x, va.z - labsYard.z) < labsYard.r - 1 ||
                Math.hypot(va.x - labsPad.x, va.z - labsPad.z) < labsPad.r - 1) {
       color.copy(COL_CONCRETE); // poured by the Boring Department, proudly
+    } else if (Math.hypot(va.x - foldFields.x, va.z - foldFields.z) < foldFields.r - 1) {
+      color.copy(COL_TILLED); // turned earth, in rows, on purpose
     } else if (Math.hypot(va.x - ISLAND3.x, va.z - ISLAND3.z) < ISLAND3.r + 6) {
       const patch = vnoise(va.x * 0.6 + 11, va.z * 0.6 - 5) > 0.5;
       color.copy(patch ? COL_MOSS_A : COL_MOSS_B);

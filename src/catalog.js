@@ -276,6 +276,19 @@ export const ITEMS = {
     kind: 'keepsake', name: 'A Small Parcel', emoji: '🎁', price: 0,
     blurb: 'Addressed in careful pawwriting. It is not for you, and it is not heavy, and you may not shake it.',
   },
+  // the Fold's preserves — the Cod provides; Mercy provides lids
+  preserves_goose: {
+    kind: 'keepsake', name: 'Gooseberry Preserves', emoji: '🫙', price: 0,
+    blurb: 'Sharp, then sweet, then gone. The label is hand-lettered and slightly proud of it.',
+  },
+  preserves_carrot: {
+    kind: 'keepsake', name: 'Carrot Marmalade', emoji: '🥕', price: 0,
+    blurb: 'Sweeter than a carrot has any business being. Patience grew it. Mercy jarred it. The Cod provided.',
+  },
+  preserves_plum: {
+    kind: 'keepsake', name: 'Sea-Plum Jam', emoji: '🫐', price: 0,
+    blurb: 'Plums from the hedge by the west shore. Tastes faintly of weather.',
+  },
   lightseed: {
     kind: 'keepsake', name: 'Lightseed', emoji: '🌟', price: 0,
     blurb: 'A warm coal of the Old Light, dozing in your pocket. It guided a thousand boats home. It would like to try going the other way, once.',

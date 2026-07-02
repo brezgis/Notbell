@@ -100,6 +100,7 @@ const ZONE_PLACES = {
   labs: '🚀 Notbell Labs',
   moon: '🌙 The Moon',
   post: '📮 Notbell Post',
+  kirk: '🐟 The House of Cod',
 };
 
 export function placeName(zone, x, z) {

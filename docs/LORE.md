@@ -96,6 +96,14 @@ island files):
   rotated daily, democratically), **Tracks** (ten-thousand-year spirals),
   **Magnet** (lends the dust-sea rod), **Comet** (does the perimeter; gives
   `gold_star` only if you've met Miss Pinion).
+- **The Fold** (`fold.js`) — the plain folk of the far shore, west of the
+  Labs, off the chart by request. Sheep. Kind, unbothered, technology
+  politely declined: **Elder Amos** (House of Cod; "the Cod provides,
+  mostly on Tuesdays"), **Mercy** (preserves stall; the Cod provides, she
+  provides lids), **Patience** (fields; named for the job), **Obed** (barn;
+  has waved at the same Labs fellow every morning for eleven years),
+  **Small Mercy** (lamb; holds with rockets a LITTLE, don't tell). Plain
+  hats and bonnets are their uniform; the wool is their own.
 
 Wanderers (roster + voices + friendships in `src/villagers.js` — 16 as of
 2026-07): Clover, Biscuit, Saffron, **Howell** (hatless; a wolf), Bramble,
@@ -123,6 +131,15 @@ none. New villagers need a hat decision (including "no").
 - **The moon** — craters named after feelings; the archipelago hangs
   overhead; rovers moved there *if they wanted to*. Consent is the
   kindergarten's whole theme.
+- **The House of Cod** (zone `kirk`) — the Fold's plain meetinghouse. No
+  steeple, no bell, and no bell-longing either: a carved wooden cod hangs
+  from the rafters and services are whenever the weather says so. **This is
+  a parallel lore lane** — it is NOT the Listener faith, it is not in
+  dialogue with the Listener faith, and the Fold has no opinion about the
+  bell. Do not give them one. (Sharing an island with the Labs is not
+  strange to anybody; both sides wave. That's the whole treaty.)
+- **The Fold stays off the chart** — its island info is registered keyless
+  on purpose (the HUD names it, the chart never will). They asked politely.
 
 ## Other future hooks on the shelf
 

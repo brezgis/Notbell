@@ -26,6 +26,7 @@ import { createBulko } from './bulko.js';
 import { createNorthline } from './northline.js';
 import { createIsland5 } from './island5.js';
 import { createIsland6 } from './island6.js';
+import { createFold } from './fold.js';
 import { createMoon } from './moon.js';
 import { wireHatKey } from './hats.js';
 import { initFieldGuide, markVisited, placeName } from './fieldguide.js';
@@ -201,6 +202,7 @@ const beachBall = createBeachBall(player);
 const fishing = createFishing(player);
 const digging = createDigging();
 const tidePools = createTidePools();
+const fold = createFold(); // last of the creators: the Fold arrived late and touches nothing
 wireHatKey(player.group);
 initFieldGuide(player);
 initControls(); // thumbsticks for the touch-blessed; a no-op for everyone else
@@ -213,7 +215,7 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, northline.group, island6.group, moon.group
+  island5.group, northline.group, island6.group, fold.group, moon.group
 );
 
 camera.position.copy(player.group.position).add(camOffset);
@@ -358,6 +360,7 @@ renderer.setAnimationLoop(() => {
   }
   bulko.update(dt, t, playerPos);
   island6.update(dt, t, playerPos); // gates itself by zone (labs life is indoors too)
+  fold.update(dt, t, playerPos); // ditto — the kirk keeps its own hours
   if (zone === 'moon') moon.update(dt, t, playerPos);
   if (zone === 'cave') cave.update(dt, t);
   ghost.update(dt, t, playerPos); // walls are a rumor
@@ -379,7 +382,7 @@ renderer.setAnimationLoop(() => {
       cafe: 'cafe', cave: 'cave', church: 'church', museum: 'museum',
       shop: 'shop', grocery: 'shop', bulko: 'bulko', manor: 'manor',
       manor_up: 'manor', cellar: 'cave', moon: 'night', labs: 'shop',
-      post: 'shop',
+      post: 'shop', kirk: 'church',
     };
     setMood(MOODS[zone] ?? (zone === 'island' || zone === 'sea'
       ? (HOLIDAY ? 'holiday' : currentWeather() !== 'clear' ? 'rain' : isNight() ? 'night' : 'day')

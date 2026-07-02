@@ -23,9 +23,9 @@ leaves      utils  audio  calendar  catalog  controls      (zero sibling imports
 foundation  terrain   state   ui   interact   zones
 world kit   animals  nature  art  hats  nightglow  almanac  sky  fieldguide
 features    buildings houses cave fishing digging tidepools player ocean
-            bridge island2 island3 island5 island6 bulko moon boats northline
-            volcano texas ghost beachball oceanlife ambient villagers
-            multiplayer settings
+            bridge island2 island3 island5 island6 fold bulko moon boats
+            northline volcano texas ghost beachball oceanlife ambient
+            villagers multiplayer settings
 conductor   main.js
 ```
 

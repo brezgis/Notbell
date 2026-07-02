@@ -3,7 +3,7 @@
 // built far away from the island and you teleport between them behind a
 // fade; each zone brings its own lighting mood.
 
-import { terrainHeight, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND4, ISLAND5, ISLAND5_HAND, ISLAND5_SOUTH, ISLAND6, TEXAS, VOLCANO, WATER_Y } from './terrain.js';
+import { terrainHeight, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND4, ISLAND5, ISLAND5_HAND, ISLAND5_SOUTH, ISLAND6, ISLAND6_WEST, TEXAS, VOLCANO, WATER_Y } from './terrain.js';
 import { fadeSwap } from './ui.js';
 import { doorChime } from './audio.js';
 
@@ -49,7 +49,8 @@ const zones = {
       const onGrove = Math.hypot(x - ISLAND5.x, z - ISLAND5.z) < ISLAND5.r + 10 ||
         Math.hypot(x - ISLAND5_SOUTH.x, z - ISLAND5_SOUTH.z) < ISLAND5_SOUTH.r + 10 ||
         ISLAND5_HAND.some((h) => Math.hypot(x - h.x, z - h.z) < h.r + 8);
-      const onLabs = Math.hypot(x - ISLAND6.x, z - ISLAND6.z) < ISLAND6.r + 12;
+      const onLabs = Math.hypot(x - ISLAND6.x, z - ISLAND6.z) < ISLAND6.r + 12 ||
+        Math.hypot(x - ISLAND6_WEST.x, z - ISLAND6_WEST.z) < ISLAND6_WEST.r + 12;
       if (!onHome && !onFar && !onNorth && !onVolcano && !onTexas && !onBulko && !onGrove && !onLabs) return false;
       for (const b of blockers) {
         if (Math.hypot(x - b.x, z - b.z) < b.r) return false;

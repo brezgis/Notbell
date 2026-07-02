@@ -461,6 +461,26 @@ export function buildAnimal(kind, colors = {}) {
     tailC.rotation.x = -0.4;
     g.add(tailC);
     g.scale.setScalar(1.15);
+  } else if (kind === 'sheep') {
+    // the plain folk wear wool. the wool is their own. it explains itself.
+    const woolMat = mat(colors.wool ?? 0xf1ead9);
+    parts.body.material = woolMat;
+    parts.body.scale.set(1.14, 1.02, 1.32);
+    const crown = new THREE.Mesh(ico(0.3), woolMat); // fleece cap, sat square
+    crown.scale.set(1.2, 0.6, 1.05);
+    crown.position.set(0, 1.5, 0.24);
+    g.add(crown);
+    const earGeoS = new THREE.CapsuleGeometry(0.075, 0.26, 4, 6);
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(earGeoS, headMat);
+      ear.position.set(sx * 0.4, 1.24, 0.3);
+      ear.rotation.z = sx * 1.35; // ears droop, agreeably
+      g.add(ear);
+    }
+    const tailS = new THREE.Mesh(ico(0.12), woolMat);
+    tailS.position.set(0, 0.74, -0.7);
+    g.add(tailS);
+    for (const leg of parts.legs) leg.material = headMat; // neat dark stockings
   } else if (kind === 'mouse') {
     for (const sx of [-1, 1]) {
       const earM = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.05, 10), headMat);
