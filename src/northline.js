@@ -30,7 +30,7 @@ function marchToWater(from, toward, start = 2) {
   return { x: from.x + ux * (t - 2), z: from.z + uz * (t - 2) };
 }
 
-export function createNorthline(player) {
+export function createNorthline(player, animals = null) {
   const group = new THREE.Group();
 
   // ----- the route: Notbell's SE shore, hopping BOTH panhandle islets,
@@ -226,18 +226,188 @@ export function createNorthline(player) {
   }
   let legDur = 1;
 
+  // ----- riders and queues: villagers wait on land, then take the +z bench
+  const animalList = Array.isArray(animals) ? animals : [];
+  const waiting = STOPS.map(() => []); // { a, here, destination, origin }
+  const riders = []; // { a, car, destination, origin }
+  const commuters = []; // visiting villagers: { a, stop, homeStop, stayTimer, origRange }
+  const seatWorld = new THREE.Vector3();
+  let playerWaiting = null;
+  let recruitT = 6;
+
+  function animalPool() {
+    if (animalList.length) return animalList;
+    if (typeof window !== 'undefined') return window.__notbell?.animals?.animals ?? animalList;
+    return animalList;
+  }
+
+  function dockedAt() {
+    return phase === 'docked' ? stopIdx : null;
+  }
+
+  function safeLanding(idx) {
+    const st = STOPS[idx];
+    const dx = st.toward.x - st.p.x, dz = st.toward.z - st.p.z;
+    const dl = Math.hypot(dx, dz) || 1;
+    for (let d = 0; d <= 14; d += 0.8) {
+      const x = st.p.x + (dx / dl) * d, z = st.p.z + (dz / dl) * d;
+      if (terrainHeight(x, z) > 0.2 && zones.islandCanWalk(x, z)) return { x, z };
+    }
+    return { x: st.p.x, z: st.p.z };
+  }
+
+  function stopRange(idx) {
+    const spot = safeLanding(idx);
+    const st = STOPS[idx];
+    const dx = st.toward.x - spot.x, dz = st.toward.z - spot.z;
+    const dl = Math.hypot(dx, dz) || 1;
+    for (const d of [4, 3, 2, 1, 0]) {
+      const x = spot.x + (dx / dl) * d, z = spot.z + (dz / dl) * d;
+      if (terrainHeight(x, z) > 0.2 && zones.islandCanWalk(x, z)) return { x, z, R: 16 };
+    }
+    return { x: spot.x, z: spot.z, R: 16 };
+  }
+
+  function queueSpot(idx, slot) {
+    const base = safeLanding(idx);
+    const h = headingAt(STOPS[idx].s);
+    const ax = Math.sin(h), az = Math.cos(h);
+    const sx = Math.cos(h), sz = -Math.sin(h);
+    const side = slot % 2 === 0 ? -1 : 1;
+    const candidates = [
+      { x: base.x + sx * side * 1.1 + ax * 0.5, z: base.z + sz * side * 1.1 + az * 0.5 },
+      { x: base.x + sx * side * 0.7 - ax * 0.7, z: base.z + sz * side * 0.7 - az * 0.7 },
+      { x: base.x + ax * (slot ? 1.1 : -0.4), z: base.z + az * (slot ? 1.1 : -0.4) },
+      base,
+    ];
+    return candidates.find((p) => terrainHeight(p.x, p.z) > 0.2 && zones.islandCanWalk(p.x, p.z)) ?? base;
+  }
+
+  function freeVillagerCar() {
+    for (let car = 0; car < cars.length; car++) {
+      if (!riders.some((r) => r.car === car)) return car;
+    }
+    return null;
+  }
+
+  function seatRiders() {
+    train.updateMatrixWorld(true);
+    for (const r of riders) {
+      seatWorld.set(0, 1.45, 0.45).applyMatrix4(cars[r.car].matrixWorld);
+      r.a.g.position.copy(seatWorld);
+      r.a.g.rotation.y = train.rotation.y;
+    }
+  }
+
+  function destinationFrom(idx, a, explicitDestination = null) {
+    if (explicitDestination !== null) return explicitDestination;
+    const commuter = commuters.find((c) => c.a === a);
+    if (commuter) return commuter.homeStop;
+    if (STOPS.length <= 1) return idx;
+    let destination = idx;
+    while (destination === idx) destination = Math.floor(Math.random() * STOPS.length);
+    return destination;
+  }
+
+  function isWaiting(a) {
+    return waiting.some((q) => q.some((w) => w.a === a));
+  }
+
+  function tryBoardWaiter(idx, entry) {
+    if (dockedAt() !== idx || !entry.here || entry.a.riding) return;
+    const car = freeVillagerCar();
+    if (car === null) return;
+    const q = waiting[idx];
+    q.splice(q.indexOf(entry), 1);
+    entry.a.riding = true;
+    entry.a.away = true;
+    riders.push({ a: entry.a, car, destination: entry.destination, origin: entry.origin });
+    seatRiders();
+  }
+
+  function enqueue(idx, a, destination = null) {
+    if (idx < 0 || idx >= STOPS.length || !a || isWaiting(a)) return false;
+    const q = waiting[idx];
+    if (q.length >= 2) return false;
+    const entry = { a, here: false, destination: destinationFrom(idx, a, destination), origin: idx };
+    q.push(entry);
+    const spot = queueSpot(idx, q.length - 1);
+    a.goal = {
+      x: spot.x,
+      z: spot.z,
+      r: 1.1,
+      done: () => { entry.here = true; tryBoardWaiter(idx, entry); },
+      fail: () => { const i = q.indexOf(entry); if (i >= 0) q.splice(i, 1); },
+    };
+    return true;
+  }
+
+  function recruit() {
+    for (let idx = 0; idx < STOPS.length; idx++) {
+      if (waiting[idx].length >= 2 || Math.random() > 0.35) continue;
+      const spot = safeLanding(idx);
+      const nearby = animalPool().filter((a) =>
+        a.identity && !a.home && !a.errand && !a.meeting && !a.riding &&
+        !a.away && !a.goal && !a.swims &&
+        Math.hypot(a.g.position.x - spot.x, a.g.position.z - spot.z) < 30);
+      if (!nearby.length) continue;
+      enqueue(idx, nearby[Math.floor(Math.random() * nearby.length)]);
+    }
+  }
+
+  function boardWaiters(idx) {
+    for (const entry of [...waiting[idx]]) tryBoardWaiter(idx, entry);
+    if (playerWaiting !== idx) return;
+    playerWaiting = null;
+    const st = STOPS[idx];
+    const pp = player.group.position;
+    if (!player.riding && !riding && Math.hypot(pp.x - st.p.x, pp.z - st.p.z) < 8) {
+      riding = true;
+      player.riding = true;
+      timer = Math.min(timer, 2);
+      placeTrain(sNow);
+      ui.toast('The Grove Line kept your place. All aboard.', '🚂');
+    }
+  }
+
+  function arriveVillagers(idx) {
+    const spot = safeLanding(idx);
+    for (const r of [...riders]) {
+      if (r.destination !== idx) continue;
+      riders.splice(riders.indexOf(r), 1);
+      let ox = rand(-0.8, 0.8), oz = rand(-0.8, 0.8);
+      if (!zones.islandCanWalk(spot.x + ox, spot.z + oz)) { ox = 0; oz = 0; }
+      r.a.g.position.set(spot.x + ox, terrainHeight(spot.x + ox, spot.z + oz) + 0.5, spot.z + oz);
+      r.a.riding = false;
+      const existing = commuters.find((c) => c.a === r.a);
+      if (existing && idx === existing.homeStop) {
+        r.a.range = existing.origRange;
+        r.a.away = r.a.home || !!r.a.errand;
+        commuters.splice(commuters.indexOf(existing), 1);
+      } else if (!existing) {
+        commuters.push({ a: r.a, stop: idx, homeStop: r.origin, stayTimer: rand(240, 480), origRange: r.a.range });
+        r.a.range = stopRange(idx);
+        r.a.away = false;
+        r.a.state = 'idle';
+        r.a.timer = rand(1, 3);
+      }
+      const center = stopRange(idx);
+      const wd = Math.hypot(center.x - spot.x, center.z - spot.z) || 1;
+      r.a.goal = {
+        x: spot.x + ((center.x - spot.x) / wd) * 4,
+        z: spot.z + ((center.z - spot.z) / wd) * 4,
+        r: 1.2,
+      };
+    }
+    boardWaiters(idx);
+  }
+
   function disembark() {
     if (!riding) return;
     riding = false;
     player.riding = false;
     const st = STOPS[stopIdx];
-    const dx = st.toward.x - st.p.x, dz = st.toward.z - st.p.z;
-    const dl = Math.hypot(dx, dz) || 1;
-    let lx = st.p.x, lz = st.p.z;
-    for (let d = 0; d <= 14; d += 0.8) {
-      const x = st.p.x + (dx / dl) * d, z = st.p.z + (dz / dl) * d;
-      if (terrainHeight(x, z) > 0.2 && zones.islandCanWalk(x, z)) { lx = x; lz = z; break; }
-    }
+    const { x: lx, z: lz } = safeLanding(stopIdx);
     player.group.position.set(lx, terrainHeight(lx, lz) + 0.5, lz);
     ui.toast(`${st.name}. The engine catches its breath behind you.`, '🚂');
   }
@@ -247,12 +417,19 @@ export function createNorthline(player) {
       pos: new THREE.Vector3(st.p.x, 0, st.p.z), r: 3,
       enabled: () => !player.riding && !riding,
       label: () => (phase === 'docked' && stopIdx === idx
-        ? 'board the Grove Line' : 'wait for the Grove Line…'),
+        ? 'board the Grove Line'
+        : playerWaiting === idx ? 'waiting for the Grove Line…' : 'wait for the Grove Line…'),
       use: () => {
         if (!(phase === 'docked' && stopIdx === idx)) {
-          ui.say('A green-roofed platform, a kettle-quiet wait. The Grove Line keeps its own time, but it always keeps it.');
+          if (playerWaiting === idx) {
+            ui.say("You're in the queue. The rails hum their green-country hum.");
+            return;
+          }
+          playerWaiting = idx;
+          ui.say('You wait for the Grove Line. Somewhere down the track, a whistle agrees to the idea.');
           return;
         }
+        if (playerWaiting === idx) playerWaiting = null;
         riding = true;
         player.riding = true;
         timer = Math.min(timer, 2);
@@ -272,7 +449,13 @@ export function createNorthline(player) {
 
   function update(dt, t) {
     timer -= dt;
+    recruitT -= dt;
+    if (recruitT <= 0) {
+      recruitT = 5;
+      recruit();
+    }
     if (phase === 'docked') {
+      boardWaiters(stopIdx);
       if (timer <= 0) {
         const next = stopIdx + direction;
         if (next < 0 || next >= STOPS.length) {
@@ -296,8 +479,25 @@ export function createNorthline(player) {
         phase = 'docked';
         timer = 13;
         placeTrain(to);
+        arriveVillagers(stopIdx);
       }
     }
+    if (riders.length) seatRiders();
+
+    // visitors eventually remember where their own patch of grass is
+    for (const c of [...commuters]) {
+      if (c.a.home) {
+        c.a.range = c.origRange;
+        commuters.splice(commuters.indexOf(c), 1);
+        continue;
+      }
+      c.stayTimer -= dt;
+      if (c.stayTimer <= 0 && !c.a.riding && !c.a.errand && !c.a.meeting &&
+          !c.a.away && !c.a.goal) {
+        if (!enqueue(c.stop, c.a, c.homeStop)) c.stayTimer = 25;
+      }
+    }
+
     const moving = phase === 'moving';
     for (const puff of puffs) {
       puff.visible = moving;
@@ -312,5 +512,7 @@ export function createNorthline(player) {
     void t;
   }
 
-  return { group, update };
+  const debug = { enqueue, waiting, phase: () => phase };
+
+  return { group, update, debug };
 }
