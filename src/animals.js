@@ -481,6 +481,27 @@ export function buildAnimal(kind, colors = {}) {
     tailS.position.set(0, 0.74, -0.7);
     g.add(tailS);
     for (const leg of parts.legs) leg.material = headMat; // neat dark stockings
+  } else if (kind === 'pelican') {
+    // a bill like a shopping bag. inventory management, solved biologically.
+    parts.body.scale.set(1.15, 1.05, 1.3);
+    const billTop = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.85, 5), mat(0xe8a25c));
+    billTop.rotation.x = Math.PI / 2;
+    billTop.scale.set(1.4, 1, 0.5);
+    billTop.position.set(0, 1.2, 1.05);
+    g.add(billTop);
+    const pouch = new THREE.Mesh(ico(0.2, 0), mat(0xf2c894));
+    pouch.scale.set(0.8, 0.9, 1.6);
+    pouch.position.set(0, 1.0, 0.78);
+    g.add(pouch);
+    const crest = new THREE.Mesh(ico(0.12, 0), headMat);
+    crest.scale.set(0.8, 0.6, 1.4);
+    crest.position.set(0, 1.56, 0.1);
+    g.add(crest);
+    const tailP = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 5), bodyMat);
+    tailP.rotation.x = -2.3;
+    tailP.position.set(0, 0.78, -0.72);
+    g.add(tailP);
+    g.scale.setScalar(1.08);
   } else if (kind === 'mouse') {
     for (const sx of [-1, 1]) {
       const earM = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.05, 10), headMat);

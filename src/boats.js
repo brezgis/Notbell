@@ -4,7 +4,7 @@
 // bell used to hang.
 
 import * as THREE from 'three';
-import { SITES, terrainHeight, WATER_Y, ISLAND2, ISLAND3, ISLAND5, ISLAND6, VOLCANO } from './terrain.js';
+import { SITES, terrainHeight, WATER_Y, ISLAND2, ISLAND3, ISLAND5, ISLAND6, ISLAND7, VOLCANO } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
@@ -15,6 +15,7 @@ import { rand, turnToward } from './utils.js';
 import { glowWindow } from './nightglow.js';
 import { BULKO_DOCK } from './bulko.js';
 import { LABS_DOCK } from './island6.js';
+import { FARTHER_DOCK } from './farther.js';
 
 function mat(color, rough = 0.85) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -388,6 +389,11 @@ export function createBoats(player) {
       land: { x: LABS_DOCK.x, z: LABS_DOCK.z, rotY: LABS_DOCK.rotY },
       sea: seaOff(LABS_DOCK.x, LABS_DOCK.z, ISLAND6.x, ISLAND6.z),
     },
+    farther: {
+      label: '🏕️ Farther Isle',
+      land: { x: FARTHER_DOCK.x, z: FARTHER_DOCK.z, rotY: FARTHER_DOCK.rotY },
+      sea: seaOff(FARTHER_DOCK.x, FARTHER_DOCK.z, ISLAND7.x, ISLAND7.z),
+    },
   };
 
   // ----------------------------------------------------------- the voyage ----
@@ -532,6 +538,7 @@ export function createBoats(player) {
   ];
   if (BULKO_DOCK.buoyPos) PORT_BUOYS.push(['bulko', BULKO_DOCK.buoyPos]);
   if (LABS_DOCK.buoyPos) PORT_BUOYS.push(['labs', LABS_DOCK.buoyPos]);
+  if (FARTHER_DOCK.buoyPos) PORT_BUOYS.push(['farther', FARTHER_DOCK.buoyPos]);
   for (const [id, pos] of PORT_BUOYS) {
     register({
       pos, r: 2.6,

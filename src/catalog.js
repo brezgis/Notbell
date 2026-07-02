@@ -276,6 +276,19 @@ export const ITEMS = {
     kind: 'keepsake', name: 'A Small Parcel', emoji: '🎁', price: 0,
     blurb: 'Addressed in careful pawwriting. It is not for you, and it is not heavy, and you may not shake it.',
   },
+  // the Farther General's shelf — camp goods, tide-tested
+  marshmallows: {
+    kind: 'keepsake', name: 'Marshmallows', emoji: '🍡', price: 0,
+    blurb: 'A bag of clouds, campfire grade. Never quite runs out, which nobody at the fire has thought to question.',
+  },
+  camp_mug: {
+    kind: 'keepsake', name: 'Enamel Camp Mug', emoji: '☕', price: 0,
+    blurb: 'Speckled blue, dented exactly once. Everything tastes fifteen percent better out of it. The dent is load-bearing.',
+  },
+  postcard_farther: {
+    kind: 'keepsake', name: 'Farther Isle Postcard', emoji: '🏝️', price: 0,
+    blurb: '“WISH YOU WERE FARTHER.” The mangroves at sunset, slightly overexposed.',
+  },
   // the Fold's preserves — the Cod provides; Mercy provides lids
   preserves_goose: {
     kind: 'keepsake', name: 'Gooseberry Preserves', emoji: '🫙', price: 0,

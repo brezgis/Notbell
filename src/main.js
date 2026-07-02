@@ -27,6 +27,7 @@ import { createNorthline } from './northline.js';
 import { createIsland5 } from './island5.js';
 import { createIsland6 } from './island6.js';
 import { createFold } from './fold.js';
+import { createFarther } from './farther.js';
 import { createMoon } from './moon.js';
 import { wireHatKey } from './hats.js';
 import { initFieldGuide, markVisited, placeName } from './fieldguide.js';
@@ -192,6 +193,7 @@ const ambient = createAmbient(animals.animals, scene);
 const oceanLife = createOceanLife();
 const bulko = createBulko(player); // before boats: the ferry needs the dock
 const island6 = createIsland6(player); // ditto — the Persistent calls at the Labs
+const farther = createFarther(); // ditto again — the ferry calls at Farther Isle
 const moon = createMoon(player); // 384,000 km up and to the right
 const boats = createBoats(player);
 const island5 = createIsland5(player);
@@ -215,7 +217,7 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, northline.group, island6.group, fold.group, moon.group
+  island5.group, northline.group, island6.group, fold.group, farther.group, moon.group
 );
 
 camera.position.copy(player.group.position).add(camOffset);
@@ -361,6 +363,7 @@ renderer.setAnimationLoop(() => {
   bulko.update(dt, t, playerPos);
   island6.update(dt, t, playerPos); // gates itself by zone (labs life is indoors too)
   fold.update(dt, t, playerPos); // ditto — the kirk keeps its own hours
+  farther.update(dt, t, playerPos); // ditto — the General keeps store hours (all of them)
   if (zone === 'moon') moon.update(dt, t, playerPos);
   if (zone === 'cave') cave.update(dt, t);
   ghost.update(dt, t, playerPos); // walls are a rumor
@@ -382,7 +385,7 @@ renderer.setAnimationLoop(() => {
       cafe: 'cafe', cave: 'cave', church: 'church', museum: 'museum',
       shop: 'shop', grocery: 'shop', bulko: 'bulko', manor: 'manor',
       manor_up: 'manor', cellar: 'cave', moon: 'night', labs: 'shop',
-      post: 'shop', kirk: 'church',
+      post: 'shop', kirk: 'church', general: 'shop',
     };
     setMood(MOODS[zone] ?? (zone === 'island' || zone === 'sea'
       ? (HOLIDAY ? 'holiday' : currentWeather() !== 'clear' ? 'rain' : isNight() ? 'night' : 'day')

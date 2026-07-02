@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import {
   WATER_Y, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND4, ISLAND5, ISLAND5_SOUTH,
-  ISLAND5_HAND, ISLAND6, TEXAS, VOLCANO, terrainHeight,
+  ISLAND5_HAND, ISLAND6, ISLAND6_WEST, ISLAND7, ISLAND7_FLATS, TEXAS, VOLCANO, terrainHeight,
 } from './terrain.js';
 import { splash } from './audio.js';
 import { rand, pick } from './utils.js';
@@ -21,6 +21,9 @@ const LAND = [
   ISLAND5_SOUTH,
   ...ISLAND5_HAND,
   ISLAND6,
+  ISLAND6_WEST,
+  ISLAND7,
+  ISLAND7_FLATS,
   TEXAS,
   VOLCANO,
 ];

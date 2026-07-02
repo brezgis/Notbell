@@ -39,6 +39,12 @@ export const ISLAND6 = { x: -150, z: -58, r: 38 };
 // they declined, very politely. everyone waves.
 export const ISLAND6_WEST = { x: -194, z: -48, r: 19 };
 
+// south past the Far Isle: Farther Isle. the name is a whole philosophy.
+// campers on the high ground, mangroves wading out of the southeast side,
+// and a tide that runs the only clock anybody down there consults.
+export const ISLAND7 = { x: 105, z: 30, r: 21 };
+export const ISLAND7_FLATS = { x: 109, z: 46, r: 13 }; // the mangrove flats
+
 const TERRACE = 2.4; // height of each AC-style terrace step
 
 function maskAt(x, z, cx, cz, R, wobbleAmp) {
@@ -60,7 +66,9 @@ function islandMask(x, z) {
     maskAt(x, z, ISLAND5_HAND[1].x, ISLAND5_HAND[1].z, ISLAND5_HAND[1].r, 4),
     maskAt(x, z, ISLAND5_SOUTH.x, ISLAND5_SOUTH.z, ISLAND5_SOUTH.r, 7),
     maskAt(x, z, ISLAND6.x, ISLAND6.z, ISLAND6.r, 9),
-    maskAt(x, z, ISLAND6_WEST.x, ISLAND6_WEST.z, ISLAND6_WEST.r, 7)
+    maskAt(x, z, ISLAND6_WEST.x, ISLAND6_WEST.z, ISLAND6_WEST.r, 7),
+    maskAt(x, z, ISLAND7.x, ISLAND7.z, ISLAND7.r, 8),
+    maskAt(x, z, ISLAND7_FLATS.x, ISLAND7_FLATS.z, ISLAND7_FLATS.r, 5)
   );
 }
 
@@ -244,6 +252,12 @@ const steading = { x: -193, z: -50, r: 12, h: 1.5 };
 const foldFields = { x: -180, z: -64, r: 9, h: 1.3 };
 const kirkyard = { x: -201, z: -41, r: 6, h: 2.2 };
 
+// Farther Isle: a camp clearing, a store yard, and the mangrove flats —
+// which flatten to just above the waterline, so the tide can visit.
+const camp = { x: 100, z: 18, r: 9, h: 1.6 };
+const storeYard = { x: 110, z: 25.5, r: 9, h: 1.5 };
+const mangroveFlats = { x: ISLAND7_FLATS.x, z: ISLAND7_FLATS.z, r: ISLAND7_FLATS.r, h: -0.3 };
+
 // Grove Isle's three clearings: the manor court, the springs, the orchard
 const manor = scanAround(ISLAND5.x, ISLAND5.z, (x, z) => {
   const avg = flatEnough(x, z, 7, 1.0, 6, 2.8);
@@ -273,13 +287,13 @@ const town3 = scanAround(ISLAND3.x, ISLAND3.z, (x, z) => {
 // the cave mound's dark opening faces the village so you approach it head-on
 cave.facing = Math.atan2(village.x - cave.x, village.z - cave.z);
 
-export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard };
+export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats };
 
 // Player begins at the south edge of the plaza, looking at the village.
 export const PLAYER_SPAWN = { x: village.x, z: village.z + 9 };
 
 export function clearOfSites(x, z, margin = 2) {
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats]) {
     if (Math.hypot(x - s.x, z - s.z) < s.r + margin) return false;
   }
   return true;
@@ -289,7 +303,7 @@ export function clearOfSites(x, z, margin = 2) {
 // so nothing needs raycasts to stand on the ground.
 export function terrainHeight(x, z) {
   let h = baseHeight(x, z);
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats]) {
     const d = Math.hypot(x - s.x, z - s.z);
     if (d < s.r) {
       const w = smoothstep(s.r, s.r * 0.45, d);
@@ -334,6 +348,8 @@ const COL_MOSS_B = new THREE.Color(0x5e975e);
 const COL_ASPHALT = new THREE.Color(0x595a5e);
 const COL_CONCRETE = new THREE.Color(0xb6b1a4);
 const COL_TILLED = new THREE.Color(0x9a7b52);
+const COL_MUD = new THREE.Color(0x9a8365); // the mangrove flats, honest tidal mud
+const COL_MUD_WET = new THREE.Color(0x7d6b52);
 
 export function createTerrain() {
   // wider than tall: the west got longer when the Labs moved in
@@ -366,10 +382,11 @@ export function createTerrain() {
     const dTown2 = Math.hypot(va.x - town2.x, va.z - town2.z);
     const dVolcano = Math.hypot(va.x - VOLCANO.x, va.z - VOLCANO.z);
 
+    const dFlats = Math.hypot(va.x - mangroveFlats.x, va.z - mangroveFlats.z);
     if (y < WATER_Y) {
-      color.copy(COL_SAND_WET);
+      color.copy(dFlats < mangroveFlats.r + 3 ? COL_MUD_WET : COL_SAND_WET);
     } else if (y < 0.42) {
-      color.copy(COL_SAND);
+      color.copy(dFlats < mangroveFlats.r + 3 ? COL_MUD : COL_SAND);
     } else if (dVolcano < VOLCANO.r + 2) {
       color.copy(y > 9 ? COL_CINDER : COL_BASALT); // her slopes, her colors
     } else if (n.y < 0.65) {

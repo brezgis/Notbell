@@ -101,6 +101,7 @@ const ZONE_PLACES = {
   moon: '🌙 The Moon',
   post: '📮 Notbell Post',
   kirk: '🐟 The House of Cod',
+  general: '🥫 The Farther General',
 };
 
 export function placeName(zone, x, z) {

@@ -104,6 +104,14 @@ island files):
   has waved at the same Labs fellow every morning for eleven years),
   **Small Mercy** (lamb; holds with rockets a LITTLE, don't tell). Plain
   hats and bonnets are their uniform; the wool is their own.
+- **Farther Isle** (`farther.js`) — south past the Far Isle, which is the
+  entire joke. **Huck** (bear, bucket hat; eleven summers camping, the RV
+  grew an awning, a wall of annotated tide tables where some entries just
+  say "yes" — a quiet future hook, do not resolve), **Wren** (duck,
+  binoculars; logs birds because somebody should be keeping notes; never
+  once remarks on being one — that IS the joke, don't touch it),
+  **Cypress** (pelican, the Farther General; the pouch is the filing
+  system), **Stilt** (heron, the flats; one leg, since Tuesday).
 
 Wanderers (roster + voices + friendships in `src/villagers.js` — 16 as of
 2026-07): Clover, Biscuit, Saffron, **Howell** (hatless; a wolf), Bramble,
@@ -140,6 +148,10 @@ none. New villagers need a hat decision (including "no").
   strange to anybody; both sides wave. That's the whole treaty.)
 - **The Fold stays off the chart** — its island info is registered keyless
   on purpose (the HUD names it, the chart never will). They asked politely.
+- **The Farther General** (zone `general`) — "We have it. If we don't,
+  come back Thursday — the tide usually brings one in." Sells marshmallows
+  (the campfire toasts them), the enamel mug, and the postcard. The third
+  bean is never identified. Keep it that way.
 
 ## Other future hooks on the shelf
 
