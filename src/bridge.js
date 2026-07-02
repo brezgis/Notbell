@@ -248,11 +248,97 @@ export function createBridge(player, animals = []) {
     { car: 1, x: 0, z: 0.45 }, { car: 1, x: 0, z: -0.45 },
   ];
   const riders = []; // { kind:'player'|'villager', a?, seat }
-  const commuters = []; // { a, side, stayTimer, origRange }
+  const commuters = []; // visiting villagers: { a, side, stayTimer, origRange }
   const seatWorld = new THREE.Vector3();
 
   function freeSeat() {
     return SEATS.find((s) => !riders.some((r) => r.seat === s));
+  }
+
+  // ------------------------------------------------------- the queue ----
+  // Nobody materializes in a seat anymore. Villagers WALK to the platform,
+  // wait for the train like anyone with somewhere to be, and board when it
+  // docks — at most two waiting per end, at most one villager per carriage.
+  // The player queues too (E on an empty platform); patience is honored.
+  const waiting = { A: [], B: [] }; // { a, here }
+  let playerWaiting = null; // which end the player queued at
+  let recruitT = 6;
+
+  function villagerCar() {
+    for (const c of [0, 1]) {
+      if (!riders.some((r) => r.kind === 'villager' && r.seat.car === c)) return c;
+    }
+    return null;
+  }
+
+  // the villager bench is the +z side of a car; the player's is the -z side
+  function villagerSeatIn(car) {
+    return SEATS.find((s) => s.car === car && s.z > 0 && !riders.some((r) => r.seat === s));
+  }
+
+  function playerSeat() {
+    return SEATS.find((s) => s.z < 0 && !riders.some((r) => r.seat === s)) || freeSeat();
+  }
+
+  function tryBoardWaiter(end, entry) {
+    if (dockedAt() !== end || !entry.here || entry.a.riding) return;
+    const car = villagerCar();
+    if (car === null) return; // both carriages spoken for — next crossing
+    const seat = villagerSeatIn(car);
+    if (!seat) return;
+    const q = waiting[end];
+    q.splice(q.indexOf(entry), 1);
+    entry.a.riding = true;
+    entry.a.away = true;
+    riders.push({ kind: 'villager', a: entry.a, seat });
+    seatRiders();
+  }
+
+  function enqueue(end, a) {
+    const q = waiting[end];
+    if (q.length >= 2 || q.some((w) => w.a === a)) return false;
+    const spot = safeLanding(end);
+    const entry = { a, here: false };
+    q.push(entry);
+    a.goal = {
+      x: spot.x + (q.length > 1 ? 1.4 : -0.3),
+      z: spot.z + (q.length > 1 ? 0.6 : -0.4),
+      r: 1.1,
+      done: () => { entry.here = true; tryBoardWaiter(end, entry); },
+      fail: () => { const i = q.indexOf(entry); if (i >= 0) q.splice(i, 1); },
+    };
+    return true;
+  }
+
+  function recruit() {
+    for (const end of ['A', 'B']) {
+      if (waiting[end].length >= 2 || Math.random() > 0.35) continue;
+      const spot = safeLanding(end);
+      const nearby = animals.filter((a) =>
+        a.identity && !a.home && !a.errand && !a.meeting && !a.riding &&
+        !a.away && !a.goal && !a.swims &&
+        Math.hypot(a.g.position.x - spot.x, a.g.position.z - spot.z) < 30);
+      if (!nearby.length) continue;
+      enqueue(end, nearby[Math.floor(Math.random() * nearby.length)]);
+    }
+  }
+
+  function boardWaiters(end) {
+    for (const entry of [...waiting[end]]) tryBoardWaiter(end, entry);
+    if (playerWaiting === end) {
+      playerWaiting = null;
+      const ps = platformSpot(end);
+      const pp = player.group.position;
+      if (!player.riding && Math.hypot(pp.x - ps.x, pp.z - ps.z) < 8) {
+        const seat = playerSeat();
+        if (seat) {
+          player.riding = true;
+          riders.push({ kind: 'player', seat });
+          seatRiders();
+          ui.toast('The train remembers you were waiting. All aboard.', '🚂');
+        }
+      }
+    }
   }
 
   function seatRiders() {
@@ -293,22 +379,6 @@ export function createBridge(player, animals = []) {
   const RANGE_A = { x: 0, z: 0, R: 30 };
   const RANGE_B = { x: ISLAND2.x, z: ISLAND2.z, R: ISLAND2.r - 2 };
 
-  function boardCommuters(departingFrom) {
-    let open = SEATS.length - riders.length;
-    const eligible = animals.filter((a) =>
-      a.identity && !a.home && !a.errand && !a.riding && !a.swims);
-    for (const a of eligible) {
-      if (open <= 0 || Math.random() > 0.45) continue;
-      const seat = freeSeat();
-      if (!seat) break;
-      a.riding = true;
-      a.away = true;
-      riders.push({ kind: 'villager', a, seat });
-      open--;
-    }
-    void departingFrom;
-  }
-
   function arrive(end) {
     const spot = safeLanding(end);
     for (const r of [...riders]) {
@@ -336,17 +406,30 @@ export function createBridge(player, animals = []) {
           r.a.state = 'idle';
           r.a.timer = rand(1, 3);
         }
+        // step away from the platform like a person, not a package
+        const center = end === 'B' ? RANGE_B : RANGE_A;
+        const wd = Math.hypot(center.x - spot.x, center.z - spot.z) || 1;
+        r.a.goal = {
+          x: spot.x + ((center.x - spot.x) / wd) * 4,
+          z: spot.z + ((center.z - spot.z) / wd) * 4,
+          r: 1.2,
+        };
       }
     }
     riders.length = 0;
+    boardWaiters(end); // whoever's been waiting gets on
   }
 
   function update(dt, t) {
     timer -= dt;
+    recruitT -= dt;
+    if (recruitT <= 0) {
+      recruitT = 5;
+      recruit();
+    }
     if (phase === 'dockedA' && timer <= 0) {
       phase = 'toB';
       timer = 26;
-      boardCommuters('A');
       whistle();
     } else if (phase === 'toB') {
       const k = 1 - timer / 26;
@@ -356,7 +439,6 @@ export function createBridge(player, animals = []) {
     } else if (phase === 'dockedB' && timer <= 0) {
       phase = 'toA';
       timer = 26;
-      boardCommuters('B');
       whistle();
     } else if (phase === 'toA') {
       const k = 1 - timer / 26;
@@ -374,13 +456,10 @@ export function createBridge(player, animals = []) {
         continue;
       }
       c.stayTimer -= dt;
-      if (c.stayTimer <= 0 && dockedAt() === c.side && !c.a.riding && !c.a.errand) {
-        const seat = freeSeat();
-        if (seat) {
-          c.a.riding = true;
-          c.a.away = true;
-          riders.push({ kind: 'villager', a: c.a, seat });
-        }
+      if (c.stayTimer <= 0 && !c.a.riding && !c.a.errand && !c.a.meeting &&
+          !c.a.away && !c.a.goal) {
+        // homesick: walk to the platform and wait, like anybody
+        if (!enqueue(c.side, c.a)) c.stayTimer = 25; // queue's full; linger a bit
       }
     }
 
@@ -430,13 +509,22 @@ export function createBridge(player, animals = []) {
       pos: new THREE.Vector3(standSpot.x, 0, standSpot.z),
       r: 2.6,
       enabled: () => !player.riding,
-      label: () => (dockedAt() === end ? label.replace('ride the train', 'board the train') : 'wait for the train…'),
+      label: () => (dockedAt() === end ? label.replace('ride the train', 'board the train')
+        : playerWaiting === end ? 'waiting for the train…' : 'wait for the train…'),
       use: () => {
         if (dockedAt() !== end) {
-          ui.say('The platform hums faintly. The train is out being a train. It won’t be long.');
+          if (playerWaiting === end) {
+            ui.say('You’re in the queue. The rails tick warmly, the way rails do when they know something’s coming.');
+            return;
+          }
+          playerWaiting = end;
+          const ahead = waiting[end].filter((w) => w.here).length;
+          ui.say(ahead
+            ? `You join the queue behind ${ahead === 1 ? 'one very patient villager' : 'two very patient villagers'}. The train will be along.`
+            : 'You wait for the train. The platform hums faintly. It won’t be long.');
           return;
         }
-        const seat = freeSeat();
+        const seat = playerSeat();
         if (!seat) {
           ui.say('Every seat is taken. The villagers look very pleased about it. There’ll be another crossing in a minute.');
           return;
@@ -451,5 +539,8 @@ export function createBridge(player, animals = []) {
     void there;
   }
 
-  return { group, update };
+  // debug/testing hooks (the shots harness rides the rails too)
+  const debug = { enqueue, waiting, dockedAt: () => dockedAt(), phase: () => phase };
+
+  return { group, update, debug };
 }

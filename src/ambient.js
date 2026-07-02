@@ -172,7 +172,7 @@ export function createAmbient(animals, scene) {
     register({
       getPos: () => a.g.position,
       r: 2.6,
-      enabled: () => !!a.meeting,
+      enabled: () => !!a.meeting && !a.meeting.pending,
       label: () => `talk to ${a.identity.name}`,
       use: () => {
         const line = a.meeting?.pair.meetLines?.[a.identity.name] ||
@@ -187,9 +187,13 @@ export function createAmbient(animals, scene) {
   function startMeeting(pair) {
     const A = byName(pair.a), B = byName(pair.b);
     if (!A || !B) return null;
-    if (A.home || B.home || A.errand || B.errand || A.meeting || B.meeting) return null;
-    // B pops over (villagers travel instantly when nobody is watching them)
+    if (A.home || B.home || A.errand || B.errand || A.meeting || B.meeting ||
+        A.goal || B.goal) return null;
+    // friends WALK over now (the instant-travel era is closed — scandalous,
+    // the things villagers did when nobody was watching). Too far apart
+    // today? Then today isn't the day; the friendship survives.
     const hx = A.g.position.x, hz = A.g.position.z;
+    if (Math.hypot(B.g.position.x - hx, B.g.position.z - hz) > 42) return null;
     let gx = hx + 1.7, gz = hz;
     for (let k = 0; k < 8; k++) {
       const ang = (k / 8) * Math.PI * 2;
@@ -202,33 +206,45 @@ export function createAmbient(animals, scene) {
     }
     const m = {
       pair, A, B,
+      pending: true, // B is on the way; the meeting starts when they arrive
+      walkPatience: 50,
       returnTo: { x: B.g.position.x, z: B.g.position.z },
       until: rand(40, 75),
       chatCooldown: rand(2, 6),
       exchange: null,
       bubble: null,
     };
-    A.meeting = m;
-    B.meeting = m;
+    A.meeting = m; // the host stands and waits — friends are worth it
     setAway(A);
-    setAway(B);
-    B.g.position.set(gx, terrainHeight(gx, gz), gz);
-    A.g.rotation.y = Math.atan2(gx - hx, gz - hz); // square up, like friends do
-    B.g.rotation.y = Math.atan2(hx - gx, hz - gz);
+    B.goal = {
+      x: gx, z: gz, r: 1.0,
+      done: () => {
+        if (!m.pending) return;
+        m.pending = false;
+        B.meeting = m;
+        setAway(B);
+        A.g.rotation.y = Math.atan2(B.g.position.x - hx, B.g.position.z - hz); // square up, like friends do
+        B.g.rotation.y = Math.atan2(hx - B.g.position.x, hz - B.g.position.z);
+      },
+      fail: () => endMeeting(m),
+    };
     meetings.push(m);
     return m;
   }
 
   function endMeeting(m) {
     clearBubble(m);
+    const wasPending = m.pending;
+    if (wasPending && m.B.goal) m.B.goal = null; // never arrived; resume rambling
     m.A.meeting = null;
     m.B.meeting = null;
     setAway(m.A);
     setAway(m.B);
     if (!m.A.home && !m.A.errand) m.A.g.visible = true;
     if (!m.B.home && !m.B.errand) m.B.g.visible = true;
-    if (!m.B.home && !m.B.errand) {
-      m.B.g.position.set(m.returnTo.x, terrainHeight(m.returnTo.x, m.returnTo.z), m.returnTo.z);
+    if (!wasPending && !m.B.home && !m.B.errand) {
+      // strolls back to their old patch, unhurried, full of gossip
+      m.B.goal = { x: m.returnTo.x, z: m.returnTo.z, r: 1.6 };
       m.B.state = 'idle';
       m.B.timer = rand(1, 3);
     }
@@ -247,6 +263,8 @@ export function createAmbient(animals, scene) {
   }
 
   function startErrand(a, venue) {
+    // errands still teleport: venues are interiors, and walking there means
+    // modeling doors — that's the journey system (B7 slice 2), not today
     const spot = typeof venue.guest === 'function' ? venue.guest() : venue.guest;
     a.errand = {
       venue,
@@ -305,6 +323,12 @@ export function createAmbient(animals, scene) {
 
     for (const m of [...meetings]) {
       if (m.A.home || m.B.home) { endMeeting(m); continue; } // bedtime wins
+      if (m.pending) {
+        // the guest is still walking over; the host waits, politely
+        m.walkPatience -= dt;
+        if (m.walkPatience <= 0) endMeeting(m);
+        continue;
+      }
       m.until -= dt;
       if (m.until <= 0) { endMeeting(m); continue; }
       const meetingVisible = zones.current() === 'island';

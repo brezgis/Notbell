@@ -718,7 +718,49 @@ export function createAnimals() {
       const distP = Math.hypot(dxp, dzp);
       let walking = false;
 
-      if (distP < 3.4) {
+      // a.goal: walk SOMEWHERE SPECIFIC — a station, a friend, one day a mail
+      // route — then call goal.done(). Goal-walkers skip the greeting stop
+      // (they have somewhere to be; they'd nod if we'd modeled nodding).
+      // Set { x, z, r?, done?, fail? } on any animal; movement respects the
+      // same rules as wandering, with a few sidestep angles for shrubbery.
+      if (a.goal) {
+        const dx = a.goal.x - g.position.x;
+        const dz = a.goal.z - g.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < (a.goal.r ?? 1.2)) {
+          const done = a.goal.done;
+          a.goal = null;
+          a.state = 'idle';
+          a.timer = rand(0.5, 1.5);
+          done?.(a);
+        } else {
+          const base = Math.atan2(dx, dz);
+          let stepped = false;
+          for (const off of [0, 0.6, -0.6, 1.2, -1.2]) {
+            const ang = base + off;
+            const nx = g.position.x + Math.sin(ang) * a.speed * dt;
+            const nz = g.position.z + Math.cos(ang) * a.speed * dt;
+            if (a.swims ? !nearBlocker(nx, nz) : islandCanWalk(nx, nz)) {
+              g.rotation.y = turnToward(g.rotation.y, ang, dt, 6);
+              g.position.x = nx;
+              g.position.z = nz;
+              stepped = true;
+              break;
+            }
+          }
+          walking = stepped;
+          if (!stepped) {
+            a.goal.stuck = (a.goal.stuck ?? 0) + dt;
+            if (a.goal.stuck > 8) {
+              const gl = a.goal;
+              a.goal = null;
+              a.state = 'idle';
+              a.timer = rand(1, 3);
+              gl.fail?.(a);
+            }
+          }
+        }
+      } else if (distP < 3.4) {
         if (a.state !== 'greet') {
           a.state = 'greet';
           a.hopT = 0;

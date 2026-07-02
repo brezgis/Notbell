@@ -408,7 +408,7 @@ renderer.setAnimationLoop(() => {
 document.getElementById('loading')?.remove();
 
 // debug/testing hook (used by shots/shoot.js)
-window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing };
+window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge };
 
 // a small welcome the first time — and everyone gets to choose who they are
 (async () => {

@@ -65,6 +65,11 @@ await browser.close();
   test the welcome itself, e.g. the wake-up flows).
 - Mobile: `boot({ mobile: true })` emulates iPhone 13; touch controls
   dispatch synthetic key events, so `press/walk` still work.
+- **Villagers walk now** (B7): `ambient.forceMeeting()` returns while the
+  guest is still walking over — poll for an animal with `meeting &&
+  !meeting.pending` before asserting bubbles. Train riders queue via
+  `__notbell.bridge.debug.enqueue(end, animal)`; a full ride is ~35 game
+  seconds ≈ 3 real minutes headless.
 
 ## Layout
 
