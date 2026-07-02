@@ -352,6 +352,34 @@ export function buildAnimal(kind, colors = {}) {
       g.add(earCap);
     }
     g.scale.setScalar(1.2);
+  } else if (kind === 'sloth') {
+    // built for patience: low head, long arms, and a little moss of his own
+    parts.body.scale.set(1.15, 1.05, 1.15);
+    parts.head.scale.set(1.05, 0.95, 1.0);
+    parts.headY = 1.02;
+    parts.head.position.set(0, parts.headY, 0.4);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.16, 1.1, 0.72));
+    for (const sx of [-1, 1]) { // the signature eye-streaks, worn like reading glasses
+      const streak = new THREE.Mesh(ico(0.09, 0), mat(0x4a3f33));
+      streak.scale.set(1.6, 0.5, 0.5);
+      streak.position.set(sx * 0.2, 1.06, 0.7);
+      streak.rotation.z = sx * -0.5;
+      g.add(streak);
+    }
+    for (const sx of [-1, 1]) { // arms long enough to never hurry
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.95, 6), bodyMat);
+      arm.position.set(sx * 0.5, 0.55, 0.18);
+      arm.rotation.z = sx * 0.16;
+      g.add(arm);
+      const paw = new THREE.Mesh(ico(0.1, 0), mat(0x6b5a44));
+      paw.scale.set(1, 0.7, 1.3);
+      paw.position.set(sx * 0.57, 0.1, 0.2);
+      g.add(paw);
+    }
+    const mossPatch = new THREE.Mesh(ico(0.16, 0), mat(0x7a8f5e));
+    mossPatch.scale.set(1.3, 0.5, 1.1);
+    mossPatch.position.set(-0.18, 1.02, -0.28);
+    g.add(mossPatch);
   } else if (kind === 'croc') {
     parts.body.scale.set(1.1, 0.7, 2.4);
     parts.bodyY = 0.5;

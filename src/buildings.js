@@ -466,13 +466,13 @@ export function createBuildings() {
     zones.addBlocker(spot.x, spot.z, Math.max(spot.w, spot.d) / 2 + 0.9);
   }
 
-  // the post office isn't open yet — but the notice is, and so is the slot
+  // the notice moved to the window when the door started opening
   // (offsets follow the westward facing: door at -x, pillar box toward the pier)
   register({
-    pos: new THREE.Vector3(spots.post.x - 2.6, 0, spots.post.z), r: 2.4,
+    pos: new THREE.Vector3(spots.post.x - 2.7, 0, spots.post.z - 1.9), r: 1.8,
     label: 'read the notice',
     use: () => ui.say([
-      'A card in the window, in careful pawwriting: “NOTBELL POST — OPENING SOON. The mail has been arriving for years; we felt it was time somebody sorted it.”',
+      'A card in the window, in careful pawwriting: “NOTBELL POST — SORTING IN PROGRESS. Visitors welcome. Mind the pace.”',
       'Smaller, underneath: “Bottle deliveries continue as usual. Thank the tide.”',
     ]),
   });
@@ -500,6 +500,7 @@ export function createBuildings() {
     shop: { x: 300, z: 0 },
     cafe: { x: 300, z: 80 },
     museum: { x: 300, z: 160 },
+    post: { x: 300, z: 240 },
   };
 
   function wireDoors(name, spot, label) {
@@ -1171,6 +1172,178 @@ export function createBuildings() {
       getPos: () => fern.position, r: 3, zone: 'museum',
       label: 'talk to Fern',
       use: () => fernMenu(refreshMuseum),
+    });
+  }
+
+  // ============================================================ Notbell Post
+  // The sorting hall. Not open for business yet — open for VISITS, which is
+  // different, and Moss will explain the difference at his own pace.
+  {
+    const roomStart = group.children.length;
+    const B = IN.post;
+    group.add(buildRoom(B, 12, 9, 0x9a6b42, 0xefe0c4));
+
+    const counter = box(4.5, 1.05, 1.1, 0x8a5a3a);
+    counter.position.set(B.x - 0.5, 0.52, B.z - 1.2);
+    group.add(counter);
+    const postLamp = makeHangingLamp(0x4a6a9c); // postal blue, of course
+    postLamp.position.set(B.x - 0.5, 2.95, B.z - 1.2);
+    group.add(postLamp);
+
+    // the pigeon-hole wall: every cubby a promise, some already kept
+    const board = box(5.8, 3.0, 0.35, 0x6b4a2e);
+    board.position.set(B.x - 2.4, 1.9, B.z - 4.1);
+    group.add(board);
+    const LETTERED = new Set([1, 4, 8, 9, 14, 16]);
+    for (let i = 0; i < 18; i++) {
+      const col = i % 6, row = Math.floor(i / 6);
+      const sx = B.x - 2.4 - 2.1 + col * 0.84, sy = 0.95 + row * 0.86;
+      const slot = box(0.74, 0.74, 0.14, 0x40332a);
+      slot.position.set(sx, sy, B.z - 3.9);
+      group.add(slot);
+      if (LETTERED.has(i)) {
+        const slip = box(0.5, 0.34, 0.1, 0xfff6e0);
+        slip.position.set(sx, sy - 0.1, B.z - 3.8);
+        slip.rotation.z = (i % 3 - 1) * 0.08; // filed, not flattened
+        group.add(slip);
+      }
+    }
+    { // one cubby holds a whole bottle. it fit. nobody asked how
+      const cubbyBottle = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.62, 7), mat(0x9fd4d4, 0.3));
+      cubbyBottle.rotation.x = Math.PI / 2 - 0.25;
+      cubbyBottle.position.set(B.x - 2.4 + 2.1, 1.75, B.z - 3.72);
+      group.add(cubbyBottle);
+    }
+
+    // the sorting line: today's letters, pinned like laundry, in order of patience
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 5, 5), mat(0x8a7a5e, 0.9));
+    rope.rotation.z = Math.PI / 2;
+    rope.position.set(B.x - 0.5, 2.5, B.z - 2.4);
+    group.add(rope);
+    [-1.8, -0.6, 0.6, 1.8].forEach((ox, i) => {
+      const clip = box(0.06, 0.12, 0.05, 0x4a4f55);
+      clip.position.set(B.x - 0.5 + ox, 2.44, B.z - 2.4);
+      group.add(clip);
+      const letter = box(0.34, 0.26, 0.02, 0xfff6e0);
+      letter.position.set(B.x - 0.5 + ox, 2.26, B.z - 2.4);
+      letter.rotation.y = (i % 2 ? -1 : 1) * 0.12;
+      group.add(letter);
+    });
+
+    // the brass scale: for weighing words
+    const scalePost = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, 0.32, 6), mat(0xc9962e, 0.45));
+    scalePost.position.set(B.x + 1.1, 1.2, B.z - 1.2);
+    const beam = box(0.72, 0.04, 0.04, 0xc9962e);
+    beam.position.set(B.x + 1.1, 1.38, B.z - 1.2);
+    group.add(scalePost, beam);
+    for (const sx of [-0.3, 0.3]) {
+      const pan = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.03, 8), mat(0xc9962e, 0.45));
+      pan.position.set(B.x + 1.1 + sx, 1.28, B.z - 1.2);
+      group.add(pan);
+    }
+
+    // arrivals: a crate of bottles with the sea still in their voices
+    const crate = box(1.1, 0.5, 0.8, 0x8a5a3a);
+    crate.position.set(B.x + 3.6, 0.25, B.z - 3.3);
+    group.add(crate);
+    for (const [bx, tilt] of [[-0.28, 0.2], [0.04, -0.12], [0.34, 0.3]]) {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.6, 7), mat(0x9fd4d4, 0.3));
+      b.position.set(B.x + 3.6 + bx, 0.66, B.z - 3.3);
+      b.rotation.z = tilt;
+      group.add(b);
+    }
+
+    // a clock, which is fine. it's not the clock that's slow
+    const clockFace = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 10), mat(0xfff6e0, 0.7));
+    clockFace.rotation.z = Math.PI / 2;
+    clockFace.position.set(B.x + 5.75, 2.6, B.z - 0.5);
+    group.add(clockFace);
+    const minuteHand = box(0.04, 0.3, 0.03, 0x3a342c);
+    minuteHand.position.set(B.x + 5.7, 2.7, B.z - 0.5);
+    const hourHand = box(0.04, 0.2, 0.03, 0x3a342c);
+    hourHand.rotation.x = 1.1;
+    hourHand.position.set(B.x + 5.7, 2.58, B.z - 0.42);
+    group.add(minuteHand, hourHand);
+
+    const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.06, 9), mat(0xb0453a, 0.9));
+    rug.position.set(B.x, 0.05, B.z + 1.2);
+    rug.receiveShadow = true;
+    group.add(rug);
+
+    // Moss, Postmaster. On a stool, like Pip — professional courtesy
+    const mossStool = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.5, 8), mat(0x6b4a2e));
+    mossStool.position.set(B.x - 0.5, 0.25, B.z - 2.3);
+    group.add(mossStool);
+    const moss = buildAnimal('sloth', { body: 0x9a8a72, head: 0xa5947c });
+    moss.position.set(B.x - 0.5, 0.5, B.z - 2.3);
+    moss.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    group.add(moss);
+    updates.push((dt, t) => {
+      if (zones.current() !== 'post') return;
+      const p = moss.userData.parts;
+      if (p?.body) p.body.position.y = p.bodyY + Math.sin(t * 0.5) * 0.015; // breathing, at leisure
+    });
+
+    const MOSS_LINES = [
+      '“People say the mail is slow.” He turns a letter over, reads the back, and nods at it, satisfied. “The mail is thorough.”',
+      '“Everything here came out of the sea. Salt-cured. Bottle-aged. You don’t rush a vintage, and you don’t rush a postcard.”',
+      '“There will be stamps, when we open.” A pause, in which he clearly pictures the stamps. “Good ones. Buttons on some.”',
+      '“One envelope has no address. Just a drawing of a bell.” He files it, gently, under B. “Everything finds where it’s going eventually. I’m proof.”',
+    ];
+    let mossIdx = 0;
+    register({
+      pos: new THREE.Vector3(B.x - 0.5, 0, B.z - 2.3), r: 3.2, zone: 'post',
+      label: 'talk to Moss',
+      use: async () => {
+        if (!S.hasFlag('metMoss')) {
+          S.setFlag('metMoss');
+          await ui.say([
+            'The sloth turns toward you. It takes a while. It is worth the wait.',
+            '“Moss,” he says. “Postmaster. Counter service begins when the sorting ends. The sorting ends when it stops being thorough.”',
+          ], { speaker: 'Moss', voice: 200 });
+          return;
+        }
+        await ui.say(MOSS_LINES[mossIdx++ % MOSS_LINES.length], { speaker: 'Moss', voice: 200 });
+      },
+    });
+    register({
+      pos: new THREE.Vector3(B.x + 3.6, 0, B.z - 3.3), r: 2.0, zone: 'post',
+      label: 'peer into the crate',
+      use: () => ui.say('(A crate of arrivals, corks still damp. One bottle contains only kelp. The kelp is also addressed.)'),
+    });
+
+    const room = collectInteriorRoot(group, roomStart);
+    zones.registerInterior('post', {
+      root: room,
+      floorY: 0,
+      bounds: { x0: B.x - 5.5, x1: B.x + 5.5, z0: B.z - 3.2, z1: B.z + 4.1 },
+      blockers: [
+        { x: B.x - 0.5, z: B.z - 1.2, r: 2.3 }, // the counter (Moss included)
+        { x: B.x + 3.6, z: B.z - 3.3, r: 0.9 }, // the crate
+      ],
+      spawn: { x: B.x, z: B.z + 3.5, rotY: Math.PI },
+      lighting: {
+        bg: 0x241c14, fog: 0x241c14, fogNear: 24, fogFar: 60,
+        hemiSky: 0xffe6c0, hemiGround: 0x6b5135, hemiIntensity: 1.2,
+        sunIntensity: 0,
+      },
+    });
+
+    register({
+      pos: new THREE.Vector3(spots.post.x - 2.9, 0, spots.post.z), r: 2.4,
+      label: 'enter Notbell Post',
+      use: async () => {
+        await zones.go('post');
+        if (!S.hasFlag('sawPost')) {
+          S.setFlag('sawPost');
+          ui.say('It smells like salt, paper, and patience. Somewhere behind the counter, a letter is being read the way letters deserve.');
+        }
+      },
+    });
+    register({
+      pos: new THREE.Vector3(B.x, 0, B.z + 3.8), r: 1.6,
+      zone: 'post', label: 'step outside',
+      use: () => zones.leaveTo({ x: spots.post.x - 3.8, z: spots.post.z, rotY: -Math.PI / 2 }),
     });
   }
 

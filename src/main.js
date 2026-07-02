@@ -376,6 +376,7 @@ renderer.setAnimationLoop(() => {
       cafe: 'cafe', cave: 'cave', church: 'church', museum: 'museum',
       shop: 'shop', grocery: 'shop', bulko: 'bulko', manor: 'manor',
       manor_up: 'manor', cellar: 'cave', moon: 'night', labs: 'shop',
+      post: 'shop',
     };
     setMood(MOODS[zone] ?? (zone === 'island' || zone === 'sea'
       ? (HOLIDAY ? 'holiday' : currentWeather() !== 'clear' ? 'rain' : isNight() ? 'night' : 'day')

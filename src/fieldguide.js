@@ -99,6 +99,7 @@ const ZONE_PLACES = {
   bulko: '🛒 BULKO',
   labs: '🚀 Notbell Labs',
   moon: '🌙 The Moon',
+  post: '📮 Notbell Post',
 };
 
 export function placeName(zone, x, z) {
