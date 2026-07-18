@@ -7,11 +7,12 @@ before/after). **Screenshot evidence, not code inspection, is what counts.**
 ## Setup (once per checkout / worktree)
 
 ```sh
-ln -sfn /home/anna/projects/not_animal_crossing/tests/node_modules node_modules
+ln -sfn ../../some-sibling-checkout/node_modules node_modules
 ```
 
-(puppeteer-core is borrowed from the sibling project; there's no package.json
-here on purpose.) Chrome is expected at `/usr/bin/google-chrome`.
+(puppeteer-core is borrowed from any sibling checkout that has it installed;
+there's no package.json here on purpose.) Chrome is expected at
+`/usr/bin/google-chrome`.
 
 ## Running
 

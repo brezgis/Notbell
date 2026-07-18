@@ -103,24 +103,25 @@ load-bearing invariants):
 - `FIXES_PLAN.md` and `CODEX_TASKS.md` are **local-only** working docs
   (git-excluded); don't expect them on other checkouts.
 - One task = one git worktree off `main`:
-  `git worktree add -b codex/<slug> ../notbell-<slug> main`, then
-  `ln -sfn /home/anna/projects/not_animal_crossing/tests/node_modules shots/node_modules`
-  and serve on your own port. Commit on the branch; **never merge to main
-  yourself** — review and merge happen on `main`.
+  `git worktree add -b codex/<slug> ../notbell-<slug> main`, then point
+  `shots/node_modules` at any `node_modules` that has puppeteer-core (a
+  relative symlink — see `shots/README.md`) and serve on your own port.
+  Commit on the branch; **never merge to main yourself** — review and merge
+  happen on `main`.
 - Parallel lanes are safe **iff their tasks touch disjoint files** (see the
   hot-file list above).
 - `main` is the integrate/verify/deploy station. Deploy (lead only, exact
   bare form — it's permission-matched):
 
   ```sh
-  rsync -az --exclude shots --exclude .git --exclude serve.py index.html src vendor README.md package.json favicon.svg samovar:/var/www/notbell/
+  rsync -az --exclude shots --exclude .git --exclude serve.py index.html src vendor README.md package.json favicon.svg your-server:/var/www/notbell/
   ```
 
-  Production nginx (samovar) serves a strict CSP whose `script-src` includes
-  the sha256 of the inline importmap in `index.html` — if any inline script
-  changes, recompute the hash and update
-  `/etc/nginx/snippets/notbell-headers.conf` on samovar, or the site ships a
-  white screen.
+  Production nginx (on your-server) serves a strict CSP whose `script-src`
+  includes the sha256 of the inline importmap in `index.html` — if any inline
+  script changes, recompute the hash and update
+  `/etc/nginx/snippets/notbell-headers.conf` on the server, or the site ships
+  a white screen.
 - Never commit screenshots (`shots/*.png` is git-ignored). One-off probe
   scripts belong in `shots/archive/`, also ignored; only the harness lib and
   canonical probes are tracked.

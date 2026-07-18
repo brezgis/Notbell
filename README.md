@@ -3,7 +3,12 @@
 A tiny low-poly village-life island in the spirit of a certain game that this
 is legally very much not. Built with plain [three.js](https://threejs.org)
 ES modules — no build step, no dependencies (three.js r180 is vendored in
-`vendor/`), runs entirely in the browser.
+`vendor/`), runs entirely in the browser. Live at
+<https://notbell.brezgis.com>.
+
+![The village plaza — three shops, one well, one lantern-lit rabbit](docs/screenshots/village-plaza.png)
+
+![The tide pools — rummage politely](docs/screenshots/tide-pools.png)
 
 ## Run it
 
@@ -256,8 +261,8 @@ src/villagers.js   names, voices, and opinions of the wanderers
 src/player.js      input, movement, lantern glow, coffee speed
 src/ocean.js       animated water       src/sky.js  drifting clouds
 src/utils.js       noise, rand, angle helpers
-shots/             puppeteer screenshot harness (borrows puppeteer-core from
-                   ../not_animal_crossing/tests via a node_modules symlink)
+shots/             puppeteer screenshot harness (borrows puppeteer-core via a
+                   node_modules symlink — see shots/README.md)
 ```
 
 ## Expansion ideas
