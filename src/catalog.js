@@ -108,6 +108,43 @@ export const ITEMS = {
     blurb: 'A tiny piece of the old light, freelancing. Night shift only.',
   },
 
+  // -- beachcombing (the tide brings these in — shells.js) --------------------
+  cowrie: {
+    kind: 'shell', name: 'Cowrie', emoji: '🐚', price: 18,
+    blurb: 'Glossy as a sweet. People used these as money once. Buttons understand.',
+  },
+  scallop: {
+    kind: 'shell', name: 'Scallop Shell', emoji: '🐚', price: 22,
+    blurb: 'Fanned like a tiny hand, waving hello from the whole sea.',
+  },
+  sand_dollar: {
+    kind: 'shell', name: 'Sand Dollar', emoji: '🪙', price: 40,
+    blurb: 'The sea’s own currency. Pip will not accept it. He has checked the exchange rate and he does not like it.',
+  },
+  sea_glass: {
+    kind: 'shell', name: 'Sea Glass', emoji: '💎', price: 55,
+    blurb: 'A bottle, eventually. The sea sands everything down to a kindness.',
+  },
+  conch: {
+    kind: 'shell', name: 'Conch', emoji: '🐚', price: 140,
+    blurb: 'Hold it to your ear: the sea. Hold it to the sea: an echo of your ear.',
+  },
+
+  pearl: {
+    kind: 'shell', name: 'Crown Pearl', emoji: '🫧', price: 300,
+    blurb: 'From the giant clam in the Dropped Crown, who makes exactly one a day and has never once been late.',
+  },
+
+  // -- starfall (starfall.js) --------------------------------------------------
+  star_fragment: {
+    kind: 'star', name: 'Star Fragment', emoji: '🌟', price: 420,
+    blurb: 'Caught on the way down, still warm. It hums a note just above hearing. Make a wish; it has the paperwork.',
+  },
+  stardust: {
+    kind: 'star', name: 'Stardust', emoji: '✨', price: 95,
+    blurb: 'What a star leaves when nobody catches it. A little sad. Very sparkly. Mostly sparkly.',
+  },
+
   // -- fossils --------------------------------------------------------------
   trilobutton: {
     kind: 'fossil', name: 'Trilobutton', emoji: '🦴', price: 420,
@@ -166,7 +203,28 @@ export const ITEMS = {
     blurb: 'Canvas, brass, and a bell-shaped helmet. One of Tansy’s divers left it behind. It never found the bell. It found everything else.',
   },
 
+  skateboard: {
+    kind: 'gear', name: 'Pip’s Skateboard', emoji: '🛹', price: 1400,
+    blurb: 'Four wheels, one plank, zero brakes. Hold run and you’re skating. The island has hills. The island has opinions about the hills.',
+  },
+
   // -- garden & orchard -----------------------------------------------------
+  blueberries: {
+    kind: 'fruit', name: 'Blueberries', emoji: '🫐', price: 12,
+    blurb: 'From the bushes around the Labs. Nobody planted them. Nobody is taking credit. The Labs are investigating.',
+  },
+  labs_mug: {
+    kind: 'keepsake', name: 'Notbell Labs Mug', emoji: '☕', price: 0,
+    blurb: '“I ♥ RESEARCH.” The heart is a little bell. The bell is a little joke. The coffee is real.',
+  },
+  labs_tee: {
+    kind: 'keepsake', name: 'Notbell Labs T-Shirt', emoji: '👕', price: 0,
+    blurb: '“I WENT TO NOTBELL LABS AND ALL I GOT WAS THIS SHIRT (AND A SMALL AMOUNT OF COSMIC PERSPECTIVE).”',
+  },
+  rocket_plush: {
+    kind: 'keepsake', name: 'Plush Rocket', emoji: '🚀', price: 0,
+    blurb: 'Soft, stuffed, fully non-functional. Has been to the moon exactly as many times as you have. Well — it depends.',
+  },
   sunfruit: {
     kind: 'fruit', name: 'Sunfruit', emoji: '🍊', price: 15,
     blurb: 'Warm even in the shade. The trees here are generous.',
@@ -231,6 +289,18 @@ export const ITEMS = {
     blurb: 'After Malevich. Howell stared at it for an hour and said “same.”' },
   art_wanderer: { kind: 'art', name: '“Wanderer above the Fog” (print)', emoji: '🖼️', price: 750,
     blurb: 'After Friedrich. The Listeners consider it a documentary.' },
+  art_lilies: { kind: 'art', name: '“Water Lilies” (print)', emoji: '🖼️', price: 750,
+    blurb: 'After Monet. Mochi is in it in spirit.' },
+  art_jatte: { kind: 'art', name: '“A Sunday on the Island” (print)', emoji: '🖼️', price: 750,
+    blurb: 'After Seurat. Count the dots; Luna did.' },
+  art_redfuji: { kind: 'art', name: '“Red Fuji” (print)', emoji: '🖼️', price: 750,
+    blurb: 'After Hokusai. A mountain on a very good morning.' },
+  art_smile: { kind: 'art', name: '“The Smile” (print)', emoji: '🖼️', price: 750,
+    blurb: 'After Leonardo. The eyes follow. The smile stays.' },
+  art_temeraire: { kind: 'art', name: '“The Last Tow” (print)', emoji: '🖼️', price: 750,
+    blurb: 'After Turner. A tug, a ghost ship, and a sunset that knows.' },
+  art_sleeper: { kind: 'art', name: '“The Sleeping Traveler” (print)', emoji: '🖼️', price: 750,
+    blurb: 'After Rousseau. The lion is just checking.' },
 
   // -- BULKO exclusives -------------------------------------------------------
   parm_wheel: {
@@ -272,6 +342,22 @@ export const ITEMS = {
     kind: 'keepsake', name: 'Milk', emoji: '🥛', price: 0,
     blurb: 'Regular milk, from the most relaxed employees BULKO has ever had.',
   },
+  eggs: {
+    kind: 'keepsake', name: 'A Dozen Eggs', emoji: '🥚', price: 0,
+    blurb: 'Twelve, in the gray cardboard. One of them is brown and knows it is special.',
+  },
+  yogurt: {
+    kind: 'keepsake', name: 'Yogurt Cup', emoji: '🍶', price: 0,
+    blurb: 'Peach on the bottom. You are meant to stir it. You are not going to stir it.',
+  },
+  butter: {
+    kind: 'keepsake', name: 'Block of Butter', emoji: '🧈', price: 0,
+    blurb: 'Salted. Folded in wax paper with the corners tucked like a present to yourself.',
+  },
+  cheese_wheel: {
+    kind: 'keepsake', name: 'Little Cheese Wheel', emoji: '🧀', price: 0,
+    blurb: 'A small, round, waxed cheese. It will outlive several of your plans.',
+  },
   parcel: {
     kind: 'keepsake', name: 'A Small Parcel', emoji: '🎁', price: 0,
     blurb: 'Addressed in careful pawwriting. It is not for you, and it is not heavy, and you may not shake it.',
@@ -284,6 +370,30 @@ export const ITEMS = {
   camp_mug: {
     kind: 'keepsake', name: 'Enamel Camp Mug', emoji: '☕', price: 0,
     blurb: 'Speckled blue, dented exactly once. Everything tastes fifteen percent better out of it. The dent is load-bearing.',
+  },
+  trail_mix: {
+    kind: 'keepsake', name: 'Trail Mix', emoji: '🥜', price: 0,
+    blurb: 'Peanuts, raisins, sunflower seeds, and a heroic minority of chocolate bits that will not survive the afternoon.',
+  },
+  bug_spray: {
+    kind: 'keepsake', name: 'Bug Spray', emoji: '🧴', price: 0,
+    blurb: '“REPELS MOSQUITOES. ATTRACTS COMPLIMENTS.” Smells of citronella and somebody’s grandmother’s porch.',
+  },
+  third_bean: {
+    kind: 'keepsake', name: 'Can of the Third Bean', emoji: '🥫', price: 0,
+    blurb: 'No label. Cypress will not say. It is doing better than expected.',
+  },
+  compass: {
+    kind: 'keepsake', name: 'Brass Compass', emoji: '🧭', price: 0,
+    blurb: 'Points north, mostly. Out here it sometimes points at the fire instead, which is also a direction.',
+  },
+  camp_lantern: {
+    kind: 'keepsake', name: 'Camp Lantern', emoji: '🏮', price: 0,
+    blurb: 'Tin and glass, a little dented. It would be a nightlight if you let it.',
+  },
+  flashlight: {
+    kind: 'gear', name: 'Flashlight', emoji: '🔦', price: 0,
+    blurb: 'A good heavy one. After dark it throws a pool of light ahead of you, wherever you point your nose.',
   },
   postcard_farther: {
     kind: 'keepsake', name: 'Farther Isle Postcard', emoji: '🏝️', price: 0,

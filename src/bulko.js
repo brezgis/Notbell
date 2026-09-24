@@ -3,12 +3,13 @@
 // lobster tank that is Not For Sale because the lobsters live there.
 
 import * as THREE from 'three';
-import { ISLAND4, terrainHeight } from './terrain.js';
+import { ISLAND4, terrainHeight, WATER_Y } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
-import { buildAnimal } from './animals.js';
+import { buildAnimal, animateGait } from './animals.js';
+import { ITEMS } from './catalog.js';
 import { kaching, jingle, sip } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { currentWeather } from './almanac.js';
@@ -75,7 +76,10 @@ const TANK_LINES = [
 const TV_WEATHERS = ['clear', 'rain', 'snow', 'fog'];
 const TV_AD_KEYS = ['ad_hotdog', 'ad_lantern', 'ad_scuba', 'ad_parm'];
 
-function makeScreenTex(key, frame) {
+function makeScreenTex(key, step) {
+  // four frames a channel: the chunky bits flip on alternate frames, the
+  // waves and wobbles advance a quarter-turn each frame
+  const frame = step % 2, phase = step * Math.PI / 2;
   const cv = document.createElement('canvas');
   cv.width = 320;
   cv.height = 200;
@@ -217,7 +221,16 @@ function makeScreenTex(key, frame) {
     label('HOT DOG');
   };
 
-  if (key === 'hoot') {
+  if (key === 'bars') {
+    // the test pattern: somebody left channel 3 on. it is weirdly soothing
+    const bars = ['#e8e8e8', '#e8d84a', '#4ad8d8', '#4ad84a', '#d84ad8', '#d84a4a', '#4a4ad8'];
+    bars.forEach((col, i) => { c.fillStyle = col; c.fillRect(i * (W / 7), 0, W / 7 + 1, 130); });
+    c.fillStyle = '#2e2a2c';
+    c.fillRect(0, 130, W, 70);
+    c.fillStyle = 'rgba(255,255,255,0.18)';
+    c.fillRect(0, (step * 37) % 130, W, 10); // the roll bar, rolling
+    label('PLEASE STAND BY', 150);
+  } else if (key === 'hoot') {
     c.fillStyle = '#221a35';
     c.fillRect(0, 0, W, H);
     c.fillStyle = '#2e3e6d';
@@ -305,7 +318,7 @@ function makeScreenTex(key, frame) {
     c.fill();
     c.fillStyle = '#f2913c';
     c.fillRect(216, 126, 64, 12);
-    for (let i = 0; i < 6; i++) dot(42 + i * 35, 154 + Math.sin(i + frame) * 4, 4, '#9fdcf7');
+    for (let i = 0; i < 6; i++) dot(42 + i * 35, 154 + Math.sin(i + phase) * 4, 4, '#9fdcf7');
     label('NOTBELL SCI');
   } else if (key === 'sea') {
     c.fillStyle = '#e8dcc8';
@@ -322,11 +335,11 @@ function makeScreenTex(key, frame) {
     c.lineTo(W, H);
     c.fill();
     c.fillStyle = '#fffaf0';
-    for (let i = 0; i < 9; i++) dot(28 + i * 18, 58 + Math.sin(i + frame) * 6, 8 - (i % 3), '#fffaf0');
+    for (let i = 0; i < 9; i++) dot(28 + i * 18, 58 + Math.sin(i + phase) * 6, 8 - (i % 3), '#fffaf0');
     c.fillStyle = '#27408f';
     c.beginPath();
     c.moveTo(0, 150);
-    for (let x = 0; x <= W; x += 18) c.lineTo(x, 150 + Math.sin(x * 0.05 + frame) * 8);
+    for (let x = 0; x <= W; x += 18) c.lineTo(x, 150 + Math.sin(x * 0.05 + phase) * 8);
     c.lineTo(W, H);
     c.lineTo(0, H);
     c.fill();
@@ -358,7 +371,7 @@ function makeScreenTex(key, frame) {
     c.fillStyle = '#fffaf0';
     for (let i = 0; i < 5; i++) {
       c.beginPath();
-      c.ellipse(186 + i * 17, 56 + Math.sin(i + frame) * 2, 18, 7, 0, 0, Math.PI * 2);
+      c.ellipse(186 + i * 17, 56 + Math.sin(i + phase) * 2, 18, 7, 0, 0, Math.PI * 2);
       c.fill();
     }
     scooch(234, 130, 'clear');
@@ -504,14 +517,14 @@ function makeScreenTex(key, frame) {
     c.beginPath();
     c.moveTo(0, H);
     c.lineTo(0, 88);
-    for (let x = 0; x <= W; x += 16) c.lineTo(x, 88 + Math.sin(x * 0.05 + frame) * 7);
+    for (let x = 0; x <= W; x += 16) c.lineTo(x, 88 + Math.sin(x * 0.05 + phase) * 7);
     c.lineTo(W, H);
     c.fill();
     c.fillStyle = '#27408f';
     c.beginPath();
     c.moveTo(0, H);
     c.lineTo(0, 142);
-    for (let x = 0; x <= W; x += 20) c.lineTo(x, 142 + Math.sin(x * 0.04 + 2 + frame) * 10);
+    for (let x = 0; x <= W; x += 20) c.lineTo(x, 142 + Math.sin(x * 0.04 + 2 + phase) * 10);
     c.lineTo(W, H);
     c.fill();
     c.fillStyle = '#c9962e';
@@ -660,6 +673,28 @@ const TV_ADS = [
     text: 'BULKO Members: the parm wheel. It is a WHEEL. Of PARM. Roll one home today. (Barnaby pays extra for cousins of the parm. Don’t ask.)' },
 ];
 
+// A slow ambient stroll for folks who work one spot: over to one side of
+// their post and back, pausing a while at each end (x-axis span, from home).
+function pace(g, dt, t, span, speed) {
+  const u = g.userData.pace ??= { home: g.position.clone(), to: 1, pause: 3 + Math.random() * 4, face: g.rotation.y };
+  if (u.pause > 0) {
+    u.pause -= dt;
+    animateGait(g, t, 0);
+    g.rotation.y = turnToward(g.rotation.y, u.face, dt, 2);
+    return;
+  }
+  const gx = u.home.x + (u.to > 0 ? span : 0);
+  const d = gx - g.position.x;
+  if (Math.abs(d) < 0.03) {
+    u.to = -u.to;
+    u.pause = 4 + Math.random() * 6;
+    return;
+  }
+  g.position.x += Math.sign(d) * Math.min(Math.abs(d), speed * dt);
+  g.rotation.y = turnToward(g.rotation.y, Math.sign(d) * Math.PI / 2, dt, 3);
+  animateGait(g, t, 1, 8);
+}
+
 export function createBulko(player) {
   const group = new THREE.Group();
   const updates = [];
@@ -704,9 +739,7 @@ export function createBulko(player) {
     ext.position.set(wx, cy, wz);
     ext.traverse((o) => { if (o.isMesh && !o.material.map) o.castShadow = true; });
     group.add(ext);
-    // two circles approximate the long rectangle without sealing the doors
-    zones.addBlocker(wx - 5, wz - 0.5, 7);
-    zones.addBlocker(wx + 5, wz - 0.5, 7);
+    zones.addBlockerBox(wx, wz, 20, 10, 0, 0.05); // the warehouse, exactly
     register({
       pos: new THREE.Vector3(wx + 2, 0, wz - 5.8), r: 2.8,
       label: 'enter BULKO (staff entrance)',
@@ -794,6 +827,25 @@ export function createBulko(player) {
     plank.position.set(dock.x + dox * (i + 0.5), 0.55, dock.z + doz * (i + 0.5));
     plank.rotation.y = dockA;
     group.add(plank);
+    if (i % 2 === 0 || i === 6) {
+      // legs down to the sand under the planks — and at the end, two tall
+      // front posts
+      const front = i === 6;
+      for (const side of [-1, 1]) {
+        const t = i + (front ? 0.85 : 0.5);
+        const lx = dock.x + dox * t - doz * side * 1.1, lz = dock.z + doz * t + dox * side * 1.1;
+        const bot = Math.min(terrainHeight(lx, lz), WATER_Y) - 0.3, top = front ? 1.55 : 0.5;
+        const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, top - bot, 6), mat(0x6b4a2e));
+        pile.position.set(lx, (top + bot) / 2, lz);
+        pile.castShadow = front;
+        if (front) {
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 6), mat(0x4f3622));
+          cap.position.y = (top - bot) / 2 + 0.02;
+          pile.add(cap);
+        }
+        group.add(pile);
+      }
+    }
   }
   zones.addCrossing({
     contains(x, z) {
@@ -814,6 +866,7 @@ export function createBulko(player) {
   buoy.position.set(dock.x - dox * 2, terrainHeight(dock.x - dox * 2, dock.z - doz * 2), dock.z - doz * 2);
   buoy.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   group.add(buoy);
+  zones.addBlocker(buoy.position.x, buoy.position.z, 0.55);
   // (boats.js wires the ferry stops — this buoy is just the landmark)
   BULKO_DOCK.x = dock.x - dox * 1.5;
   BULKO_DOCK.z = dock.z - doz * 1.5;
@@ -962,12 +1015,27 @@ export function createBulko(player) {
         post.position.set(dx, 1.85, dz + s * (hw + 0.35));
         group.add(post);
       }
-      // strip curtains, the kind you nose through with a cart
+      // strip curtains, the kind you nose through with a cart — hung from
+      // the top (pivot at the lintel) so they sway in the cold draft
+      const strips = [];
+      const stripGeo = new THREE.BoxGeometry(0.06, 3.1, 0.5);
+      stripGeo.translate(0, -1.55, 0);
       for (let i = 0; i <= 10; i++) {
-        const strip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 3.1, 0.5),
+        const strip = new THREE.Mesh(stripGeo,
           new THREE.MeshStandardMaterial({ color: 0xcfe8f0, transparent: true, opacity: 0.34, roughness: 0.1, flatShading: true }));
-        strip.position.set(dx + 0.3, 1.7, dz - hw + 0.35 + i * ((hw * 2 - 0.7) / 10));
+        strip.position.set(dx + 0.3, 3.25, dz - hw + 0.35 + i * ((hw * 2 - 0.7) / 10));
         group.add(strip);
+        strips.push(strip);
+      }
+      // wisps of cold rolling out along the floor, curling and thinning
+      const wisps = [];
+      for (let i = 0; i < 9; i++) {
+        const w = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1),
+          new THREE.MeshBasicMaterial({ color: 0xdff2f8, transparent: true, opacity: 0, depthWrite: false }));
+        w.scale.set(1.4, 0.35, 1.1);
+        w.userData = { k: i / 9, z: dz - hw + 0.6 + ((i * 5) % 9) / 8 * (hw * 2 - 1.2) };
+        group.add(w);
+        wisps.push(w);
       }
       // cold breath spilling into the aisle — and it BREATHES: the cooler
       // exhales, reconsiders, exhales again. tide mechanics, dairy scale.
@@ -977,8 +1045,18 @@ export function createBulko(player) {
       group.add(leak);
       updates.push((dt, t) => {
         if (zones.current() !== 'bulko') return;
-        leak.material.opacity = 0.09 + Math.sin(t * 0.55) * 0.05;
+        leak.material.opacity = 0.07 + Math.sin(t * 0.55) * 0.04;
         leak.position.x = dx + 1.1 + (Math.sin(t * 0.3) + 1) * 0.22;
+        strips.forEach((st, i) => {
+          st.rotation.z = Math.sin(t * 0.9 + i * 0.7) * 0.05 + Math.sin(t * 2.3 + i) * 0.015;
+          st.rotation.x = Math.sin(t * 0.7 + i * 1.3) * 0.03;
+        });
+        for (const w of wisps) {
+          const k = (w.userData.k + t * 0.07) % 1;
+          w.position.set(dx + 0.6 + k * 3.2, 0.18 + k * 0.15, w.userData.z + Math.sin(t * 0.6 + w.userData.k * 7) * 0.3);
+          w.scale.set(1.2 + k * 1.2, 0.3 + k * 0.1, 1 + k * 0.8);
+          w.material.opacity = 0.22 * Math.sin(k * Math.PI);
+        }
       });
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 1.0),
         textPanel([['❄  THE MILK COOLER  ❄', 64, 40]], 768, 128, '#2f5a6e', '#eaf6fb'));
@@ -1019,12 +1097,14 @@ export function createBulko(player) {
         new THREE.MeshBasicMaterial({ color: 0xbfe6f2, transparent: true, opacity: 0.09, depthWrite: false }));
       chill.position.set(MC.x, 2.5, MC.z);
       group.add(chill);
-      const bigSign = new THREE.Mesh(new THREE.PlaneGeometry(8, 1.4),
-        textPanel([['❄  COLD FRESH MOO JUICE  ❄', 64, 44]], 768, 140, '#2f5a6e', '#eaf6fb'));
-      bigSign.position.set(MC.x, 4.2, MC.z - 7.78);
+      const bigSign = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.9),
+        textPanel([['❄  COLD FRESH MOO JUICE  ❄', 64, 44]], 768, 100, '#2f5a6e', '#eaf6fb'));
+      bigSign.position.set(MC.x, 5.0, MC.z - 7.78); // up over the shelf headers
       group.add(bigSign);
-      // the carton wall (north), long
-      const tops = [0x6b4a2e, 0xe89ab0, 0xd9c08f];
+      // the cold wall (north): real steel shelving now, in sections — milk,
+      // eggs, yogurt, butter, cheese — each with its little header card. (The
+      // cartons used to hang in rows in midair, no shelf under any of them.)
+      const tops = [0x6b4a2e, 0xe89ab0, 0xd9c08f, 0x5b8bc9];
       // a milk carton wears a RIDGE, not a peak — a little gable prism, seated
       // flush on the box (build the 3-cylinder with thetaStart π/2 BEFORE
       // rotateZ, or the ridge skews — see VISUAL_CANON)
@@ -1033,66 +1113,183 @@ export function createBulko(player) {
         g.rotateZ(Math.PI / 2); // ridge runs along x
         return g;
       };
-      for (let i = 0; i < 56; i++) {
-        const col = i % 14, row = Math.floor(i / 14);
-        const cxn = MC.x - 6.5 + col * 1.0, cyn = 0.95 + row * 0.74, czn = MC.z - 7.4;
-        const carton = box(0.6, 0.66, 0.6, 0xfbf7ef);
-        carton.position.set(cxn, cyn, czn);
-        group.add(carton);
-        const top = new THREE.Mesh(gableGeo(0.56, 0.2), mat(tops[(i + row) % 3], 0.7));
-        top.position.set(cxn, cyn + 0.43, czn); // gable bottom kisses the carton top
-        group.add(top);
+      const WZ = MC.z - 7.1;
+      const SHELF_Y = [0.35, 1.3, 2.25, 3.2];
+      const steel = 0x9aa8b0;
+      const shelfBack = box(19, 4.0, 0.12, 0x8da0aa);
+      shelfBack.position.set(MC.x, 2.0, WZ - 0.55);
+      group.add(shelfBack);
+      for (const y of SHELF_Y) {
+        const sh = box(19, 0.08, 1.1, steel);
+        sh.position.set(MC.x, y, WZ);
+        group.add(sh);
       }
-      // dairy island cases full of cartons (the Costco aisle)
-      const dairyCase = (cx, cz) => {
+      for (const x of [-9.5, -5.7, -1.9, 1.9, 5.7, 9.5]) {
+        const up = box(0.12, 4.0, 1.1, 0x7a8a94);
+        up.position.set(MC.x + x, 2.0, WZ);
+        group.add(up);
+      }
+      const onShelves = (x0, x1, fn) => {
+        for (const y of SHELF_Y) for (let x = x0 + 0.45; x < x1 - 0.3; x += 0.75) fn(MC.x + x, y + 0.04);
+      };
+      const header = (text, x) => {
+        const h = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.45),
+          textPanel([[text, 64, 34]], 384, 66, '#eaf6fb', '#2f5a6e'));
+        h.position.set(MC.x + x, 4.35, WZ + 0.1);
+        group.add(h);
+      };
+      // milk: cartons with a colored label band and a proper ridge cap
+      header('MILK', -7.6);
+      onShelves(-9.5, -5.7, (x, y) => {
+        const k = Math.floor((x * 7 + y * 3) % 4 + 4) % 4;
+        const carton = box(0.5, 0.62, 0.5, 0xfbf7ef);
+        carton.position.set(x, y + 0.31, WZ + 0.1);
+        const band = box(0.52, 0.18, 0.52, tops[k]);
+        band.position.set(x, y + 0.36, WZ + 0.1);
+        const top = new THREE.Mesh(gableGeo(0.46, 0.17), mat(tops[k], 0.7));
+        top.position.set(x, y + 0.62 + 0.085, WZ + 0.1);
+        group.add(carton, band, top);
+      });
+      // eggs: gray cardboard cartons, lids up, the eggs peeking out
+      header('EGGS', -3.8);
+      const eggMat = mat(0xf6efe0, 0.6), brownEgg = mat(0xd9a878, 0.6);
+      onShelves(-5.7, -1.9, (x, y) => {
+        const tray = box(0.62, 0.18, 0.34, 0xb8b0a0);
+        tray.position.set(x, y + 0.09, WZ + 0.15);
+        group.add(tray);
+        for (let e = 0; e < 3; e++) {
+          const egg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.08, 0), (e + Math.round(x * 3)) % 5 ? eggMat : brownEgg);
+          egg.scale.y = 1.25;
+          egg.position.set(x - 0.18 + e * 0.18, y + 0.24, WZ + 0.15);
+          group.add(egg);
+        }
+        const lid = box(0.62, 0.2, 0.04, 0xb8b0a0);
+        lid.position.set(x, y + 0.28, WZ - 0.04);
+        lid.rotation.x = -0.4;
+        group.add(lid);
+      });
+      // yogurt: little cups with foil lids in every flavor
+      header('YOGURT', 0);
+      const flav = [0xf2a0a8, 0xf2cf5b, 0x9ac4e8, 0xb8e0a0, 0xfbf7ef];
+      onShelves(-1.9, 1.9, (x, y) => {
+        for (const dx of [-0.17, 0.17]) {
+          const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.11, 0.26, 8), mat(0xfbf7ef, 0.5));
+          cup.position.set(x + dx, y + 0.13, WZ + 0.1);
+          const foil = new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.02, 8), mat(flav[Math.floor(Math.abs(x * 5 + dx * 9 + y)) % 5], 0.3));
+          foil.position.set(x + dx, y + 0.27, WZ + 0.1);
+          group.add(cup, foil);
+        }
+      });
+      // butter: wrapped bricks, stacked like gold
+      header('BUTTER', 3.8);
+      onShelves(1.9, 5.7, (x, y) => {
+        for (const st of [0, 1]) {
+          const brick = box(0.5, 0.16, 0.26, st ? 0xf3e6a8 : 0xfbf1c8);
+          brick.position.set(x, y + 0.08 + st * 0.17, WZ + 0.1);
+          group.add(brick);
+        }
+      });
+      // cheese: waxed wheels, and a wedge or two showing its holes
+      header('CHEESE', 7.6);
+      onShelves(5.7, 9.5, (x, y) => {
+        if (Math.round(x * 4 + y) % 3) {
+          const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.22, 10), mat(Math.round(x * 3) % 2 ? 0xd84f4f : 0xe8c547, 0.5));
+          wheel.position.set(x, y + 0.11, WZ + 0.1);
+          group.add(wheel);
+        } else {
+          const wedge = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.24, 3, 1, false, 0, Math.PI / 2.2), mat(0xf2cf5b, 0.6));
+          wedge.position.set(x, y + 0.12, WZ + 0.1);
+          group.add(wedge);
+        }
+      });
+      // the islands (the Costco aisle): gallon jugs on one, egg flats and
+      // yogurt multipacks on the other
+      const dairyCase = (cx, cz, fill) => {
         const base = box(5.2, 1.0, 2.6, 0xaebfc8);
         base.position.set(cx, 0.5, cz);
         group.add(base);
         const rim = box(5.4, 0.18, 2.8, 0x8da0aa);
         rim.position.set(cx, 1.05, cz);
         group.add(rim);
-        for (let i = 0; i < 14; i++) {
-          const ccx = cx - 2.1 + (i % 7) * 0.7, ccz = cz - 0.55 + Math.floor(i / 7) * 1.05;
-          const carton = box(0.5, 0.7, 0.5, 0xfbf7ef);
-          carton.position.set(ccx, 1.45, ccz);
-          group.add(carton);
-          const ctop = new THREE.Mesh(gableGeo(0.46, 0.17), mat(tops[i % 3], 0.7));
-          ctop.position.set(ccx, 1.89, ccz);
-          group.add(ctop);
-        }
+        for (let i = 0; i < 14; i++) fill(cx - 2.1 + (i % 7) * 0.7, cz - 0.55 + Math.floor(i / 7) * 1.05, i);
       };
-      dairyCase(MC.x - 5, MC.z - 2);
-      dairyCase(MC.x + 5, MC.z - 2);
+      dairyCase(MC.x - 5, MC.z - 2, (x, z, i) => {
+        const jug = box(0.46, 0.66, 0.46, 0xfbf7ef);
+        jug.position.set(x, 1.47, z);
+        const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.3, 0.16, 6), mat(0xfbf7ef, 0.6));
+        shoulder.position.set(x, 1.88, z);
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.08, 8), mat(tops[i % 4], 0.5));
+        cap.position.set(x, 2.0, z);
+        const handle = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.035, 4, 8), mat(0xfbf7ef, 0.6));
+        handle.position.set(x + 0.2, 1.7, z);
+        handle.rotation.y = Math.PI / 2;
+        group.add(jug, shoulder, cap, handle);
+      });
+      dairyCase(MC.x + 5, MC.z - 2, (x, z, i) => {
+        if (i % 2) {
+          const flat = box(0.6, 0.12, 0.6, 0xb8b0a0);
+          flat.position.set(x, 1.2, z);
+          group.add(flat);
+          for (let e = 0; e < 4; e++) {
+            const egg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.1, 0), e === 2 ? brownEgg : eggMat);
+            egg.scale.y = 1.25;
+            egg.position.set(x - 0.14 + (e % 2) * 0.28, 1.34, z - 0.14 + Math.floor(e / 2) * 0.28);
+            group.add(egg);
+          }
+        } else {
+          for (let c = 0; c < 4; c++) {
+            const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.24, 8), mat(0xfbf7ef, 0.5));
+            cup.position.set(x - 0.15 + (c % 2) * 0.3, 1.26, z - 0.15 + Math.floor(c / 2) * 0.3);
+            const foil = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.135, 0.02, 8), mat(flav[(i + c) % 5], 0.3));
+            foil.position.set(cup.position.x, 1.39, cup.position.z);
+            group.add(cup, foil);
+          }
+        }
+      });
 
       // and yes, you can buy the milk. it's a store. mostly.
-      const MILKS = [
-        { id: 'milk_choco', label: '🍫 Chocolate milk', name: 'Chocolate Milk', emoji: '🍫', price: 8 },
-        { id: 'milk_straw', label: '🍓 Strawberry milk', name: 'Strawberry Milk', emoji: '🍓', price: 8 },
-        { id: 'milk_oat', label: '🌾 Oat beverage', name: 'Oat Beverage', emoji: '🌾', price: 9 },
-        { id: 'milk_plain', label: '🥛 Milk', name: 'Milk', emoji: '🥛', price: 6 },
+      const DAIRY = [
+        { id: 'milk_plain', price: 6, at: 'jugs' },
+        { id: 'milk_choco', price: 8, at: 'jugs' },
+        { id: 'milk_straw', price: 8, at: 'jugs' },
+        { id: 'milk_oat', price: 9, at: 'jugs' },
+        { id: 'eggs', price: 7, at: 'eggs' },
+        { id: 'yogurt', price: 4, at: 'eggs' },
+        { id: 'butter', price: 6, at: 'wall' },
+        { id: 'cheese_wheel', price: 14, at: 'wall' },
       ];
-      for (const caseX of [MC.x - 5, MC.x + 5]) {
-        register({
-          pos: new THREE.Vector3(caseX, 0, MC.z - 2), r: 2.8, zone: 'milkroom',
-          label: 'browse the dairy case',
-          use: async () => {
-            const picked = await ui.ask('The case hums its one cold note. Cartons stand in ranks, capped by flavor.', [
-              ...MILKS.map((m) => ({
-                label: m.label, value: m.id, hint: `${m.price}🔘`,
-                disabled: S.state.buttons < m.price,
-              })),
-              { label: 'Stay cool', value: null },
-            ]);
-            const m = MILKS.find((x) => x.id === picked);
-            if (!m) return;
-            S.spend(m.price);
-            S.addItem(m.id);
-            kaching();
-            ui.updateHUD();
-            ui.toast(`You bought <b>${m.name}</b>. The cold clings to the carton like it wants to come along.`, m.emoji);
-          },
-        });
-      }
+      const buyFrom = async (where, text) => {
+        const list = DAIRY.filter((d) => where === 'wall' || d.at === where);
+        const picked = await ui.ask(text, [
+          ...list.map((d) => ({
+            label: `${ITEMS[d.id].emoji} ${ITEMS[d.id].name}`, value: d.id, hint: `${d.price}🔘`,
+            disabled: S.state.buttons < d.price,
+          })),
+          { label: 'Stay cool', value: null },
+        ]);
+        const d = DAIRY.find((x) => x.id === picked);
+        if (!d) return;
+        S.spend(d.price);
+        S.addItem(d.id);
+        kaching();
+        ui.updateHUD();
+        ui.toast(`You bought <b>${ITEMS[d.id].name}</b>. The cold clings to it like it wants to come along.`, ITEMS[d.id].emoji);
+      };
+      register({
+        pos: new THREE.Vector3(MC.x - 5, 0, MC.z - 2), r: 2.8, zone: 'milkroom',
+        label: 'browse the milk jugs',
+        use: () => buyFrom('jugs', 'Gallon jugs in ranks, capped by flavor. The case hums its one cold note.'),
+      });
+      register({
+        pos: new THREE.Vector3(MC.x + 5, 0, MC.z - 2), r: 2.8, zone: 'milkroom',
+        label: 'browse the eggs and yogurt',
+        use: () => buyFrom('eggs', 'Egg flats, and yogurt by the four-pack. One egg is brown. It knows.'),
+      });
+      register({
+        pos: new THREE.Vector3(MC.x, 0, MC.z - 5.8), r: 3.2, zone: 'milkroom',
+        label: 'browse the cold wall',
+        use: () => buyFrom('wall', 'Milk, eggs, yogurt, butter, cheese — shelves of it, up into the cold.'),
+      });
 
       // the cows, spread across the hall
       const makeCow = (body, x, z, ry) => {
@@ -1126,9 +1323,13 @@ export function createBulko(player) {
           const p = c.userData.parts;
           if (p?.body) p.body.position.y = p.bodyY + Math.sin(t * 1.1 + i * 1.7) * 0.018;
           if (p?.head) p.head.position.y = p.headY + Math.sin(t * 1.1 + i * 1.7 + 0.6) * 0.02;
-          if (playerPos) { // turn to face a customer, like any good staff
-            const dx = playerPos.x - c.position.x, dz = playerPos.z - c.position.z;
-            if (Math.hypot(dx, dz) < 8) c.rotation.y = turnToward(c.rotation.y, Math.atan2(dx, dz), dt, 2.5);
+          if (p?.head) p.head.rotation.x = Math.max(0, Math.sin(t * 2.2 + i)) * 0.12; // chewing, thoughtfully
+          const near = playerPos && Math.hypot(playerPos.x - c.position.x, playerPos.z - c.position.z) < 5;
+          if (near) { // turn to face a customer, like any good staff
+            animateGait(c, t, 0);
+            c.rotation.y = turnToward(c.rotation.y, Math.atan2(playerPos.x - c.position.x, playerPos.z - c.position.z), dt, 2.5);
+          } else {
+            pace(c, dt, t, 1.6, 0.5);
           }
         });
       });
@@ -1188,9 +1389,9 @@ export function createBulko(player) {
       zones.registerInterior('milkroom', {
         root: milkroomRoot,
         floorY: 0,
-        bounds: { x0: MC.x - 10.5, x1: MC.x + 10.5, z0: MC.z - 7.6, z1: MC.z + 7.6 },
+        bounds: { x0: MC.x - 10.5, x1: MC.x + 10.5, z0: MC.z - 6.2, z1: MC.z + 7.6 }, // (the cold wall's shelves)
         blockers: [
-          { x: MC.x - 5, z: MC.z - 2, r: 2.5 }, { x: MC.x + 5, z: MC.z - 2, r: 2.5 },
+          { x: MC.x - 5, z: MC.z - 2, w: 5.6, d: 3.0 }, { x: MC.x + 5, z: MC.z - 2, w: 5.6, d: 3.0 },
         ],
         spawn: { x: MC.x, z: MC.z + 6.5, rotY: 0 },
         lighting: {
@@ -1212,11 +1413,11 @@ export function createBulko(player) {
     // each channel keeps two painted frames; the schedule assigns them to screens
     const channelFrames = {};
     for (const key of [
-      'hoot', 'science', 'sea',
+      'hoot', 'science', 'sea', 'bars',
       ...TV_WEATHERS.map((w) => `weather_${w}`),
       ...TV_AD_KEYS,
     ]) {
-      channelFrames[key] = [makeScreenTex(key, 0), makeScreenTex(key, 1)];
+      channelFrames[key] = [0, 1, 2, 3].map((f) => makeScreenTex(key, f));
     }
     const screenTexKey = (key) => key === 'weather' ? `weather_${currentWeather()}` : key;
     const tvScreens = [];
@@ -1234,22 +1435,31 @@ export function createBulko(player) {
     }
     // TV scheduling — what's on depends on the hour. Day: weather, science, ads,
     // and the sea on one random screen. Night: Hoot's show, ads, the sea.
+    // each screen has its OWN channel (no two alike, one of them is the sea)
+    // and its own flipbook rhythm, so the wall reads as eight little shows
+    // instead of one shuffle
     function scheduleScreens() {
-      const fill = isNight() ? ['hoot', ...TV_AD_KEYS] : ['weather', 'science', ...TV_AD_KEYS];
-      const seaScreen = Math.floor(rand(0, tvScreens.length)); // exactly one screen is the sea
-      tvScreens.forEach((s, i) => { s.key = i === seaScreen ? 'sea' : pick(fill); });
+      const lineup = isNight()
+        ? ['hoot', 'sea', 'bars', ...TV_AD_KEYS, 'weather']
+        : ['weather', 'science', 'sea', 'bars', ...TV_AD_KEYS];
+      const shift = Math.floor(rand(0, lineup.length));
+      tvScreens.forEach((sc, i) => {
+        sc.key = lineup[(i + shift) % lineup.length];
+        sc.rate = 0.45 + ((i * 37) % 10) / 30; // 0.45–0.75s a frame
+        sc.t = i * 0.13;
+        sc.f = i % 4;
+      });
     }
     scheduleScreens();
-    // lo-fi flipbook + re-schedule on the day/night flip (and every so often, for variety)
-    let tvStep = 0, tvFlipT = 0, tvNight = isNight(), tvSchedT = 0;
+    let tvNight = isNight();
     updates.push((dt) => {
       if (zones.current() !== 'bulko') return;
-      tvSchedT += dt;
-      if (isNight() !== tvNight || tvSchedT > 40) { tvNight = isNight(); tvSchedT = 0; scheduleScreens(); }
-      tvFlipT += dt;
-      if (tvFlipT >= 1.6) { tvFlipT = 0; tvStep ^= 1; }
-      for (const s of tvScreens) {
-        s.screen.material.map = channelFrames[screenTexKey(s.key)]?.[tvStep] ?? channelFrames.sea[tvStep];
+      if (isNight() !== tvNight) { tvNight = isNight(); scheduleScreens(); }
+      for (const sc of tvScreens) {
+        sc.t += dt;
+        if (sc.t >= sc.rate) { sc.t = 0; sc.f = (sc.f + 1) % 4; }
+        const frames = channelFrames[screenTexKey(sc.key)] ?? channelFrames.sea;
+        sc.screen.material.map = frames[sc.f];
       }
     });
     // watch from anywhere along the wall front; you get one of the displayed screens
@@ -1260,6 +1470,7 @@ export function createBulko(player) {
       hoot: () => { const pool = isNight() ? [...HOOT_BITS, HOOT_NIGHT] : HOOT_BITS; ui.say(pool[tvIdx.hoot++ % pool.length]); },
       science: () => ui.say([{ speaker: NEWT, voice: NEWT_V, text: SCIENCE_FACTS[tvIdx.science++ % SCIENCE_FACTS.length] }]),
       sea: () => ui.say(SEA_BITS[tvIdx.sea++ % SEA_BITS.length]),
+      bars: () => ui.say('Color bars and a steady tone. PLEASE STAND BY. You stand by. It is, honestly, one of the more restful programs on.'),
     };
     const playTv = (key) => {
       if (TV_AD_KEYS.includes(key)) return ui.say(tvAds[key]);
@@ -1348,45 +1559,27 @@ export function createBulko(player) {
       for (const dog of rollerDogs) dog.rotation.z += dt * 0.7; // the roller turns
     });
 
-    // the staff: a frog vendor. makeFrog — same idea as makeCow up in the milk
-    // room: build the body, recolor, scale, place. (modeled on the North Isle's
-    // very poisonous frog, grown large and gone green-and-yellow.)
-    const makeFrog = (body, legColor, x, z, s = 1) => {
-      const f = new THREE.Group();
-      const fb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.13, 0), mat(body, 0.5));
-      fb.scale.set(1, 0.78, 1.2); fb.position.y = 0.1;
-      f.add(fb);
-      for (const sx of [-1, 1]) {
-        const eye = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat(0x222222, 0.3));
-        eye.position.set(sx * 0.07, 0.22, 0.08);
-        const leg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat(legColor, 0.5));
-        leg.scale.set(1, 0.6, 1.6); leg.position.set(sx * 0.13, 0.04, -0.04);
-        f.add(eye, leg);
-      }
-      f.scale.setScalar(s);
-      f.position.set(x, 0, z);
-      f.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-      group.add(f);
-      return f;
-    };
-    // a stool so he can see, and be seen, over his counter (like Pip's)
+    // the staff: Mortimer, the frog vendor — the canon frog from animals.js
+    // (the North Isle's very poisonous frog is his tiny blue cousin)
     const frogStool = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.85, 8), mat(0x6b4a2e));
     frogStool.position.set(B.x + 12, 0.42, B.z + 5.4);
     frogStool.castShadow = true;
     group.add(frogStool);
-    const frog = makeFrog(0x6ab04a, 0xf0d840, B.x + 12, B.z + 5.4, 6);
+    const frog = buildAnimal('frog', { body: 0x6ab04a, belly: 0xf3e9a8, feet: 0xf0d840 });
+    frog.position.set(B.x + 12, 0.85, B.z + 5.4);
+    group.add(frog);
     { // the paper hat — a little origami boat (the paper_boat item) — on his head
-      const hatHull = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.07, 4), mat(0xfffaf0, 0.7));
+      const hatHull = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.36, 4), mat(0xfffaf0, 0.7));
       hatHull.rotation.y = Math.PI / 4; hatHull.scale.set(1.5, 1, 0.7);
-      hatHull.position.set(0, 0.28, 0.02);
-      const hatSail = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.06, 4), mat(0xfffaf0, 0.7));
-      hatSail.position.set(0, 0.34, 0.02);
+      hatHull.position.set(0, 1.28, 0.1);
+      const hatSail = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.34, 4), mat(0xfffaf0, 0.7));
+      hatSail.position.set(0, 1.58, 0.1);
       hatHull.castShadow = true; hatSail.castShadow = true;
       frog.add(hatHull, hatSail);
     }
     updates.push((dt, t, playerPos) => {
       if (zones.current() !== 'bulko') return;
-      frog.position.y = 0.6 + Math.abs(Math.sin(t * 1.4)) * 0.1; // a patient little bob, up on his stool
+      frog.position.y = 0.85 + Math.abs(Math.sin(t * 1.4)) * 0.08; // a patient little bob, up on his stool
       if (playerPos) { // Mortimer turns to face whoever's ordering, like Gus
         const dx = playerPos.x - frog.position.x, dz = playerPos.z - frog.position.z;
         if (Math.hypot(dx, dz) < 8) frog.rotation.y = turnToward(frog.rotation.y, Math.atan2(dx, dz), dt, 3);
@@ -1467,10 +1660,46 @@ export function createBulko(player) {
     lobsterB.position.set(1, 0.6, 0.4);
     lobsterB.rotation.y = -0.8;
     tankG.add(lobsterA, lobsterB);
+    // life in the tank: A lounges on the couch and turns to see who's
+    // looking; B potters about the floor — rug, lamp, the art, back again —
+    // and a few bubbles find their way up
+    const tankSpots = [[1, 0.4], [0.2, 0.6], [1.6, -0.6], [-0.3, -0.7], [1.8, 0.8]];
+    const tb = { at: 0, pause: 2 };
+    const bubbles = [];
+    for (let i = 0; i < 5; i++) {
+      const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0),
+        new THREE.MeshBasicMaterial({ color: 0xe8f7ff, transparent: true, opacity: 0.7 }));
+      b.userData.k = i / 5;
+      tankG.add(b);
+      bubbles.push(b);
+    }
     updates.push((dt, t) => {
       if (zones.current() !== 'bulko') return;
-      lobsterA.position.y = 0.95 + Math.sin(t * 1.2) * 0.04;
-      lobsterB.position.y = 0.6 + Math.sin(t * 1.4 + 2) * 0.05;
+      lobsterA.position.y = 0.95 + Math.sin(t * 1.2) * 0.02;
+      lobsterA.rotation.y = Math.sin(t * 0.3) * 0.7;
+      if (tb.pause > 0) {
+        tb.pause -= dt;
+        animateGait(lobsterB, t, 0);
+      } else {
+        const [gx, gz] = tankSpots[tb.at];
+        const dx = gx - lobsterB.position.x, dz = gz - lobsterB.position.z, d = Math.hypot(dx, dz);
+        if (d < 0.05) {
+          tb.at = (tb.at + 1 + Math.floor(Math.random() * 3)) % tankSpots.length;
+          tb.pause = 2 + Math.random() * 4;
+        } else {
+          const st = Math.min(d, dt * 0.35);
+          lobsterB.position.x += (dx / d) * st;
+          lobsterB.position.z += (dz / d) * st;
+          lobsterB.rotation.y = turnToward(lobsterB.rotation.y, Math.atan2(dx, dz), dt, 3);
+          animateGait(lobsterB, t, 1, 14);
+        }
+      }
+      lobsterB.position.y = 0.6;
+      for (const b of bubbles) {
+        const k = (b.userData.k + t * 0.12) % 1;
+        b.position.set(-1.8 + b.userData.k * 0.3 + Math.sin(t * 3 + b.userData.k * 9) * 0.05, 0.6 + k * 2.6, -0.9);
+        b.material.opacity = 0.7 * (1 - k);
+      }
     });
     let tankIdx = 0;
     register({
@@ -1492,8 +1721,11 @@ export function createBulko(player) {
       const parts = gus.userData.parts;
       parts.body.position.y = parts.bodyY + Math.sin(t * 0.9) * 0.02;
       const dx = playerPos.x - gus.position.x, dz = playerPos.z - gus.position.z;
-      if (Math.hypot(dx, dz) < 8) {
+      if (Math.hypot(dx, dz) < 6) {
+        animateGait(gus, t, 0);
         gus.rotation.y = turnToward(gus.rotation.y, Math.atan2(dx, dz), dt, 3);
+      } else {
+        pace(gus, dt, t, 2.4, 0.35); // a slow patrol of the entrance: it's a system
       }
     });
     register({

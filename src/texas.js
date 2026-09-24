@@ -8,7 +8,7 @@ import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
-import { buildAnimal } from './animals.js';
+import { buildAnimal, animateGait } from './animals.js';
 import { tone } from './audio.js';
 import { rand, turnToward } from './utils.js';
 
@@ -89,7 +89,7 @@ export function createTexas() {
   shack.rotation.y = 0.3;
   shack.traverse((o) => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
   group.add(shack);
-  zones.addBlocker(T.x - 1, T.z - 1.5, 2.6);
+  zones.addBlockerBox(T.x - 1, T.z - 1.5, 3.4, 3.2, 0.3, 0.05);
 
   updates.push((dt, t) => {
     strands.forEach((strand, si) => {
@@ -113,6 +113,7 @@ export function createTexas() {
   cactus.position.set(T.x + 2.6, terrainHeight(T.x + 2.6, T.z + 0.5), T.z + 0.5);
   cactus.traverse((o) => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
   group.add(cactus);
+  zones.addBlocker(cactus.position.x, cactus.position.z, 0.45, 'tree'); // it's a cactus. don't.
 
   // ------------------------------------------- the can, and the truth ----
   const canPost = box(0.12, 1.1, 0.12, 0x8a6f4d);
@@ -169,16 +170,52 @@ export function createTexas() {
   let shotTimer = rand(6, 14);
   let shotK = -1;
   let canDown = 0;
+  // he walks the border, too: a stiff little lap of all of Texas, checking
+  // the lights and the fence of his own imagination, then back to his post
+  const LAP = [[-0.5, 3.0], [-3.2, 2.0], [-3.6, -0.8], [-3.2, -2.9], [0.8, -3.8], [3.0, -1.8], [3.6, 1.6], [0.8, 1.2]]
+    .map(([dx, dz]) => ({ x: T.x + dx, z: T.z + dz }));
+  let lapAt = -1;          // index into LAP while patrolling, -1 at the post
+  let postTimer = 12 + Math.random() * 10;
   updates.push((dt, t, playerPos) => {
-    // breathing, and glaring fondly at visitors
     const parts = pecos.userData.parts;
+    const near = playerPos && Math.hypot(playerPos.x - pecos.position.x, playerPos.z - pecos.position.z) < 5;
+    if (lapAt >= 0) {
+      // on patrol: stops dead to glare at anyone who comes close
+      if (near) {
+        animateGait(pecos, t, 0);
+        pecos.rotation.y = turnToward(pecos.rotation.y, Math.atan2(playerPos.x - pecos.position.x, playerPos.z - pecos.position.z), dt, 4);
+        return;
+      }
+      const w = LAP[lapAt];
+      const dx = w.x - pecos.position.x, dz = w.z - pecos.position.z, d = Math.hypot(dx, dz);
+      if (d < 0.15) {
+        lapAt++;
+        if (lapAt >= LAP.length) { lapAt = -1; postTimer = 18 + Math.random() * 16; }
+        return;
+      }
+      const step = Math.min(d, dt * 1.6);
+      pecos.position.x += (dx / d) * step;
+      pecos.position.z += (dz / d) * step;
+      pecos.position.y = terrainHeight(pecos.position.x, pecos.position.z);
+      pecos.rotation.y = turnToward(pecos.rotation.y, Math.atan2(dx, dz), dt, 6);
+      animateGait(pecos, t, 1, 14); // quick, indignant little steps
+      return;
+    }
+    // at the post: breathing, and glaring fondly at visitors
+    animateGait(pecos, t, 0);
     parts.body.position.y = parts.bodyY + Math.sin(t * 1.8) * 0.02;
     if (playerPos) {
       const dx = playerPos.x - pecos.position.x;
       const dz = playerPos.z - pecos.position.z;
       if (Math.hypot(dx, dz) < 7) {
         pecos.rotation.y = turnToward(pecos.rotation.y, Math.atan2(dx, dz), dt, 4);
+      } else {
+        pecos.rotation.y = turnToward(pecos.rotation.y, Math.atan2(canX - px, canZ - pz), dt, 2);
       }
+    }
+    if (shotK < 0 && canDown <= 0 && !near) {
+      postTimer -= dt;
+      if (postTimer <= 0) { lapAt = 0; return; }
     }
     // target practice
     if (canDown > 0) {
@@ -229,13 +266,37 @@ export function createTexas() {
     },
   });
 
-  // the sign. the whole sign.
+  // the sign. the whole sign. it says TEXAS, in letters, on both sides
   const sign = box(1.3, 0.7, 0.1, 0xe8d49a);
   const sy = terrainHeight(T.x - 2, T.z + 4);
   sign.position.set(T.x - 2, sy + 1.0, T.z + 4);
   const signPost = box(0.12, 0.9, 0.12, 0x8a6f4d);
   signPost.position.set(T.x - 2, sy + 0.45, T.z + 4);
   group.add(sign, signPost);
+  {
+    const cv = document.createElement('canvas');
+    cv.width = 260; cv.height = 140;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#e8d49a';
+    c.fillRect(0, 0, 260, 140);
+    c.strokeStyle = '#8a6f4d';
+    c.lineWidth = 8;
+    c.strokeRect(6, 6, 248, 128);
+    c.fillStyle = '#7a3b1e';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = '900 76px ui-rounded, "Segoe UI", system-ui, sans-serif';
+    c.fillText('TEXAS', 130, 76);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    for (const side of [1, -1]) {
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(1.24, 0.64), new THREE.MeshBasicMaterial({ map: tex }));
+      face.position.set(T.x - 2, sy + 1.0, T.z + 4 + side * 0.056);
+      if (side < 0) face.rotation.y = Math.PI;
+      group.add(face);
+    }
+  }
+  zones.addBlocker(T.x - 2, T.z + 4, 0.2);
   register({
     pos: new THREE.Vector3(T.x - 2, 0, T.z + 4), r: 2.2,
     label: 'read the sign',

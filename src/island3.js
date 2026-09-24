@@ -185,56 +185,161 @@ export function createIsland3() {
     const perp = { x: -dir.z, z: dir.x };
     const hA = terrainHeight(A.x, A.z);
     const hB = terrainHeight(dir.x * tB, dir.z * tB);
-    const archY = (t) => hA + (hB - hA) * t + Math.sin(t * Math.PI) * 3.2 + 0.5;
+    const archY = (t) => hA + (hB - hA) * t + Math.sin(t * Math.PI) * 3.9 + 0.5;
 
     zones.addCrossing({
       contains(x, z) {
         const dx = x - A.x, dz = z - A.z;
         const t = (dx * along.x + dz * along.z) / LEN;
         if (t < -0.02 || t > 1.02) return false;
-        return Math.abs(dx * perp.x + dz * perp.z) < 1.55;
+        return Math.abs(dx * perp.x + dz * perp.z) < 1.8; // the whole cap stone, edge to edge
       },
       height(x, z) {
         const t = Math.max(0, Math.min(1, ((x - A.x) * along.x + (z - A.z) * along.z) / LEN));
         return archY(t);
       },
     });
+    // the arch is a road as well as a ridge (zones routes: Notbell ⇄ North)
+    zones.addLink({
+      a: 'notbell', b: 'north', kind: 'walk',
+      path: [
+        { x: A.x - along.x * 3, z: A.z - along.z * 3 }, { x: A.x, z: A.z },
+        { x: A.x + along.x * LEN, z: A.z + along.z * LEN },
+        { x: A.x + along.x * (LEN + 3), z: A.z + along.z * (LEN + 3) },
+      ],
+    });
+    // nobody builds a cottage on the arch's feet
+    zones.addKeepout(A.x - along.x * 3, A.z - along.z * 3, 5.5);
+    zones.addKeepout(A.x + along.x * (LEN + 3), A.z + along.z * (LEN + 3), 7);
+    zones.addKeepout(A.x + along.x * (LEN + 9), A.z + along.z * (LEN + 9), 5);
 
-    const slabCount = Math.ceil(LEN / 1.6);
-    for (let i = 0; i <= slabCount; i++) {
-      const t = i / slabCount;
-      const px = A.x + along.x * t * LEN, pz = A.z + along.z * t * LEN;
-      const slab = box(3.6 + rand(-0.3, 0.4), rand(0.7, 1.1), 1.8, i % 3 ? 0x7d8287 : 0x73807a);
-      slab.position.set(px + rand(-0.1, 0.1), archY(t) - 0.45, pz);
-      slab.rotation.y = Math.atan2(along.x, along.z) + rand(-0.04, 0.04);
-      slab.receiveShadow = true;
-      group.add(slab);
-      // the senior librarian (moss)
-      if (i % 2 === 0) {
-        const moss = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.35, 0.6), 0), mat(0x4f8a52, 0.95));
-        moss.scale.y = 0.25;
-        moss.position.set(px + rand(-1.2, 1.2), archY(t) + 0.05, pz + rand(-0.6, 0.6));
-        group.add(moss);
+    // It's LAND, not a bridge: one solid ridge of rock the sea wore through
+    // in a single place — a tunnel in the middle, tall enough for the
+    // Persistent's funnel. Barnacles on the tide line, moss drooping off the
+    // shoulders, and nothing under it but rock and sea.
+    const TUN_T = 0.5;                    // the tunnel sits under the crown
+    const TUN_HALF = 3.4;                 // half its width, along the ridge
+    const TUN_TOP = WATER_Y + 3.5;        // crown of the tunnel ceiling
+    const TOP_W = 4.1, BASE_W = 6.4;      // rock width at the path / at the sea
+    const tunnelCeil = (alongD) => {
+      const u = (alongD - TUN_T * LEN) / TUN_HALF;
+      return Math.abs(u) >= 1 ? null : WATER_Y + (TUN_TOP - WATER_Y) * Math.sqrt(1 - u * u);
+    };
+    const STONES = [0x7d8287, 0x73807a, 0x6e7873, 0x7a7f78];
+    const heading = Math.atan2(along.x, along.z);
+    const SL = 1.2; // slice length
+    const slices = Math.ceil(LEN / SL);
+    for (let i = 0; i <= slices; i++) {
+      const t = i / slices;
+      const d = t * LEN;
+      const px = A.x + along.x * d, pz = A.z + along.z * d;
+      const deck = archY(t);
+      const floor = Math.min(terrainHeight(px, pz), WATER_Y) - 0.6;
+      const ceil = tunnelCeil(d);
+      // the walking stone: a cap slab (moss on top of it, sometimes)
+      const cap = box(TOP_W + rand(-0.2, 0.3), 0.7, SL + 0.35, STONES[i % 4]);
+      cap.position.set(px, deck - 0.35, pz);
+      cap.rotation.y = heading + rand(-0.03, 0.03);
+      cap.receiveShadow = true;
+      group.add(cap);
+      // the body of the ridge: upper shoulders, then a wider foot in the sea.
+      // under the tunnel, only the lintel above the ceiling remains.
+      // one tapered block per slice: narrow at the path, spreading into the
+      // sea like a real ridge (a box whose top face is pinched inward)
+      const top = deck - 0.65, bot = ceil === null ? floor : ceil;
+      if (top - bot > 0.1) {
+        const wBot = ceil === null ? BASE_W + rand(-0.5, 0.5) : TOP_W + 0.9;
+        const wTop = TOP_W + 0.4 + rand(-0.2, 0.2);
+        const geo = new THREE.BoxGeometry(wBot, top - bot, SL + 0.45);
+        const pos = geo.attributes.position;
+        for (let v = 0; v < pos.count; v++) {
+          if (pos.getY(v) > 0) pos.setX(v, pos.getX(v) * (wTop / wBot));
+        }
+        geo.computeVertexNormals();
+        const rock = new THREE.Mesh(geo, mat(STONES[(i + 1) % 4], 0.95));
+        rock.position.set(px + perp.x * rand(-0.15, 0.15), (top + bot) / 2, pz + perp.z * rand(-0.15, 0.15));
+        rock.rotation.y = heading + rand(-0.05, 0.05);
+        rock.castShadow = true;
+        rock.receiveShadow = true;
+        group.add(rock);
       }
-      // barnacles crust the slab sides near the waterline
-      if (t > 0.12 && t < 0.88 && i % 2 === 1) {
-        for (let b = 0; b < 3; b++) {
-          const barn = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.06, 0.11), 0), mat(0xe8e4d8, 0.6));
-          barn.position.set(
-            px + perp.x * (1.85 * (b % 2 ? 1 : -1)),
-            archY(t) - rand(1.2, 2.4),
-            pz + perp.z * (1.85 * (b % 2 ? 1 : -1)));
-          group.add(barn);
+      // boulders slumped at the waterline soften the foot into the sea
+      if (ceil === null && i % 2 === 0 && t > 0.06 && t < 0.94) {
+        for (const side of [-1, 1]) {
+          const bol = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.8, 1.3), 0), mat(STONES[(i + 2) % 4], 0.95));
+          bol.scale.y = 0.7;
+          const off = side * (BASE_W / 2 + rand(-0.2, 0.3));
+          bol.position.set(px + perp.x * off, WATER_Y + rand(-0.3, 0.1), pz + perp.z * off);
+          bol.castShadow = true;
+          group.add(bol);
         }
       }
-      // stout pillars where the arch rides highest
-      if (i === Math.floor(slabCount / 2) || i === Math.floor(slabCount / 4) || i === Math.floor(3 * slabCount / 4)) {
-        const pil = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.7, 1.1, archY(t) - WATER_Y + 2, 6), mat(0x6e7873));
-        pil.position.set(px, (archY(t) + WATER_Y - 2) / 2, pz);
-        group.add(pil);
+      // moss: a green mat on the path's edges, drooping over the shoulders
+      if (i % 2 === 0) {
+        const mossTop = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.35, 0.6), 0), mat(0x4f8a52, 0.95));
+        mossTop.scale.y = 0.25;
+        mossTop.position.set(px + perp.x * rand(-1.4, 1.4), deck + 0.02, pz + perp.z * rand(-1.4, 1.4));
+        group.add(mossTop);
+      }
+      for (const side of [-1, 1]) {
+        if ((i + (side > 0 ? 0 : 1)) % 3) continue;
+        const drape = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 0), mat(i % 2 ? 0x5e975e : 0x4f8a52, 0.95));
+        drape.scale.set(0.35, 1.5 + rand(0, 0.8), 0.9);
+        const off = side * ((TOP_W + 0.5) / 2 + 0.12);
+        drape.position.set(px + perp.x * off, deck - 0.9, pz + perp.z * off);
+        drape.rotation.y = heading;
+        drape.castShadow = true;
+        group.add(drape);
+      }
+      // barnacles crust the tide line — ON the rock face, not beside it
+      if (t > 0.08 && t < 0.92) {
+        for (const side of [-1, 1]) {
+          // the face slopes: find its half-width right at the tide line
+          const kf = (WATER_Y + 0.3 - floor) / Math.max(0.1, deck - 0.65 - floor);
+          const faceW = ceil === null ? (BASE_W + (TOP_W + 0.4 - BASE_W) * kf) / 2 : null;
+          if (faceW === null) continue;
+          for (let b = 0; b < 3; b++) {
+            const barn = new THREE.Mesh(new THREE.ConeGeometry(rand(0.08, 0.13), 0.12, 6), mat(0xe8e4d8, 0.6));
+            const along2 = rand(-SL / 2, SL / 2);
+            const off = side * (faceW + 0.03);
+            barn.rotation.set(0, heading, side * Math.PI / 2); // point out of the rock
+            barn.position.set(
+              px + along.x * along2 + perp.x * off,
+              WATER_Y + rand(-0.1, 0.7),
+              pz + along.z * along2 + perp.z * off);
+            group.add(barn);
+          }
+        }
       }
     }
+    // the tunnel mouth wears moss curtains and a barnacle rim
+    for (const end of [-1, 1]) {
+      const d = TUN_T * LEN + end * TUN_HALF;
+      for (let k = -2; k <= 2; k++) {
+        const drape = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), mat(0x5e975e, 0.95));
+        drape.scale.set(0.8, 1.3, 0.3);
+        const lat = k * 1.1;
+        const dd = d - end * 0.4;
+        drape.position.set(A.x + along.x * dd + perp.x * lat, (tunnelCeil(dd) ?? TUN_TOP) - 0.35, A.z + along.z * dd + perp.z * lat);
+        drape.rotation.y = heading;
+        group.add(drape);
+      }
+    }
+    // rock is solid from the sea's side too — except the tunnel
+    zones.addSeaWall({
+      contains(x, z) {
+        const dx = x - A.x, dz = z - A.z;
+        const dAlong = dx * along.x + dz * along.z;
+        if (dAlong < -1 || dAlong > LEN + 1) return false;
+        if (Math.abs(dx * perp.x + dz * perp.z) > BASE_W / 2 + 0.9) return false;
+        return Math.abs(dAlong - TUN_T * LEN) > TUN_HALF - 0.9;
+      },
+    });
+    zones.addSeaGate({
+      a: { x: A.x, z: A.z }, b: { x: A.x + along.x * LEN, z: A.z + along.z * LEN },
+      x: A.x + along.x * TUN_T * LEN, z: A.z + along.z * TUN_T * LEN,
+      nx: perp.x, nz: perp.z,
+    });
   }
 
   // ------------------------------------------------------- moss & such ----
@@ -357,7 +462,7 @@ export function createIsland3() {
     ext.position.set(libSpot.x, ly, libSpot.z);
     ext.traverse((o) => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
     group.add(ext);
-    zones.addBlocker(libSpot.x, libSpot.z, 4.2);
+    zones.addBlockerBox(libSpot.x, libSpot.z, 6.8, 5.8, 0, 0.05);
 
     const B = IN.library;
     const roomStart = group.children.length;
@@ -437,6 +542,7 @@ export function createIsland3() {
     group.add(openBook);
 
     const vesper = buildAnimal('bat', { body: 0x6a5a78, head: 0x6a5a78 });
+    vesper.userData.fidget = true;
     vesper.position.set(B.x - 4, 0, B.z - 0.2);
     group.add(vesper);
     wireBob(vesper, updates, 0.8);
@@ -521,10 +627,11 @@ export function createIsland3() {
     door.position.set(0, 0.95, 2.51);
     ext.add(door);
     // the gentle cross of a place that mostly hands out lollipops
-    const crossV = box(0.5, 1.3, 0.12, 0x8fce7a);
-    crossV.position.set(0, 3.0, 2.56);
-    const crossH = box(1.3, 0.5, 0.12, 0x8fce7a);
-    crossH.position.set(0, 3.0, 2.56);
+    // (down on the wall above the door, where the eaves can't hide it)
+    const crossV = box(0.34, 0.86, 0.12, 0x8fce7a);
+    crossV.position.set(0, 2.42, 2.56);
+    const crossH = box(0.86, 0.34, 0.12, 0x8fce7a);
+    crossH.position.set(0, 2.42, 2.56);
     ext.add(crossV, crossH);
     const cwin = makeWindow(0.4);
     cwin.position.set(1.6, 1.7, 2.51);
@@ -532,7 +639,7 @@ export function createIsland3() {
     ext.position.set(clinSpot.x, cy, clinSpot.z);
     ext.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(ext);
-    zones.addBlocker(clinSpot.x, clinSpot.z, 3.8);
+    zones.addBlockerBox(clinSpot.x, clinSpot.z, 5.9, 5.3, 0, 0.05);
 
     const B = IN.clinic;
     const roomStart = group.children.length;
@@ -623,6 +730,7 @@ export function createIsland3() {
     group.add(chart);
 
     const gill = buildAnimal('axolotl', { body: 0xf2b8c6, head: 0xf2b8c6 });
+    gill.userData.fidget = true;
     gill.position.set(B.x + 2.5, 0.6, B.z - 3.4);
     group.add(gill);
     // a stool so Dr. Gill clears his counter, the way Pip does at the shop
@@ -729,7 +837,7 @@ export function createIsland3() {
     wagon.rotation.y = 0.5;
     wagon.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(wagon);
-    zones.addBlocker(bx, bz, 2.8);
+    zones.addBlockerBox(bx, bz, 3.8, 2.0, 0.5, 0.05);
 
     register({
       pos: new THREE.Vector3(bx + 2.5, 0, bz + 1.5), r: 2.6,
@@ -745,22 +853,49 @@ export function createIsland3() {
   // -------------------------------------------- the very poisonous frog ----
   {
     const fs = shroomSpots[0] ?? { x: T.x + 8, z: T.z + 2, h: ty };
-    const frog = new THREE.Group();
-    const fBody = new THREE.Mesh(new THREE.IcosahedronGeometry(0.13, 0), mat(0x2a7fe8, 0.5));
-    fBody.scale.set(1, 0.75, 1.2);
-    fBody.position.y = 0.1;
-    frog.add(fBody);
-    for (const sx of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), mat(0x222222, 0.3));
-      eye.position.set(sx * 0.07, 0.21, 0.08);
-      frog.add(eye);
-      const legF = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat(0xff9430, 0.5));
-      legF.scale.set(1, 0.6, 1.6);
-      legF.position.set(sx * 0.13, 0.04, -0.04);
-      frog.add(legF);
-    }
-    frog.position.set(fs.x + 0.7, terrainHeight(fs.x + 0.7, fs.z + 0.4), fs.z + 0.4);
+    // the canon frog (same build as Mortimer at BULKO), small, blue, and
+    // unmistakably not to be licked
+    const frog = buildAnimal('frog', { body: 0x2a7fe8, belly: 0x9fd0ff, feet: 0xff9430, spots: 0x13305e });
+    frog.scale.setScalar(0.55);
+    // up on a mossy stone in the middle of the clearing, where a frog this
+    // important can be seen (he was easy to miss down in the leaf litter)
+    const fx0 = fs.x + 0.7, fz0 = fs.z + 0.4;
+    const seatY = terrainHeight(fx0, fz0) + 0.5;
+    const seat = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 0), mat(0x8a8f86, 0.95));
+    seat.scale.set(1.1, 0.6, 1);
+    seat.position.set(fx0, seatY - 0.3, fz0);
+    seat.castShadow = seat.receiveShadow = true;
+    const seatMoss = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), mat(0x4f8a52, 0.95));
+    seatMoss.scale.set(1.1, 0.35, 1);
+    seatMoss.position.set(fx0, seatY - 0.08, fz0);
+    group.add(seat, seatMoss);
+    frog.position.set(fx0, seatY, fz0);
+    frog.name = 'poison-frog';
     group.add(frog);
+    zones.addBlocker(fx0, fz0, 0.6); // his stone
+    // and a sign, because somebody has to say it
+    {
+      const cv = document.createElement('canvas');
+      cv.width = 256; cv.height = 128;
+      const c = cv.getContext('2d');
+      c.fillStyle = '#f3e7c4'; c.fillRect(0, 0, 256, 128);
+      c.fillStyle = '#b8322a'; c.textAlign = 'center';
+      c.font = 'bold 30px sans-serif'; c.fillText('PLEASE', 128, 38);
+      c.font = 'bold 34px sans-serif'; c.fillText('DO NOT LICK', 128, 78);
+      c.font = 'bold 26px sans-serif'; c.fillText('THE FROG', 128, 112);
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const sx = fx0 + 1.9, sz = fz0 + 0.9, sy = terrainHeight(sx, sz);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, 0.1), mat(0x7a5230));
+      post.position.set(sx, sy + 0.55, sz);
+      const board = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.46, 0.06),
+        [mat(0x9a7448), mat(0x9a7448), mat(0x9a7448), mat(0x9a7448), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }), mat(0x9a7448)]);
+      board.position.set(sx, sy + 1.05, sz);
+      board.rotation.y = Math.atan2(fx0 - sx, fz0 - sz) + Math.PI * 0.75; // angled toward the path in
+      post.castShadow = board.castShadow = true;
+      group.add(post, board);
+      zones.addBlocker(sx, sz, 0.2);
+    }
     // the frog only reads in a clearing — relocate every tree on top of it to a
     // dry spot just outside, scanning ALL directions (its own bearing may face
     // water, which is why moving it straight out used to leave the copse behind)
@@ -781,6 +916,10 @@ export function createIsland3() {
       }
       if (!moved) tree.visible = false; // nowhere dry to move it — just clear the canopy
     }
+    // trunks are solid — added now, after the frog's clearing moved some
+    for (const tree of forestTrees) {
+      if (tree.visible) zones.addBlocker(tree.position.x, tree.position.z, 0.6, 'tree');
+    }
     let hopT = rand(1, 3);
     let hop = 99;
     updates.push((dt) => {
@@ -788,13 +927,12 @@ export function createIsland3() {
       if (hopT <= 0) { hop = 0; hopT = rand(2, 5); }
       if (hop < 0.35) {
         hop += dt;
-        frog.position.y = terrainHeight(frog.position.x, frog.position.z) +
-          Math.sin(Math.min(hop / 0.35, 1) * Math.PI) * 0.18;
+        frog.position.y = seatY + Math.sin(Math.min(hop / 0.35, 1) * Math.PI) * 0.18;
       }
     });
     let frogIdx = 0;
     register({
-      getPos: () => frog.position, r: 1.8,
+      getPos: () => frog.position, r: 2.4,
       label: 'admire the very poisonous frog (do not touch)',
       use: () => ui.say(FROG_LINES[frogIdx++ % FROG_LINES.length]),
     });
@@ -838,11 +976,24 @@ export function createIsland3() {
     const cabinRoof = box(2.7, 0.16, 3.1, 0x4f8f6a);
     cabinRoof.position.set(0, 2.66, -0.8);
     boat.add(cabinRoof);
-    const porthole = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.1, 8), mat(0xbfe6f2, 0.3));
-    porthole.rotation.x = Math.PI / 2;
-    porthole.position.set(0, 1.8, 0.65);
-    glowWindow(porthole); // glows at night like the rest
-    boat.add(porthole);
+    // portholes on both sides now — the front wall belongs to the door
+    for (const sx of [-1, 1]) {
+      const porthole = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.1, 8), mat(0xbfe6f2, 0.3));
+      porthole.rotation.z = Math.PI / 2;
+      porthole.position.set(sx * 1.22, 1.85, -0.8);
+      glowWindow(porthole); // glows at night like the rest
+      boat.add(porthole);
+    }
+    // the front door is a mouse hole: a round-topped dark arch in the wall
+    const holeMat = mat(0x2a1d16, 0.9);
+    const holeLow = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.55, 0.08), holeMat);
+    holeLow.position.set(0, 1.2, 0.62);
+    const holeTop = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.08, 12, 1, false, Math.PI / 2, Math.PI), holeMat);
+    holeTop.rotation.x = Math.PI / 2;
+    holeTop.position.set(0, 1.47, 0.62);
+    const sill = box(1.1, 0.08, 0.22, 0xa97c50);
+    sill.position.set(0, 0.95, 0.66);
+    boat.add(holeLow, holeTop, sill);
     const stovepipe = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6), mat(0x2e2a26));
     stovepipe.position.set(0.8, 3.0, -1.4);
     boat.add(stovepipe);
@@ -853,6 +1004,8 @@ export function createIsland3() {
     boat.add(cheese);
     boat.position.set(bx, WATER_Y + 0.25, bz);
     boat.rotation.y = seaward + Math.PI / 2;
+    // a hull is a wall, as far as rowboats and swimmers are concerned
+    zones.addSeaWall({ contains: (x, z) => Math.hypot(x - bx, z - bz) < 3.0 });
     boat.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(boat);
     updates.push((dt, t) => {
@@ -907,7 +1060,7 @@ export function createIsland3() {
     cart.rotation.y = -0.5;
     cart.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(cart);
-    zones.addBlocker(cx, cz, 1.8);
+    zones.addBlockerBox(cx, cz, 2.9, 1.8, -0.5, 0.05);
 
     register({
       pos: new THREE.Vector3(cx + 1.4, 0, cz + 1.4), r: 2.4,

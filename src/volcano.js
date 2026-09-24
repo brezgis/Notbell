@@ -3,8 +3,10 @@
 // never hurt anyone and isn't going to start for you.
 
 import * as THREE from 'three';
-import { VOLCANO, SITES, WATER_Y, terrainHeight } from './terrain.js';
+import { VOLCANO, VOLCANO_SHELF, SITES, WATER_Y, terrainHeight } from './terrain.js';
+import { makeCampfire } from './campfire.js';
 import { register } from './interact.js';
+import * as zones from './zones.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
 import { buildAnimal, animateGait } from './animals.js';
@@ -30,6 +32,72 @@ export function createVolcano() {
   glow.rotation.x = -Math.PI / 2;
   glow.position.set(V.x, craterY + 0.15, V.z);
   group.add(glow);
+  // ...and the lava shows from outside now: a warm halo hanging over the
+  // crater (a little by day, properly at night) and embers drifting up
+  const haloCv = document.createElement('canvas');
+  haloCv.width = haloCv.height = 64;
+  {
+    const c = haloCv.getContext('2d');
+    const g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,160,90,0.8)');
+    g.addColorStop(0.3, 'rgba(255,120,60,0.45)');
+    g.addColorStop(0.65, 'rgba(255,95,45,0.14)');
+    g.addColorStop(1, 'rgba(255,80,40,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, 64, 64);
+  }
+  // not one orb but a haze: a broad low glow sitting in the crater mouth,
+  // a wider, fainter bloom above it, and the faintest wash up into the smoke
+  const haloTex = new THREE.CanvasTexture(haloCv);
+  const halos = [
+    [22, 7, 3.5, 0.5], [34, 14, 7, 0.32], [44, 26, 13, 0.16],
+  ].map(([w, h, y, k]) => {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTex, transparent: true, opacity: 0.2,
+      depthWrite: false, blending: THREE.AdditiveBlending, fog: false, color: 0xff7a44,
+    }));
+    sp.scale.set(w, h, 1);
+    sp.position.set(V.x, craterY + y, V.z);
+    sp.renderOrder = 5; // after the sky and its horizon haze, or they paint over it
+    sp.userData.k = k;
+    group.add(sp);
+    return sp;
+  });
+  // two lazy lava runnels spilling over the rim, down the slope a little way
+  const lavaMat = new THREE.MeshBasicMaterial({ color: 0xff6a2a });
+  for (const [ang, len] of [[0.5, 5.5], [2.6, 4]]) {
+    const pts = [];
+    for (let i = 0; i <= 6; i++) {
+      const d = 2.8 + (i / 6) * len;
+      const a = ang + Math.sin(i * 1.7) * 0.06;
+      const x = V.x + Math.cos(a) * d, z = V.z + Math.sin(a) * d;
+      pts.push(new THREE.Vector3(x, terrainHeight(x, z) + 0.05, z));
+    }
+    const runnel = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 12, 0.22, 4), lavaMat);
+    group.add(runnel);
+  }
+  const embers = [];
+  for (let i = 0; i < 10; i++) {
+    const e = new THREE.Mesh(new THREE.IcosahedronGeometry(0.1, 0),
+      new THREE.MeshBasicMaterial({ color: 0xffa04a, transparent: true }));
+    e.userData = { t: Math.random() * 4, x: Math.random() * 3.6 - 1.8, z: Math.random() * 3.6 - 1.8 };
+    group.add(e);
+    embers.push(e);
+  }
+  updates.push((dt, t) => {
+    const night = isNight() ? 1 : 0;
+    for (const sp of halos) {
+      sp.material.opacity = sp.userData.k * (0.35 + night * 0.65 + Math.sin(t * 0.7) * 0.08);
+    }
+    glow.material.opacity = 0.75 + Math.sin(t * 1.3) * 0.15;
+    for (const e of embers) {
+      const u = e.userData;
+      u.t += dt;
+      if (u.t > 4) { u.t = 0; u.x = Math.random() * 3.6 - 1.8; u.z = Math.random() * 3.6 - 1.8; }
+      e.position.set(V.x + u.x + Math.sin(u.t * 2) * 0.3, craterY + 1 + u.t * 3, V.z + u.z);
+      e.material.opacity = Math.max(0, 1 - u.t / 4);
+    }
+  });
   const emberLight = new THREE.PointLight(0xff8a4c, 60, 24, 2);
   emberLight.position.set(V.x, craterY + 2, V.z);
   group.add(emberLight);
@@ -42,6 +110,7 @@ export function createVolcano() {
     rock.position.set(rx, terrainHeight(rx, rz) + 0.3, rz);
     rock.castShadow = true;
     group.add(rock);
+    zones.addBlocker(rx, rz, rock.geometry.parameters.radius * 0.85, 'tree');
   }
 
   // she smokes sometimes. it means she's comfortable.
@@ -86,6 +155,31 @@ export function createVolcano() {
     }
   });
 
+  // ------------------------------------------------------- Ember's fire ----
+  // on the black-sand shelf, in front of her hut: the fire Ember keeps (she
+  // insists it keeps her). Two flat warm stones to sit on; nobody walks
+  // through it — not even her, and she'd be fine.
+  {
+    const fx = VOLCANO_SHELF.x + 2.2, fz = VOLCANO_SHELF.z + 1.6;
+    const fire = makeCampfire(fx, fz, { scale: 1 });
+    group.add(fire.group);
+    updates.push((dt, t) => fire.update(dt, t));
+    zones.addBlocker(fx, fz, 1.3);
+    for (const [dx, dz] of [[-1.9, 1.1], [1.6, 1.7]]) {
+      const x = fx + dx, z = fz + dz;
+      const seat = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), mat(0x5e5854, 0.95));
+      seat.scale.set(1.2, 0.35, 1);
+      seat.position.set(x, terrainHeight(x, z) + 0.1, z);
+      seat.castShadow = seat.receiveShadow = true;
+      group.add(seat);
+    }
+    register({
+      pos: new THREE.Vector3(fx, 0, fz + 1.8), r: 2,
+      label: 'warm your paws at Ember’s fire',
+      use: () => ui.say('The fire pops and settles. It smells of driftwood and, faintly, of the mountain. Ember says it hums along if you listen. You listen. …Maybe.'),
+    });
+  }
+
   // ------------------------------------------------- Cinder the iguana ----
   const cinder = buildAnimal('salamander', { body: 0x7a8a6a, head: 0x7a8a6a });
   cinder.scale.setScalar(1.25);
@@ -118,6 +212,11 @@ export function createVolcano() {
   baskRock.position.set(baskX, baskY + 0.25, baskZ);
   baskRock.castShadow = true;
   group.add(baskRock);
+  // a warm flat rock you can step up onto (Cinder won't mind. much.)
+  zones.addSurface({
+    contains: (x, z) => ((x - baskX) / 1.8) ** 2 + ((z - baskZ) / 1.4) ** 2 < 1,
+    height: () => baskY + 0.6,
+  });
   cinder.position.set(baskX, baskY + 0.55, baskZ);
   cinder.rotation.y = Math.atan2(0 - baskX, 0 - baskZ); // faces the home islands, eyes half shut
   group.add(cinder);
@@ -189,6 +288,7 @@ export function createVolcano() {
   bar.rotation.y = Math.PI; // counter faces the sea
   bar.traverse((o) => { if (o.isMesh && !o.userData.flicker) o.castShadow = true; });
   group.add(bar);
+  zones.addBlockerBox(bar.position.x, bar.position.z, 2.9, 0.9, Math.PI, 0.05);
 
   register({
     pos: new THREE.Vector3(VB.x + 0.5, 0, VB.z + 4.6), r: 2.4,

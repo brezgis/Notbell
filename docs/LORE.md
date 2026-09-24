@@ -21,8 +21,13 @@ buttons have been the currency since — it's why your money jingles funny.
   milestone (1 / 3 / 6 / 10 donations, `loreToldUpTo` in state).
 - Tansy's **four letters** wash up in bottles while fishing
   (`bottlesRead`).
-- The old lighthouse still stands, dark, with a **polished empty hook**
-  where the bell hung. **Murmur**, the ghost, polishes it. Someone should.
+- The old lighthouse still stands with a **polished empty hook** where the
+  bell hung (on a plain wall bracket now — the old crossbar read as a
+  gallows). **Murmur**, the ghost, polishes it. Someone should. Somebody
+  has since wired a small **electric lamp** into the lamp room: it turns a
+  modest beam over the water after dark and in weather. A newer plate:
+  "IT IS NOT HER LIGHT. IT DOES ITS BEST." The Old Light is still the one in
+  the cave.
 - **Howell** insists he hears the bell underwater on foggy nights. Howell is
   a gray fox who insists he is a wolf. Both claims get the same treatment
   in-world: nobody argues, everybody notes it down.
@@ -104,8 +109,18 @@ island files):
   has waved at the same Labs fellow every morning for eleven years),
   **Small Mercy** (lamb; holds with rockets a LITTLE, don't tell). Plain
   hats and bonnets are their uniform; the wool is their own.
-- **Farther Isle** (`farther.js`) — south past the Far Isle, which is the
-  entire joke. **Huck** (bear, bucket hat; eleven summers camping, the RV
+- **Farther Isle** (`farther.js`) — way out past the Far Isle (a long
+  ride on the Farther Line, north-east over open water), which is the
+  entire joke. A campground under its own little mountain (the summit
+  trail; sign the register — Sprint has written "almost" twice), kayaks,
+  and a **rotating cast of campers**, a different handful each day:
+  Thistle (hedgehog, three chords), Pim (penguin, packed for every
+  weather), Reedy (frog, ultralight: "I am the four ounces"), Lumen (moth,
+  reading by the one lantern), Gulliver (pelican, kayak guide), Dune
+  (horse, sold everything but the blanket), Burrow (mole, trenches),
+  Sprint (tortoise, summit by next autumn), Mallow (capybara, hammock),
+  Vela (owl, stars), Cedar (boar, beans — the third bean), Juniper
+  (rabbit, first time camping). **Huck** (bear, bucket hat; eleven summers camping, the RV
   grew an awning, a wall of annotated tide tables where some entries just
   say "yes" — a quiet future hook, do not resolve), **Wren** (duck,
   binoculars; logs birds because somebody should be keeping notes; never
@@ -115,8 +130,10 @@ island files):
 
 Wanderers (roster + voices + friendships in `src/villagers.js` — 16 as of
 2026-07): Clover, Biscuit, Saffron, **Howell** (hatless; a wolf), Bramble,
-Puddle, Admiral Greenbean, Marigold (horse, Far Isle), Ember (salamander,
-commutes to the cave at midday, has opinions about its acoustics), Tusk
+Puddle, Admiral Greenbean, Marigold (horse, Far Isle), **Ember** (salamander,
+**the volcano's own**: her hut and her fire are on the black-sand shelf at
+its foot; the mountain hums in B-flat and she hums back; in the rain she
+goes in), Tusk
 (boar, wild-adjacent), Butterpat (cow), Crumb (mouse, master of the
 MouseBoat), and the Grove lounge: Mochi (capybara, wears the orange — "the
 orange situation simply arose"), Pondo (the other capybara), Sol and Brook
@@ -125,10 +142,58 @@ orange situation simply arose"), Pondo (the other capybara), Sol and Brook
 Signature hats are identity: each wanderer keeps theirs; Howell pointedly has
 none. New villagers need a hat decision (including "no").
 
+**Anchored vs. roaming.** Characters who ARE their place stay in it —
+Crumb (the MouseBoat), Mochi/Pondo/Sol/Brook (the springs), Ember (the
+volcano), the ducks (the nest) — `ANCHORED` in villagers.js. Everyone
+else is a little random dude and roams: they walk the footbridge, the arch
+and the causeway, or take the trains, and walk home the same way at night.
+
+## The Dropped Crown (under the reef) — `crown.js`
+
+Brine's grandmother said the reef was a crown a sea-queen threw away on
+purpose. All true. Dive from the reef in Pip's diver's suit (you wear the
+bubble helmet down there, like on the moon):
+
+- **The Crown** — a ring of twelve candy-colored coral points tipped with
+  glowing pearls. **Octavia** (octopus, costume tiara) was never a queen,
+  "just a very tired octopus holding a very heavy hat"; she threw the crown
+  off the edge of the world and now everyone lives in it. **Delphine** (a
+  dolphin with legs, in sneakers, always running). **Bernard** (a blue
+  whale — "the largest animal that has ever lived" — exactly as tall as
+  everyone else, in a top hat; walks the Highway every morning, doctor's
+  orders; the doctor is a sea cucumber). **Gil & Marina** (fish-folk who
+  grew legs because evolution was taking too long; jogging, forever).
+  **Sequin** (glitter crab, gossip). The giant clam makes one pearl a day.
+- **Kelpwood** — the kelp forest; otters holding hands on the surface
+  above. **Ranger Holdfast** keeps the **Kelp Highway**: the road that
+  links every neighborhood, with bubbles that carry you along it.
+- **The Lady Button** — Moledecai Salvage Co.'s barge, sunk hunting the
+  bell, now "luxury residences" (exposed beams, original barnacles, a
+  jellyfish chandelier). **Maurice** the eel is the doorman; **Mister
+  Periwinkle** (hermit crab) is the broker; a sea cucumber in a bow tie is
+  the sommelier. Survey marker 38: "BELL: NOT FOUND HERE EITHER."
+  **Unit 0 — the bilge — is not for sale; something glints on the heavy
+  tides.** (A bell hook: do not resolve.)
+- **The Glow** — the trench. Plankton that light up when you move through
+  them ("oh! hello!"), waltzing jellyfish, lanternfish, and **Lanterne** the
+  anglerfish: "Up there you had a lighthouse. Down here, you have me." On
+  the heavy tides she hears something ring, far off, once. (Same hook.)
+
+## The night sky
+
+Constellations (sky.js): **The Bell** (one star missing — the clapper; the
+sailors say it fell in the Great Squall), The Hook, The Button, **The Wolf
+(a fox)** (per Howell; the committee gently disagrees), The Big Parmesan
+(BULKO asked to sponsor it; denied), The Lantern. The Labs roof telescope
+names them at night. On clear nights stars come loose (starfall.js) —
+catch one in the net before it lands.
+
 ## Places with rules
 
 - **The Listening House** — a faith of listening; candles counted in
-  `flags.candlesLit`. Never give the belfry a bell.
+  `flags.candlesLit`. Never give the belfry a bell. (The bell-cote over the
+  front gable is tall and open on purpose: an empty hook where a bell
+  would hang.)
 - **BULKO** — legally-distinct warehouse club, ferry-only. The 1.5-button hot
   dog has cost that "since the sea had a bell"; your change is **half a
   button**, a keepsake, and the price plaque is quietly about the lore.
@@ -149,9 +214,30 @@ none. New villagers need a hat decision (including "no").
 - **The Fold stays off the chart** — its island info is registered keyless
   on purpose (the HUD names it, the chart never will). They asked politely.
 - **The Farther General** (zone `general`) — "We have it. If we don't,
-  come back Thursday — the tide usually brings one in." Sells marshmallows
-  (the campfire toasts them), the enamel mug, and the postcard. The third
-  bean is never identified. Keep it that way.
+  come back Thursday — the tide usually brings one in." A full shop now:
+  camp food (marshmallows, trail mix, the third bean), gear (flashlight —
+  a pool of light ahead of you after dark —, lantern, bug spray, compass),
+  keepsakes (the mug, the postcard). The third bean is never identified.
+  Keep it that way.
+- **Farther Isle, the back** — past the neck of sand, east: **Gordy** (skunk),
+  his trailer, a lawn chair, a TV that gets one channel (a fishing show; the
+  same episode; he has a feeling this time), and a cooler of Big Moose Root
+  Beer. His first line is canon: *"I thought it was the Farter Isle."*
+  Every tent and RV at Farther can be walked into.
+- **The sharks have names** — Gummy (the strait; self-conscious about the
+  teeth), Aunt Doris (south of home; forty years going round), Finnegan
+  (off the Far Isle; would like to be a dolphin). Swim or row up to chat.
+- **The Labs grounds** (`labsgrounds.js`) — the wildflower trial plot (Azure
+  the butterfly, "PH.D. in not being a moth"; Buzz the bee, reports, does
+  not brag), the gift kiosk (Dot; science-adjacent merch), the **emo baby
+  rover** behind it "vaping" water vapor (the moon is so mainstream), the
+  blueberry bushes nobody planted, and the south beach: rovers on towels,
+  a sandcastle, a ball that never drops, and Wendell the mole on his union
+  break. The Labs love a picnic table.
+- **The telephone** — one line, two booths, one at each end of the North
+  Isle ↔ Labs causeway. It calls the other end of the bridge. That's it.
+- **The poison frog** (North Isle) sits on a mossy stone by a sign that
+  says PLEASE DO NOT LICK THE FROG. Nobody has.
 - **The Farther Line** (`farline.js`) — the third railway, salt-teal
   livery, Far Isle south shore → Farther Isle, over open water. An engine
   on EACH end (the B2 two-engine doctrine, first implemented here): no

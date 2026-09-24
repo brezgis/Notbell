@@ -7,14 +7,18 @@ export const WATER_Y = -0.55;
 
 // the Far Isle — a smaller neighbor across the strait, joined by the bridge
 export const ISLAND2 = { x: 98, z: -30, r: 24 };
+// ...grown a little east, to give the Listeners' town and the Old Singer
+// room to breathe (the whale used to hang her tail off the end)
+export const ISLAND2_EAST = { x: 118, z: -27, r: 13 };
 
 // the volcano that made the whole archipelago. retired. proud of her work.
 // visible from both islands, reachable only by rowboat.
 export const VOLCANO = { x: 30, z: -120, r: 19 };
+export const VOLCANO_SHELF = { x: 22, z: -99, r: 6.5 };
 
 // the north island: moss, mushrooms, books, and a doctor nobody needs.
 // joined to Notbell by a natural stone arch the sea carved itself.
-export const ISLAND3 = { x: -55, z: -85, r: 20 };
+export const ISLAND3 = { x: -58, z: -89, r: 23 }; // (backed off a notch and grown, so the town has room)
 
 // TEXAS. a very small island. it is called Texas. that's it, that's the lore.
 export const TEXAS = { x: -14, z: -52, r: 7 };
@@ -38,12 +42,27 @@ export const ISLAND6 = { x: -150, z: -58, r: 38 };
 // plain folk farm. they were offered a spot on the chart, very politely.
 // they declined, very politely. everyone waves.
 export const ISLAND6_WEST = { x: -194, z: -48, r: 19 };
+// ...and a beach, off the Labs' south shore, for the rovers' days off
+export const ISLAND6_BEACH = { x: -146, z: -19, r: 9 };
 
-// south past the Far Isle: Farther Isle. the name is a whole philosophy.
-// campers on the high ground, mangroves wading out of the southeast side,
-// and a tide that runs the only clock anybody down there consults.
-export const ISLAND7 = { x: 105, z: 30, r: 21 };
-export const ISLAND7_FLATS = { x: 109, z: 46, r: 13 }; // the mangrove flats
+// Farther Isle: way out past the Far Isle, off to the northeast in open
+// water — a real trip on the Farther Line. the name is a whole philosophy.
+// a campsite in the lee of its own little mountain (trails to the top),
+// mangroves wading out of the southeast side, and a tide that runs the only
+// clock anybody out there consults.
+export const ISLAND7 = { x: 170, z: -126, r: 27 };
+// the back of Farther: a thin neck of sand and a knob of peninsula, east,
+// where somebody parked a trailer years ago and simply stayed
+export const ISLAND7_BACK = { x: ISLAND7.x + 34, z: ISLAND7.z + 4, r: 8 };
+export const ISLAND7_NECK = { x: ISLAND7.x + 25, z: ISLAND7.z + 3, r: 7 };
+export const ISLAND7_FLATS = { x: ISLAND7.x + 14, z: ISLAND7.z + 16, r: 10 }; // the mangrove flats
+// the mountain: not a volcano — nobody's ever had to say that out loud here
+export const MOUNT7 = { x: ISLAND7.x + 8, z: ISLAND7.z - 10, r: 15, h: 13 };
+// the summit trail, switchbacking up from camp (painted into the ground; the
+// trail signs and the summit cairn live in farther.js)
+export const TRAIL7 = [
+  [-6, 4], [-1, 2], [4, 2.5], [10, 0], [4, -4], [0, -7], [5, -11], [8, -10],
+].map(([dx, dz]) => ({ x: ISLAND7.x + dx, z: ISLAND7.z + dz }));
 
 const TERRACE = 2.4; // height of each AC-style terrace step
 
@@ -58,6 +77,7 @@ function islandMask(x, z) {
   return Math.max(
     maskAt(x, z, 0, 0, ISLAND_RADIUS, 14),
     maskAt(x, z, ISLAND2.x, ISLAND2.z, ISLAND2.r, 10),
+    maskAt(x, z, ISLAND2_EAST.x, ISLAND2_EAST.z, ISLAND2_EAST.r, 6),
     maskAt(x, z, ISLAND3.x, ISLAND3.z, ISLAND3.r, 9),
     maskAt(x, z, TEXAS.x, TEXAS.z, TEXAS.r, 4),
     maskAt(x, z, ISLAND4.x, ISLAND4.z, ISLAND4.r, 6),
@@ -67,8 +87,11 @@ function islandMask(x, z) {
     maskAt(x, z, ISLAND5_SOUTH.x, ISLAND5_SOUTH.z, ISLAND5_SOUTH.r, 7),
     maskAt(x, z, ISLAND6.x, ISLAND6.z, ISLAND6.r, 9),
     maskAt(x, z, ISLAND6_WEST.x, ISLAND6_WEST.z, ISLAND6_WEST.r, 7),
+    maskAt(x, z, ISLAND6_BEACH.x, ISLAND6_BEACH.z, ISLAND6_BEACH.r, 4),
     maskAt(x, z, ISLAND7.x, ISLAND7.z, ISLAND7.r, 8),
-    maskAt(x, z, ISLAND7_FLATS.x, ISLAND7_FLATS.z, ISLAND7_FLATS.r, 5)
+    maskAt(x, z, ISLAND7_FLATS.x, ISLAND7_FLATS.z, ISLAND7_FLATS.r, 5),
+    maskAt(x, z, ISLAND7_NECK.x, ISLAND7_NECK.z, ISLAND7_NECK.r, 3),
+    maskAt(x, z, ISLAND7_BACK.x, ISLAND7_BACK.z, ISLAND7_BACK.r, 4)
   );
 }
 
@@ -89,6 +112,19 @@ function baseHeight(x, z) {
     const cone = (1 - vd / VOLCANO.r) * 17 - 1.5 + wobble;
     const crater = smoothstep(4.2, 0, vd) * 7.5;
     h = Math.max(h, cone - crater);
+  }
+  // her shelf: a low black-sand apron on the volcano's south-west foot, room
+  // enough for a salamander's hut and a fire (the old shelf was a towel)
+  const sd = Math.hypot(x - VOLCANO_SHELF.x, z - VOLCANO_SHELF.z);
+  if (sd < VOLCANO_SHELF.r + 4) {
+    h = Math.max(h, smoothstep(VOLCANO_SHELF.r + 4, VOLCANO_SHELF.r, sd) * 1.1 - 0.6);
+  }
+  // Farther's mountain: a soft grassy peak that terraces like everything else
+  const md = Math.hypot(x - MOUNT7.x, z - MOUNT7.z);
+  if (md < MOUNT7.r) {
+    const k = 1 - md / MOUNT7.r;
+    const peak = MOUNT7.h * Math.pow(k, 1.35) + (vnoise(x * 0.15 + 2.2, z * 0.15 - 7.1) - 0.5) * 1.4 * k;
+    h = Math.max(h, peak * m + h * (1 - m)); // only where there's island under it
   }
   return h;
 }
@@ -196,15 +232,17 @@ function findBones(town2) {
   // the Old Singer rests on a far shore, not under the train
   const toHome = { x: -ISLAND2.x, z: -ISLAND2.z };
   const homeLen = Math.hypot(toHome.x, toHome.z);
-  return scanAround(ISLAND2.x, ISLAND2.z, (x, z) => {
-    if (Math.hypot(x - town2.x, z - town2.z) < 13) return null;
+  // she rests on the new east lobe: a long, low stretch with room for all
+  // sixteen units of her, nose to tail, on dry sand
+  return scanAround(ISLAND2_EAST.x, ISLAND2_EAST.z, (x, z) => {
+    if (Math.hypot(x - town2.x, z - town2.z) < 14) return null;
     const dx = x - ISLAND2.x, dz = z - ISLAND2.z;
     const d = Math.hypot(dx, dz) || 1;
     if ((dx * toHome.x + dz * toHome.z) / (d * homeLen) > -0.1) return null; // strait side
     const h = baseHeight(x, z);
-    if (h < -0.1 || h > 0.35) return null;
-    return { x, z, r: 6, h: 0.25 };
-  }, 10, ISLAND2.r + 5) ?? { x: ISLAND2.x + 18, z: ISLAND2.z + 8, r: 6, h: 0.25 };
+    if (h < 0.1 || h > 2.6) return null;
+    return { x, z, r: 7, h: Math.max(0.35, h) };
+  }, 0, ISLAND2_EAST.r) ?? { x: ISLAND2_EAST.x, z: ISLAND2_EAST.z, r: 7, h: 0.6 };
 }
 
 function findDock(village, pools) {
@@ -245,6 +283,7 @@ const bigbox = { x: ISLAND4.x, z: ISLAND4.z, r: 17, h: 0.8 };
 // science prefers level ground; the paperwork alone demands it.
 const labsYard = { x: -124, z: -58, r: 14, h: 1.6 };
 const labsPad = { x: -134, z: -78, r: 10, h: 1.6 };
+const labsBeach = { x: ISLAND6_BEACH.x, z: ISLAND6_BEACH.z + 1, r: 8, h: 0.25 };
 
 // the Fold: a green, a field, and a small hill of well-kept stones.
 // plain folk like their ground the way the Cod made it — mostly.
@@ -254,8 +293,8 @@ const kirkyard = { x: -201, z: -41, r: 6, h: 2.2 };
 
 // Farther Isle: a camp clearing, a store yard, and the mangrove flats —
 // which flatten to just above the waterline, so the tide can visit.
-const camp = { x: 100, z: 18, r: 9, h: 1.6 };
-const storeYard = { x: 110, z: 25.5, r: 9, h: 1.5 };
+const camp = { x: ISLAND7.x - 1, z: ISLAND7.z + 4, r: 12, h: 1.6 };
+const storeYard = { x: ISLAND7.x - 13, z: ISLAND7.z - 3, r: 7, h: 1.6 };
 const mangroveFlats = { x: ISLAND7_FLATS.x, z: ISLAND7_FLATS.z, r: ISLAND7_FLATS.r, h: -0.3 };
 
 // Grove Isle's three clearings: the manor court, the springs, the orchard
@@ -264,11 +303,16 @@ const manor = scanAround(ISLAND5.x, ISLAND5.z, (x, z) => {
   return avg === null ? null : { x, z, r: 11, h: avg };
 }, 2, 14) ?? { x: ISLAND5.x, z: ISLAND5.z, r: 11, h: 2.0 };
 
+// the manor's gravel forecourt (fountain and all) gets level ground of its
+// own — it used to hang half off the hillside below the front steps. It's
+// flattened LAST, so the southern orchard's lower plateau can't tug at it.
+const forecourt = { x: manor.x, z: manor.z + 6, r: 9, h: manor.h };
+
 const springs = scanAround(ISLAND5.x, ISLAND5.z, (x, z) => {
   if (Math.hypot(x - manor.x, z - manor.z) < 16) return null;
   const avg = flatEnough(x, z, 5, 0.6, 5.5, 2.6);
-  return avg === null ? null : { x, z, r: 7.5, h: Math.max(avg, 0.9) };
-}, 8, ISLAND5.r - 2) ?? { x: ISLAND5.x - 12, z: ISLAND5.z + 8, r: 7.5, h: 1.2 };
+  return avg === null ? null : { x, z, r: 9, h: Math.max(avg, 0.9) };
+}, 8, ISLAND5.r - 2) ?? { x: ISLAND5.x - 12, z: ISLAND5.z + 8, r: 9, h: 1.2 };
 
 const southOrchard = { x: ISLAND5_SOUTH.x, z: ISLAND5_SOUTH.z - 2, r: 11, h: 1.4 };
 
@@ -282,18 +326,18 @@ const orchard = scanAround(ISLAND5.x, ISLAND5.z, (x, z) => {
 // the north island's little clearing, for the library and the clinic
 const town3 = scanAround(ISLAND3.x, ISLAND3.z, (x, z) => {
   const avg = flatEnough(x, z, 6.5, 1.0, 5.5, 2.6);
-  return avg === null ? null : { x, z, r: 9, h: avg };
-}, 2, 13) ?? { x: ISLAND3.x, z: ISLAND3.z, r: 9, h: 1.8 };
+  return avg === null ? null : { x, z, r: 13, h: avg }; // wide enough for the library AND the clinic
+}, 2, 13) ?? { x: ISLAND3.x, z: ISLAND3.z, r: 13, h: 1.8 };
 // the cave mound's dark opening faces the village so you approach it head-on
 cave.facing = Math.atan2(village.x - cave.x, village.z - cave.z);
 
-export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats };
+export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, labsBeach, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats };
 
 // Player begins at the south edge of the plaza, looking at the village.
 export const PLAYER_SPAWN = { x: village.x, z: village.z + 9 };
 
 export function clearOfSites(x, z, margin = 2) {
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, labsBeach, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats, forecourt]) {
     if (Math.hypot(x - s.x, z - s.z) < s.r + margin) return false;
   }
   return true;
@@ -303,7 +347,7 @@ export function clearOfSites(x, z, margin = 2) {
 // so nothing needs raycasts to stand on the ground.
 export function terrainHeight(x, z) {
   let h = baseHeight(x, z);
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, labsBeach, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats, forecourt]) {
     const d = Math.hypot(x - s.x, z - s.z);
     if (d < s.r) {
       const w = smoothstep(s.r, s.r * 0.45, d);
@@ -350,13 +394,25 @@ const COL_CONCRETE = new THREE.Color(0xb6b1a4);
 const COL_TILLED = new THREE.Color(0x9a7b52);
 const COL_MUD = new THREE.Color(0x9a8365); // the mangrove flats, honest tidal mud
 const COL_MUD_WET = new THREE.Color(0x7d6b52);
+const COL_ROCK_TOP = new THREE.Color(0x9a948a);
+
+function onTrail(x, z) {
+  if (Math.hypot(x - MOUNT7.x, z - MOUNT7.z) > MOUNT7.r + 10) return false;
+  for (let i = 0; i < TRAIL7.length - 1; i++) {
+    const a = TRAIL7[i], b = TRAIL7[i + 1];
+    const dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz;
+    const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / l2));
+    if (Math.hypot(x - (a.x + dx * t), z - (a.z + dz * t)) < 0.95) return true;
+  }
+  return false;
+}
 
 export function createTerrain() {
   // wider than tall: the west got longer when the Labs moved in
-  const SIZE_X = 390, SIZE_Z = 320, SEG_X = 232, SEG_Z = 190;
+  const SIZE_X = 460, SIZE_Z = 320, SEG_X = 274, SEG_Z = 190;
   let geo = new THREE.PlaneGeometry(SIZE_X, SIZE_Z, SEG_X, SEG_Z);
   geo.rotateX(-Math.PI / 2);
-  geo.translate(-35, 0, 0); // x spans -230..160; the chart still ends at -130
+  geo.translate(0, 0, 0); // x spans -230..230 (Farther is FAR); the chart still ends at -130
 
   const pos = geo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
@@ -389,6 +445,10 @@ export function createTerrain() {
       color.copy(dFlats < mangroveFlats.r + 3 ? COL_MUD : COL_SAND);
     } else if (dVolcano < VOLCANO.r + 2) {
       color.copy(y > 9 ? COL_CINDER : COL_BASALT); // her slopes, her colors
+    } else if (onTrail(va.x, va.z)) {
+      color.copy(COL_DIRT); // the summit trail, worn in by boots and hooves
+    } else if (Math.hypot(va.x - MOUNT7.x, va.z - MOUNT7.z) < MOUNT7.r * 0.35 && y > MOUNT7.h * 0.62) {
+      color.copy(COL_ROCK_TOP); // bare rock up top, where the wind lives
     } else if (n.y < 0.65) {
       color.copy(COL_DIRT); // steep terrace walls read as earth
     } else if (dVillage < 6.5 || dTown2 < 5.5) {

@@ -6,6 +6,7 @@ import { terrainHeight, clearOfSites, ISLAND_RADIUS } from './terrain.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
+import { play as playTool } from './tools.js';
 import { rollTable, FOSSIL_TABLE } from './catalog.js';
 import { thud, jingle } from './audio.js';
 import { rand } from './utils.js';
@@ -95,6 +96,7 @@ export function createDigging() {
           return;
         }
         thud();
+        playTool('shovel');
         spot.alive = false;
         spot.mark.visible = false;
         spot.respawn = rand(240, 480); // the island makes fossils slower than you spend them

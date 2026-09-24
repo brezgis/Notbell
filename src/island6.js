@@ -5,6 +5,7 @@
 // they grow up, if they want. Almost named Bell Labs. Legal said no.
 
 import * as THREE from 'three';
+import { CONSTELLATION_NAMES } from './sky.js';
 import { SITES, ISLAND3, ISLAND6, terrainHeight, WATER_Y } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
@@ -14,7 +15,7 @@ import { buildAnimal, animateGait } from './animals.js';
 import { jingle, tone, doorChime, sip } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { addIslandInfo } from './fieldguide.js';
-import { HOLIDAY } from './calendar.js';
+import { HOLIDAY, isNight } from './calendar.js';
 import { currentWeather, setSpaceFade } from './almanac.js';
 import { setLaunchNight } from './sky.js';
 import { makeCeilingTube } from './buildings.js';
@@ -42,6 +43,32 @@ const IN = { x: 300, z: 1700 }; // the labs interior, off in the elsewhere
 // the dock the Persistent calls at (consumed by boats.js — create the labs
 // before the boats in main.js, same deal as BULKO)
 export const LABS_DOCK = { x: 0, z: 0, rotY: 0, buoyPos: null };
+
+// painted lettering for boards and banners: auto-shrinks each line to fit
+// (the BULKO sign's trick), so the words always make it onto the wood
+function letteredPlane(w, h, lines, bg, fg, pxPerUnit = 128) {
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(w * pxPerUnit);
+  cv.height = Math.round(h * pxPerUnit);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = fg;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const [text, yFrac, sizeFrac, weight = 800] of lines) {
+    let size = Math.round(cv.height * sizeFrac);
+    do {
+      ctx.font = `${weight} ${size}px ui-rounded, "Segoe UI", system-ui, sans-serif`;
+      if (ctx.measureText(text).width <= cv.width * 0.9 || size <= 10) break;
+      size -= 2;
+    } while (true);
+    ctx.fillText(text, cv.width / 2, cv.height * yFrac);
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex }));
+}
 
 // ----------------------------------------------------------- the flag ----
 // The Notbell flag: the outline of the bell that isn't, a button where the
@@ -159,7 +186,10 @@ export function createIsland6(player) {
   });
 
   // ===================================================== the facility ----
-  const fx = -126, fz = -63; // building center
+  // building center — set back three yards west of where it first stood, so
+  // the North Isle causeway (which lands aiming right at this corner) comes
+  // ashore onto open yard instead of into the east wall
+  const fx = -129, fz = -63;
   const fy = Y.h;
   {
     const main = box(16, 5, 7, 0xe6e2d4);
@@ -184,9 +214,7 @@ export function createIsland6(player) {
     const lintel = box(2.4, 0.5, 0.3, 0xb6b1a4);
     lintel.position.set(fx, fy + 2.8, fz + 3.6);
     group.add(lintel);
-    zones.addBlocker(fx - 4.5, fz, 5.2);
-    zones.addBlocker(fx + 4.5, fz, 5.2);
-    zones.addBlocker(fx, fz + 2.8, 1.4); // the doorway recess is a recess, not a hallway
+    zones.addBlockerBox(fx, fz, 16, 7, 0, 0.05); // the building, exactly
 
     register({
       pos: new THREE.Vector3(fx, 0, fz + 4.4), r: 2.2,
@@ -225,6 +253,12 @@ export function createIsland6(player) {
     },
     height: () => ROOF_Y,
   });
+  // the handrails are rails: thin walls just outside the walkway, so your
+  // shoulders stop at them (the walkway itself is a crossing and wins)
+  for (const sz of [-1, 1]) {
+    zones.addBlockerBox((stairX1 + fx + 7.2) / 2, fz + sz * (CATWALK_HALF_W + 0.12), fx + 7.2 - stairX1, 0.24);
+  }
+  zones.addBlockerBox(fx + 7.35, fz, 0.24, CATWALK_HALF_W * 2 + 0.5); // and the far end
   {
     // the stair: a long inclined slab with cleats, plus rails
     const run = stairX0 - stairX1; // climbs eastward, toward the roof
@@ -282,9 +316,25 @@ export function createIsland6(player) {
     register({
       pos: new THREE.Vector3(fx + 6.4, 0, fz), r: 1.8,
       label: 'peer through the telescope',
-      use: () => ui.say(S.hasFlag('rocketPowered')
-        ? ['The moon, enormous and patient. Someone has taped a note to the eyepiece: “SOON.”']
-        : ['The moon, enormous and patient. Chalked on the railing beside the telescope, an arrow pointing up: “IT’S RIGHT THERE.”']),
+      use: () => {
+        if (isNight()) {
+          // after dark the chalk chart on the railing names what you're seeing
+          const CHARTED = {
+            'The Bell': 'THE BELL — note the missing clapper star. Fell in the Great Squall (sailors). Never existed (astronomers). Committee split 4–4.',
+            'The Hook': 'THE HOOK — hangs over the lighthouse most of the year. Coincidence, says the committee, unanimously, too quickly.',
+            'The Button': 'THE BUTTON — four holes, perfectly spaced. Pip claims naming rights. Pip does not have naming rights.',
+            'The Wolf (a fox)': 'THE WOLF — per Howell. The committee has reviewed the shape and would like to gently say: fox.',
+            'The Big Parmesan': 'THE BIG PARMESAN — the brightest wheel in the sky. BULKO has asked to sponsor it. Denied (for now).',
+            'The Lantern': 'THE LANTERN — rises over the café. Luna says it was there first. Luna may be right.',
+          };
+          const name = CONSTELLATION_NAMES[Math.floor(Math.random() * CONSTELLATION_NAMES.length)];
+          ui.say(['You swing the telescope up past the moon, into the stars.', `A chalk chart on the railing: “${CHARTED[name]}”`]);
+          return;
+        }
+        ui.say(S.hasFlag('rocketPowered')
+          ? ['The moon, enormous and patient. Someone has taped a note to the eyepiece: “SOON.”']
+          : ['The moon, enormous and patient. Chalked on the railing beside the telescope, an arrow pointing up: “IT’S RIGHT THERE.”']);
+      },
     });
   }
 
@@ -312,11 +362,13 @@ export function createIsland6(player) {
       zones.addBlocker(bx, bz, 0.8);
     }
     // planters: poured concrete, institutional; flowers: insubordinate.
-    // a square, but a square somebody laid out by eye on a Friday — each bed
-    // a half-step off true, which is as aligned as gardens ever agree to be
+    // a square around the flagpole, centered on the front door — but a
+    // square somebody laid out by eye on a Friday, each bed a half-step off
+    // true. the walk from the door runs straight between them, and the east
+    // pair stays well clear of the causeway landing.
     for (const [px, pz, ry] of [
-      [fx - 7.3, fz + 7.8, 0.07], [fx - 2.9, fz + 8.2, -0.1],
-      [fx - 7.1, fz + 12.2, -0.06], [fx - 3.2, fz + 11.9, 0.12],
+      [fx - 3.8, fz + 8.1, 0.07], [fx + 4.0, fz + 7.9, -0.1],
+      [fx - 3.6, fz + 12.0, -0.06], [fx + 3.7, fz + 12.2, 0.12],
     ]) {
       const py = terrainHeight(px, pz);
       const tub = box(1.5, 0.55, 1.5, 0xb6b1a4);
@@ -373,6 +425,13 @@ export function createIsland6(player) {
     plaque.position.set(flagBaseX - 0.9, py + 0.9, flagBaseZ);
     plaque.rotation.x = -0.3;
     group.add(plaque);
+    // ...on a post, like a plaque that means it
+    const plaquePost = box(0.1, 0.75, 0.1, 0x6b7280);
+    plaquePost.position.set(flagBaseX - 0.9, py + 0.37, flagBaseZ - 0.08);
+    group.add(plaquePost);
+    const plaqueFace = letteredPlane(0.82, 0.52, [['FLAG', 0.3, 0.3], ['PROTOCOL', 0.66, 0.28]], '#c9b178', '#4a3f32');
+    plaqueFace.position.set(0, 0, 0.045);
+    plaque.add(plaqueFace);
     register({
       pos: new THREE.Vector3(flagBaseX, 0, flagBaseZ), r: 2.4,
       label: 'read the flag protocol',
@@ -431,7 +490,7 @@ export function createIsland6(player) {
     dish.position.set(dx, dy, dz);
     dish.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(dish);
-    zones.addBlocker(dx, dz, 1.4);
+    zones.addBlocker(dx, dz, 2.8); // the bowl sweeps at head height — give it room
     updates.push((dt, t) => {
       dish.rotation.y = Math.sin(t * 0.05) * 1.2; // a very slow, very thorough sweep
       blinker.material.emissiveIntensity = (Math.sin(t * 2.5) > 0.4) ? 1.4 : 0.15;
@@ -455,6 +514,7 @@ export function createIsland6(player) {
     ring.position.set(P.x, P.h + 0.05, P.z);
     ring.receiveShadow = true;
     group.add(ring);
+    zones.addSurfaceDisc(P.x, P.z, 6.3, P.h + 0.18); // a pad you stand ON
     const scorch = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 0.28, 14), mat(0x44403a, 1));
     scorch.position.set(P.x, P.h + 0.07, P.z);
     group.add(scorch);
@@ -619,6 +679,12 @@ export function createIsland6(player) {
     const boardS = box(3.8, 1.2, 0.14, 0xf0e8d8);
     boardS.position.set(sx, sy + 1.7, sz);
     group.add(boardS);
+    const face = letteredPlane(3.7, 1.1, [
+      ['NOTBELL LABS', 0.42, 0.42, 900],
+      ['research in progress · mind the rovers', 0.8, 0.16, 700],
+    ], '#f0e8d8', '#3a4a5c');
+    face.position.set(sx, sy + 1.7, sz + 0.075);
+    group.add(face);
     zones.addBlocker(sx, sz, 0.6);
     register({
       pos: new THREE.Vector3(sx, 0, sz + 1), r: 2.2,
@@ -645,6 +711,7 @@ export function createIsland6(player) {
     LABS_DOCK.z = sz;
     LABS_DOCK.rotY = bearing + Math.PI; // step off facing the Labs
     const px = -bz, pz = bx;
+    const LAST = 4;
     for (let i = 0; i < 5; i++) {
       const t = i + 0.5;
       const plank = box(2.4, 0.16, 1.0, i % 4 === 2 ? 0x96703f : 0xa97c50);
@@ -652,11 +719,28 @@ export function createIsland6(player) {
       plank.rotation.y = bearing;
       plank.receiveShadow = true;
       group.add(plank);
-      if (i % 3 === 0) {
+      if (i % 2 === 0 && i !== LAST) {
+        // legs all the way down to the sand, whatever the depth
         for (const side of [-1, 1]) {
-          const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 2.4, 6), mat(0x6b4a2e));
-          pile.position.set(sx + bx * t + px * side * 1.1, -0.6, sz + bz * t + pz * side * 1.1);
+          const lx = sx + bx * t + px * side * 1.1, lz = sz + bz * t + pz * side * 1.1;
+          const bot = Math.min(terrainHeight(lx, lz), WATER_Y) - 0.3, top = 0.5;
+          const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, top - bot, 6), mat(0x6b4a2e));
+          pile.position.set(lx, (top + bot) / 2, lz);
           group.add(pile);
+        }
+      }
+      if (i === LAST) {
+        // the front posts: the pier ends where two tall posts say it does
+        for (const side of [-1, 1]) {
+          const fx = sx + bx * (t + 0.35) + px * side * 1.1, fz = sz + bz * (t + 0.35) + pz * side * 1.1;
+          const fbot = Math.min(terrainHeight(fx, fz), WATER_Y) - 0.3, ftop = 1.55;
+          const fp = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, ftop - fbot, 6), mat(0x6b4a2e));
+          fp.position.set(fx, (ftop + fbot) / 2, fz);
+          fp.castShadow = true;
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13 + 0.03, 0.13 + 0.03, 0.08, 6), mat(0x4f3622));
+          cap.position.y = (ftop - fbot) / 2 + 0.02;
+          fp.add(cap);
+          group.add(fp);
         }
       }
     }
@@ -681,6 +765,7 @@ export function createIsland6(player) {
     buoy.position.set(bxp, terrainHeight(bxp, bzp), bzp);
     buoy.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(buoy);
+    zones.addBlocker(bxp, bzp, 0.55);
     LABS_DOCK.buoyPos = new THREE.Vector3(bxp, 0, bzp);
   }
 
@@ -721,6 +806,13 @@ export function createIsland6(player) {
         const t = (x - ISLAND3.x) * ux + (z - ISLAND3.z) * uz;
         return deckH(Math.min(Math.max(t, tA), tB));
       },
+    });
+    zones.addLink({ // North Isle ⇄ the Labs, on foot, beside the phone line
+      a: 'north', b: 'labs', kind: 'walk',
+      path: [
+        { x: ax - ux * 3, z: az - uz * 3 }, { x: ax, z: az },
+        { x: bx2, z: bz2 }, { x: bx2 + ux * 3, z: bz2 + uz * 3 },
+      ],
     });
     const sx2 = -uz, sz2 = ux; // sideways
     for (let tt = tA; tt <= tB; tt += 1.1) {
@@ -796,6 +888,112 @@ export function createIsland6(player) {
       }
       prevTop = top;
     }
+
+    // the two telephone booths: one at each end, and each can only call the
+    // other. Pick up at one end and, faintly, down the causeway, the other
+    // one rings. Sometimes somebody's walking past it.
+    const booths = [];
+    const ANSWERS = [
+      [{ text: 'Brrring… brrring… brrring…' }, { text: 'Far down the causeway, very faintly, the other telephone is ringing its heart out. Nobody picks up.' }],
+      [{ text: 'Brrring… brr— *click*' }, { text: '“Hello? Labs switchboard. …This is the other booth. You know that, right? You can see me. I’m waving.”', speaker: 'a passing mole', voice: 300 }],
+      [{ text: 'Brrring… *click*' }, { text: '“…Is this the telephone? I heard it ringing and I panicked. Hello. It’s very nice to talk to you. Goodbye.”', speaker: 'a passing mole', voice: 300 }],
+      [{ text: '*click*' }, { text: '“Notbell Labs, Department of Calling the Other End of the Bridge. Your call is important to us. We are the only call.”', speaker: 'Strix', voice: 420 }],
+      [{ text: 'Brrring…' }, { text: 'Somebody answers, breathes for a moment, and whispers “the frog is fine” before hanging up.' }],
+    ];
+    function phoneBooth(cx, cz, face, where) {
+      const b = new THREE.Group();
+      const y0 = terrainHeight(cx, cz);
+      const PAINT = 0x3f8a8a, TRIM = 0xf3e7c4;
+      const floor = box(1.3, 0.12, 1.3, 0x8a8f86);
+      floor.position.y = 0.06;
+      b.add(floor);
+      const body = box(1.15, 2.1, 1.15, PAINT);
+      body.position.y = 1.17;
+      b.add(body);
+      // the glass door (front) and side windows, a little proud of the walls
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0xcfe8ef, roughness: 0.2, flatShading: true });
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.78, 1.5, 0.04), glassMat);
+      door.position.set(0, 1.12, 0.59);
+      b.add(door);
+      for (const sx of [-1, 1]) {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.6), glassMat);
+        win.position.set(sx * 0.59, 1.45, 0);
+        b.add(win);
+      }
+      const handle = box(0.05, 0.3, 0.05, 0xd9b44a);
+      handle.position.set(0.3, 1.1, 0.63);
+      b.add(handle);
+      // the sign band: TELEPHONE, front and back
+      for (const [z, ry] of [[0.585, 0], [-0.585, Math.PI]]) {
+        const sign = letteredPlane(1.0, 0.2, [['TELEPHONE', 0.55, 0.75]], '#f3e7c4', '#2f5f5f');
+        sign.position.set(0, 2.06, z + (z > 0 ? 0.005 : -0.005));
+        sign.rotation.y = ry;
+        b.add(sign);
+      }
+      // roof: a little pyramid wide enough to clear the walls, and a bell
+      // on top (it's Notbell. of course the phone has a bell. it's the only
+      // bell. don't tell anyone.)
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(1.05, 0.45, 4), mat(TRIM));
+      roof.rotation.y = Math.PI / 4;
+      roof.position.y = 2.22 + 0.225;
+      b.add(roof);
+      const bell = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.2, 7), mat(0xd9b44a, 0.4));
+      bell.position.y = 2.78;
+      b.add(bell);
+      // inside, through the glass: the telephone itself
+      const phone = box(0.3, 0.36, 0.14, 0x2e2e2e);
+      phone.position.set(0, 1.35, -0.48);
+      b.add(phone);
+      b.position.set(cx, y0, cz);
+      b.rotation.y = face;
+      b.name = 'phone-booth';
+      b.traverse((o) => { if (o.isMesh && !o.material.isMeshBasicMaterial) { o.castShadow = true; o.receiveShadow = true; } });
+      group.add(b);
+      zones.addBlockerBox(cx, cz, 1.3, 1.3, face, 0.05);
+      const booth = { b, bell, ring: 0 };
+      booths.push(booth);
+      register({
+        getPos: () => new THREE.Vector3(cx + Math.sin(face) * 1.2, y0, cz + Math.cos(face) * 1.2), r: 1.9,
+        label: 'use the telephone',
+        use: () => {
+          const other = booths.find((o) => o !== booth);
+          if (other) other.ring = 4;
+          tone(880, { dur: 0.25, type: 'square', vol: 0.02 });
+          tone(880, { time: 0.4, dur: 0.25, type: 'square', vol: 0.02 });
+          const first = !S.hasFlag('calledOtherEnd');
+          S.setFlag('calledOtherEnd');
+          ui.say(first
+            ? [{ text: `A booth at the ${where} end of the causeway. There is one number on the dial. It says OTHER END.` }, ...ANSWERS[0]]
+            : pick(ANSWERS));
+        },
+      });
+      return booth;
+    }
+    // a dry, clear spot near each landing, beside the wire side of the path
+    function boothSpot(ex, ez, back) {
+      // (roomy first — a booth wedged against somebody's cottage is no good)
+      for (const room of [2.4, 1.4]) {
+        for (const k of [3.2, 4.2, 5.2, 2.6, 6.2]) {
+          for (const off of [3.2, -3.2, 4.2, -4.2, 2.6]) {
+            const x = ex + back.x * k + sx2 * off, z = ez + back.z * k + sz2 * off;
+            if (terrainHeight(x, z) > 0.45 && !zones.nearAnything(x, z, room)) return { x, z };
+          }
+        }
+      }
+      return { x: ex + back.x * 3 + sx2 * 3.2, z: ez + back.z * 3 + sz2 * 3.2 };
+    }
+    const nA = boothSpot(ax, az, { x: -ux, z: -uz });
+    const nB = boothSpot(bx2, bz2, { x: ux, z: uz });
+    // doors face the causeway mouth, so you walk off the bridge and there it is
+    phoneBooth(nA.x, nA.z, Math.atan2(ax - nA.x, az - nA.z), 'north');
+    phoneBooth(nB.x, nB.z, Math.atan2(bx2 - nB.x, bz2 - nB.z), 'Labs');
+    updates.push((dt, t) => {
+      for (const bo of booths) {
+        if (bo.ring <= 0) { bo.bell.rotation.z = 0; continue; }
+        bo.ring -= dt;
+        bo.bell.rotation.z = Math.sin(t * 40) * 0.35 * Math.min(1, bo.ring);
+      }
+    });
   }
 
   // ------------------------------------------------- engineers, exterior ----
@@ -804,9 +1002,17 @@ export function createIsland6(player) {
   function addWalker(name, points, lines, opts = {}) {
     const mole = buildAnimal('mole', { body: opts.body ?? 0x5a4a44 });
     mole.scale.setScalar(0.95);
+    // the hat sits ON the head (and bobs with it) — it used to float at the
+    // body's origin, a little behind the snout
     const hat = hardHat();
-    hat.position.y = 1.55;
-    mole.add(hat);
+    const head = mole.userData.parts?.head;
+    if (head) {
+      hat.position.y = 0.3;
+      head.add(hat);
+    } else {
+      hat.position.y = 1.55;
+      mole.add(hat);
+    }
     mole.position.set(points[0].x, points[0].y ?? terrainHeight(points[0].x, points[0].z), points[0].z);
     group.add(mole);
     const w = { g: mole, points, seg: 0, speed: opts.speed ?? 1.3, pause: 0, fixedY: opts.fixedY };
@@ -879,16 +1085,16 @@ export function createIsland6(player) {
       tube.position.set(B.x + tx, 4.4, B.z + 2);
       room.add(tube);
     }
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(W + 2, 0.3, D + 2), mat(0xcfd2cc, 1));
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(W + 0.5, 0.3, D + 0.5), mat(0xcfd2cc, 1)); // flush with the walls' outer faces
     floor.position.set(B.x, -0.15, B.z);
     floor.receiveShadow = true;
     room.add(floor);
     // walls (the south wall leaves a doorway)
-    const north = new THREE.Mesh(new THREE.BoxGeometry(W + 2, 4.6, 0.5), wallMat);
+    const north = new THREE.Mesh(new THREE.BoxGeometry(W + 0.5, 4.6, 0.5), wallMat); // corners meet, not cross
     north.position.set(B.x, 2.3, B.z - D / 2);
     room.add(north);
     for (const sx of [-1, 1]) {
-      const side = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4.6, D + 2), wallMat);
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4.6, D + 0.5), wallMat);
       side.position.set(B.x + sx * W / 2, 2.3, B.z);
       room.add(side);
     }
@@ -913,6 +1119,11 @@ export function createIsland6(player) {
     const banner = box(6, 0.9, 0.06, 0xf0e8d8);
     banner.position.set(B.x, 2.6, B.z - 1.9);
     room.add(banner);
+    const bannerFace = letteredPlane(5.9, 0.82, [
+      ['DAYS SINCE LAST UNSCHEDULED DISCOVERY:  0', 0.5, 0.42, 900],
+    ], '#f0e8d8', '#b0453a');
+    bannerFace.position.set(B.x, 2.6, B.z - 1.865);
+    room.add(bannerFace);
     // handrails along the gantry — the inside catwalk reads as one now too
     for (const rz of [B.z - 2 - 0.62, B.z - 2 + 0.62]) {
       const grail = box(W - 4, 0.07, 0.07, 0xd9534f);
@@ -1710,6 +1921,19 @@ export function createIsland6(player) {
       if (Math.hypot(playerPos.x - ISLAND6.x, playerPos.z - ISLAND6.z) < ISLAND6.r + 130) {
         for (const u of updates) u(dt, t, playerPos);
         for (const w of walkers) {
+          // a visitor! stop, turn, give them a couple of seconds to say
+          // something — then carry on (and never, ever walk THROUGH them)
+          const pdx = playerPos.x - w.g.position.x, pdz = playerPos.z - w.g.position.z;
+          const pd = Math.hypot(pdx, pdz);
+          const sameLevel = Math.abs(playerPos.y - w.g.position.y) < 1.5;
+          if (pd > 4) w.greeted = false;
+          if (sameLevel && pd < 2.6 && !w.greeted) { w.greeted = true; w.greet = 2.5; }
+          if (w.greet > 0) {
+            w.greet -= dt;
+            w.g.rotation.y = turnToward(w.g.rotation.y, Math.atan2(pdx, pdz), dt, 6);
+            animateGait(w.g, t, 0, 8);
+            continue;
+          }
           if (w.pause > 0) { w.pause -= dt; animateGait(w.g, t, 0, 8); continue; }
           const target = w.points[(w.seg + 1) % w.points.length];
           const dx = target.x - w.g.position.x, dz = target.z - w.g.position.z;
@@ -1720,8 +1944,14 @@ export function createIsland6(player) {
             continue;
           }
           w.g.rotation.y = turnToward(w.g.rotation.y, Math.atan2(dx, dz), dt, 5);
-          w.g.position.x += (dx / dist) * w.speed * dt;
-          w.g.position.z += (dz / dist) * w.speed * dt;
+          const nx = w.g.position.x + (dx / dist) * w.speed * dt;
+          const nz = w.g.position.z + (dz / dist) * w.speed * dt;
+          if (sameLevel && Math.hypot(playerPos.x - nx, playerPos.z - nz) < 1.0 && Math.hypot(playerPos.x - nx, playerPos.z - nz) < pd) {
+            animateGait(w.g, t, 0, 8); // you're in the way; he waits, politely
+            continue;
+          }
+          w.g.position.x = nx;
+          w.g.position.z = nz;
           w.g.position.y = w.fixedY ?? terrainHeight(w.g.position.x, w.g.position.z);
           animateGait(w.g, t, 1, 9);
         }

@@ -9,11 +9,13 @@ import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
+import { play as playTool, holdRod, putAway } from './tools.js';
 import { rollFish, BOTTLE_NOTES } from './catalog.js';
 import { plop, bite, splash, jingle, sadTrombone, tone } from './audio.js';
-import { rand } from './utils.js';
+import { rand, turnToward } from './utils.js';
 import { CAVE_POND } from './cave.js';
 import { isRaining } from './almanac.js';
+import { waveAt } from './ocean.js';
 
 const BITE_WINDOW = 0.8;  // seconds you have to react to the real thing
 const CAST_REACH = 3.2;   // how close the bobber must land to a shadow
@@ -74,14 +76,37 @@ export function createFishing(player) {
   // dark shapes under the surface; they draw on top of the water so the
   // waves can't hide what you're being offered
 
+  // a fish shape — body, and a tail that flicks — lying flat on the water,
+  // nose toward -z before turning. It floats just above the wave crests
+  // (like the reef glow does), or the waves chew holes in it and it reads
+  // as a flickering puddle rather than a fish
+  const SHADOW_GEO = (() => {
+    const sh = new THREE.Shape();
+    const pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const a = (i / 10) * Math.PI; // the body: a plump lens, nose at +y
+      pts.push([Math.cos(a) * 0.45, 0.2 + Math.sin(a) * 0.75]);
+    }
+    sh.moveTo(0.45, 0.2);
+    for (const [x, y] of pts) sh.lineTo(x, y);
+    sh.lineTo(-0.3, -0.45);
+    sh.lineTo(-0.42, -0.95); // the tail
+    sh.lineTo(0, -0.7);
+    sh.lineTo(0.42, -0.95);
+    sh.lineTo(0.3, -0.45);
+    sh.lineTo(0.45, 0.2);
+    const g = new THREE.ShapeGeometry(sh);
+    g.rotateX(-Math.PI / 2); // lie flat; the nose now points toward -z
+    return g;
+  })();
+  const SEA_LIFT = 0.06; // just above the (interpolated) wave it rides
+
   function makeShadow() {
-    const m = new THREE.Mesh(new THREE.CircleGeometry(1, 9),
+    const m = new THREE.Mesh(SHADOW_GEO,
       new THREE.MeshBasicMaterial({
-        color: 0x122b38, transparent: true, opacity: 0.55, depthWrite: false, depthTest: true,
+        color: 0x122b38, transparent: true, opacity: 0, depthWrite: false, depthTest: true,
       }));
-    m.rotation.x = -Math.PI / 2;
     m.renderOrder = 1;
-    m.scale.x = 1.4; // fish-shaped, approximately. it's a shadow. squint.
     return m;
   }
 
@@ -116,7 +141,8 @@ export function createFishing(player) {
   function respawnShadow(s, playerPos) {
     const size = rollSize(isRaining() && s.where === 'sea' ? 8 : 0);
     s.size = size;
-    s.m.scale.set(size.scale * 1.4, size.scale, 1);
+    s.m.scale.set(size.scale, 1, size.scale);
+    s.fade = 0; // surfaces slowly, rather than popping into being
     for (let tries = 0; tries < 24; tries++) {
       let x, z;
       if (s.where === 'cave') {
@@ -135,7 +161,7 @@ export function createFishing(player) {
         if (h < WATER_Y - 2.2 || h > WATER_Y - 0.3) continue;
       }
       if (waterAt(x, z, s.where)) {
-        const y = (s.where === 'cave' ? CAVE_POND.surfaceY : WATER_Y) + 0.02;
+        const y = s.where === 'cave' ? CAVE_POND.surfaceY + 0.02 : WATER_Y + SEA_LIFT;
         s.m.position.set(x, y, z);
         s.m.visible = true;
         s.gone = 0;
@@ -161,6 +187,7 @@ export function createFishing(player) {
   let junkBite = false;     // nothing around, but the boot is patient
   let where = 'sea';
   let surfaceY = WATER_Y;
+  let castWhere = 'sea';
   const castFrom = new THREE.Vector3();
   const castSpot = new THREE.Vector3();
 
@@ -184,6 +211,7 @@ export function createFishing(player) {
   function reset() {
     state = 'idle';
     bobber.visible = false;
+    putAway();
     hooked = null;
     junkBite = false;
   }
@@ -234,10 +262,13 @@ export function createFishing(player) {
           if (!spot) return;
           where = spot.where;
           surfaceY = spot.surfaceY;
+          castWhere = spot.where;
           castSpot.set(spot.x, surfaceY + 0.08, spot.z);
           castFrom.copy(player.group.position);
           bobber.position.copy(castSpot);
           bobber.visible = true;
+          playTool('cast');
+          holdRod(() => (bobber.visible ? bobber.position : null));
           plop();
           // did the cast land near anyone interested?
           hooked = null;
@@ -290,6 +321,11 @@ export function createFishing(player) {
         if (s.gone <= 0) respawnShadow(s, playerPos);
         continue;
       }
+      s.fade = Math.min(1, (s.fade ?? 1) + dt * 0.8);
+      s.m.material.opacity = 0.5 * s.fade;
+      const sc = s.size?.scale ?? 1;
+      s.m.scale.x = sc * (1 + Math.sin(t * 7 + s.m.position.x) * 0.07); // a swimmy wiggle
+      if (s.where === 'sea') s.m.position.y = WATER_Y + waveAt(s.m.position.x, s.m.position.z, t) + SEA_LIFT;
       // too far from the action? swim around to where the player is
       if (s.where === 'sea' && s.m.position.distanceTo(playerPos) > 34) {
         respawnShadow(s, playerPos);
@@ -303,6 +339,7 @@ export function createFishing(player) {
         if (d > 0.45) {
           s.m.position.x += (dx / d) * 1.1 * dt;
           s.m.position.z += (dz / d) * 1.1 * dt;
+          s.m.rotation.y = turnToward(s.m.rotation.y, Math.atan2(-dx, -dz), dt, 5);
         } else if (state === 'approach') {
           startNibbles();
         }
@@ -324,10 +361,12 @@ export function createFishing(player) {
       } else {
         s.driftT = 0;
       }
-      s.m.rotation.z = Math.atan2(s.drift.x, s.drift.z) + Math.PI / 2;
+      s.m.rotation.y = turnToward(s.m.rotation.y, Math.atan2(-s.drift.x, -s.drift.z), dt, 2);
     }
 
     if (state === 'idle') return;
+    // the bobber rides the swell with everything else
+    if (castWhere === 'sea') surfaceY = WATER_Y + waveAt(castSpot.x, castSpot.z, t);
 
     // walking away abandons the line
     if (castFrom.distanceTo(player.group.position) > 0.35) {

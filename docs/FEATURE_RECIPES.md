@@ -13,11 +13,12 @@ Finish every feature with the checklist at the bottom.
 
 Exemplars: `texas.js` (minimal islet), `island5.js` (full-featured).
 
-1. Terrain first (lead work — `terrain.js` is approval-tier): island center/
-   radius export, heightmap contribution, any flat `SITES` pads, terrain
-   colors if it has its own ground character.
-2. `zones.js` `island.canWalk` gets the new island's radius check
-   (approval-tier, two lines).
+1. Terrain first (`terrain.js` is load-bearing — see AGENTS.md): island
+   center/radius export, a `maskAt` line in `islandMask`, any flat `SITES`
+   pads, terrain colors if it has its own ground character. (A *lobe* on an
+   existing island — `ISLAND2_EAST` — is the same thing, smaller.)
+2. `zones.js` `island.canWalk` gets the new island's radius check (two
+   lines), and `oceanlife.js` `LAND` gets the center so whales keep off it.
 3. New module `islandN.js` builds everything else: props, NPCs,
    interactables, interiors.
 4. Chart entry: `addIslandInfo({ name, x, z, r, icon, blurb })`
@@ -26,7 +27,12 @@ Exemplars: `texas.js` (minimal islet), `island5.js` (full-featured).
 5. Getting there is a feature, not a given: bridge/arch/causeway =
    `zones.addCrossing` (see `bridge.js`, the island3 arch, the island6
    causeway); ferry stop = export a `*_DOCK` and add to the `STOPS` table
-   in `boats.js` (see `BULKO_DOCK`); rail = `northline.js` pattern.
+   in `boats.js` (see `BULKO_DOCK`); rail = a `railway.js` line (see
+   `northline.js` — a route, two stop names, colors, and flavor text).
+   Anything standing IN the sea that a boat must not pass through is a
+   `zones.addSeaWall`; if boats may pass through a gap in it (the North
+   Isle arch's tunnel) register a `zones.addSeaGate` and the tug routes
+   through it.
    Swimming reaches it for free if it's in range.
 6. Lore: who lives here and why does it point at the bell? (docs/LORE.md.)
    An island with no relationship to the canon is a theme-park expansion —
@@ -45,10 +51,14 @@ Exemplars: the café (`buildings.js`), the library (`island3.js`).
    lighting, spawn, exit })` — lighting is a whole mood profile; steal the
    closest existing one and tint it.
 4. Door pair: an `interact.register` outside (`use: () => zones.go(name)`)
-   and one inside (`use: () => zones.leaveTo(exitSpot)`).
-5. Music: add the zone to the `MOODS` map in `main.js` (sanctioned one-line
+   and one inside (`use: () => zones.leaveTo(exitSpot)`). Also
+   `zones.setDoor(name, {x, z})` (the spot just outside) — villagers on
+   errands walk to it instead of teleporting in.
+5. Interior furniture blockers go in `registerInterior`'s `blockers` list:
+   circles `{x, z, r}` or rectangles `{x, z, w, d, rot?}`.
+6. Music: add the zone to the `MOODS` map in `main.js` (sanctioned one-line
    main.js edit) or it falls back to 'indoors'.
-6. If the module didn't have indoor life before, make its `update` gate
+7. If the module didn't have indoor life before, make its `update` gate
    itself by zone (the bulko.js pattern) rather than moving it out of
    main's outdoor block.
 
@@ -104,8 +114,14 @@ Exemplar: any `ITEMS` entry (`catalog.js` — pure data, edit freely).
 
 ## A ride / vehicle
 
-Exemplars: the Grove Line (`northline.js`), the Persistent's voyages
-(`boats.js`).
+Exemplars: any train line (`northline.js` on top of `railway.js`), the
+Persistent's voyages (`boats.js`).
+
+- A new railway is `defineLine({ points, stops })` at module load (so the
+  route and its stations reserve ground before trees are planted) plus
+  `createRailway(line, { player, animals, name, colors, text })`. The kit
+  gives you the two-engine consist, stations beside the track, rider
+  queues, and the villager commute for free — don't fork it.
 
 - Reuse `player.riding` (board → seat the player group, disable walking;
   release on arrival). Disembark spots MUST use safe-landing scans over
@@ -121,8 +137,8 @@ Exemplar: `calendar.js` `holidayOf` + `HOLIDAY_LINES`; bunting in
 `buildings.js` (~line 290); Pip's once-a-year gift (flag
 `gift_<id>_<year>`).
 
-- Date in `holidayOf` (calendar is approval-tier — it's tiny; propose the
-  diff), a line for every villager mood, plaza decoration gated on
+- Date in `holidayOf` (calendar is load-bearing and must keep zero
+  imports — it's tiny; keep the diff tiny), a line for every villager mood, plaza decoration gated on
   `HOLIDAY`, at most one mechanical treat. Holidays are baked at load like
   seasons — no mid-session switches.
 
@@ -146,14 +162,20 @@ look (`makeWindow` lived in buildings.js). When a **second consumer**
 appears, export from the owning module — don't create a new shared-kit
 file, don't move the helper "somewhere neutral" (`makeWindow` is still in
 buildings.js; houses/island2/island3 import it; no cycles resulted —
-buildings imports none of them). A third home for visual helpers needs
-lead approval.
+buildings imports none of them). A third home for visual helpers is a
+decision worth flagging, not making quietly. (`railway.js` is the one
+sanctioned exception: three near-identical train files had drifted apart,
+so the lines now share one kit.)
 
 ## The finishing checklist
 
 - [ ] `castShadow`/`receiveShadow` on every new solid; emissive things cast none
-- [ ] Blockers for anything solid the player could walk through (two small
-      circles beat one big one — a single big blocker once sealed BULKO's door)
+- [ ] Blockers for anything solid the player could walk through: a
+      `zones.addBlockerBox` that matches a rectangular footprint exactly
+      (round force-fields used to keep you two steps off every wall and let
+      you cut the corners); circles for posts, trunks, rocks
+- [ ] Raised floors you can stand on (porches, plinths, pads) are
+      `zones.addSurface*`; foundations reach the ground on their lowest corner
 - [ ] Big flat walls: `userData.occlude = true` if the auto-heuristic misses them
 - [ ] Interacts through `interact.register`; dialogue through `ui.say/ask`
 - [ ] Keyboard-only input (touch synthesizes key events — never pointer-only)
@@ -162,3 +184,4 @@ lead approval.
 - [ ] Zone-gated updates (one of the three shapes in ARCHITECTURE.md)
 - [ ] Chart/almanac entries if it's a place or a catchable
 - [ ] Screenshot proof via `shots/` (day + night if it emits light; see shots/README.md)
+- [ ] `node shots/clip_audit.mjs` shows nothing new of yours in the offender list

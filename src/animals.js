@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { terrainHeight, clearOfSites, SITES, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND5, WATER_Y } from './terrain.js';
-import { islandCanWalk, nearBlocker } from './zones.js';
+import { terrainHeight, clearOfSites, SITES, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND5, VOLCANO_SHELF, WATER_Y } from './terrain.js';
+import { islandCanWalk, islandCanStand, islandGroundHeight, solidAt, islandOf, findRoute } from './zones.js';
 import { rand, pick, turnToward } from './utils.js';
 
 function mat(color) {
@@ -80,6 +80,84 @@ export function buildAnimal(kind, colors = {}) {
     tail.position.set(0, 0.74, -0.8);
     tail.rotation.x = -0.35;
     g.add(tail);
+  } else if (kind === 'bee') {
+    // round, fuzzy, striped, busy: black bands, glassy wings, a little sting
+    const black = mat(0x2e2a26);
+    for (const z of [-0.12, 0.2]) {
+      const band = new THREE.Mesh(ico(0.51, 1), black);
+      band.scale.set(1.02, 0.94, 0.14);
+      band.position.set(0, parts.bodyY, z);
+      g.add(band);
+    }
+    const sting = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 5), black);
+    sting.rotation.x = -Math.PI / 2;
+    sting.position.set(0, parts.bodyY, -0.72);
+    g.add(sting);
+    for (const sx of [-1, 1]) {
+      const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.34, 4), black);
+      ant.position.set(sx * 0.13, 1.66, 0.42);
+      ant.rotation.z = -sx * 0.4;
+      ant.rotation.x = 0.3;
+      g.add(ant);
+      const tip = new THREE.Mesh(ico(0.05, 0), black);
+      tip.position.set(sx * 0.2, 1.82, 0.47);
+      g.add(tip);
+    }
+    const wingMat = new THREE.MeshStandardMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0.6, side: THREE.DoubleSide, roughness: 0.2 });
+    parts.wings = [];
+    for (const sx of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(sx * 0.15, 1.08, -0.05);
+      const w = new THREE.Mesh(new THREE.CircleGeometry(0.34, 8), wingMat);
+      w.scale.set(1, 0.6, 1);
+      w.position.x = sx * 0.3;
+      pivot.add(w);
+      pivot.rotation.set(-0.9, 0, sx * 0.3);
+      pivot.userData.baseY = 0;
+      g.add(pivot);
+      parts.wings.push(pivot);
+    }
+  } else if (kind === 'skunk') {
+    // black and white and extremely relaxed about it
+    const white = mat(colors.stripe ?? 0xf3efe6);
+    const earGeo = new THREE.ConeGeometry(0.12, 0.2, 4);
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(earGeo, headMat);
+      ear.position.set(sx * 0.22, 1.58, 0.28);
+      g.add(ear);
+    }
+    const blaze = new THREE.Mesh(ico(0.1, 0), white); // the stripe starts on the nose
+    blaze.scale.set(0.8, 0.5, 2.2);
+    blaze.position.set(0, 1.5, 0.45);
+    g.add(blaze);
+    const stripe = new THREE.Mesh(ico(0.2, 0), white);
+    stripe.scale.set(0.9, 0.5, 2.6);
+    stripe.position.set(0, 1.04, -0.1);
+    g.add(stripe);
+    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.26, 6), headMat);
+    snout.rotation.x = Math.PI / 2;
+    snout.position.set(0, 1.1, 0.8);
+    g.add(snout);
+    const nose = new THREE.Mesh(ico(0.05, 0), NOSE_MAT);
+    nose.position.set(0, 1.1, 0.94);
+    g.add(nose);
+    // the tail: a great plume, up and curling over, striped down the middle
+    const plume = new THREE.Mesh(ico(0.36), bodyMat);
+    plume.scale.set(0.9, 1.6, 0.9);
+    plume.position.set(0, 1.25, -0.85);
+    plume.rotation.x = -0.35;
+    g.add(plume);
+    const plumeStripe = new THREE.Mesh(ico(0.2, 0), white);
+    plumeStripe.scale.set(0.7, 2.2, 0.6);
+    plumeStripe.position.set(0, 1.35, -0.72);
+    plumeStripe.rotation.x = -0.35;
+    g.add(plumeStripe);
+    // white rims round the eyes, or they vanish into all that black
+    parts.eyes.forEach((e) => {
+      const rim = new THREE.Mesh(ico(0.075, 0), white);
+      rim.position.copy(e.position).add(new THREE.Vector3(0, 0, -0.02));
+      g.add(rim);
+    });
   } else if (kind === 'duck') {
     const beak = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), BEAK_MAT);
     beak.rotation.x = Math.PI / 2;
@@ -137,16 +215,34 @@ export function buildAnimal(kind, colors = {}) {
     ruff.scale.set(1.25, 0.55, 1.1);
     ruff.position.set(0, 0.95, 0.18);
     g.add(ruff);
-    const wingGeo = new THREE.PlaneGeometry(0.62, 0.95);
-    wingGeo.translate(0.31, -0.32, 0);
+    // wings: a rounded forewing and hindwing on each side, rooted at the
+    // shoulders and spread out behind her like a moth at rest — with a soft
+    // eyespot each. (They flutter a little: see idleAll.)
+    const wingShape = new THREE.Shape();
+    wingShape.moveTo(0, 0.05);
+    wingShape.quadraticCurveTo(0.5, 0.42, 0.95, 0.3);
+    wingShape.quadraticCurveTo(1.05, 0.0, 0.8, -0.2);
+    wingShape.quadraticCurveTo(0.75, -0.6, 0.35, -0.62);
+    wingShape.quadraticCurveTo(0.1, -0.45, 0, -0.1);
+    const wingGeo = new THREE.ShapeGeometry(wingShape, 3);
     const wingMat = new THREE.MeshStandardMaterial({
-      color: 0xf0e3c0, side: THREE.DoubleSide, roughness: 0.85, flatShading: true,
+      color: colors.wing ?? 0xf0e3c0, side: THREE.DoubleSide, roughness: 0.85, flatShading: true,
     });
+    const spotMat = new THREE.MeshStandardMaterial({ color: 0xc9a86a, side: THREE.DoubleSide, roughness: 0.85 });
+    parts.wings = [];
     for (const sx of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(sx * 0.2, 1.12, -0.28);
       const wing = new THREE.Mesh(wingGeo, wingMat);
-      wing.position.set(sx * 0.12, 1.05, -0.3);
-      wing.rotation.set(0.5, sx * 2.4, 0);
-      g.add(wing);
+      wing.scale.x = sx; // mirror for the left side
+      pivot.add(wing);
+      const spot = new THREE.Mesh(new THREE.CircleGeometry(0.1, 8), spotMat);
+      spot.position.set(sx * 0.55, 0.02, 0.01);
+      pivot.add(spot);
+      pivot.rotation.set(-0.35, sx * -0.55, sx * -0.15); // swept back, a touch lifted
+      pivot.userData.baseY = pivot.rotation.y;
+      g.add(pivot);
+      parts.wings.push(pivot);
     }
   } else if (kind === 'tortoise') {
     // Fern — museum curator, older than most rumors
@@ -206,7 +302,8 @@ export function buildAnimal(kind, colors = {}) {
     parts.headY = 1.85;
     parts.head.scale.set(0.85, 0.85, 1.15);
     parts.head.position.set(0, parts.headY, 0.72);
-    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.16, 1.95, 1.0));
+    // eyes ON the long face (they used to sit inside it), a little bigger
+    parts.eyes.forEach((e, i) => { e.position.set((i ? 1 : -1) * 0.3, 1.97, 0.93); e.scale.setScalar(1.5); });
     const muzzle = new THREE.Mesh(ico(0.16), mat(0xe8d8c0));
     muzzle.scale.set(0.9, 0.7, 1.1);
     muzzle.position.set(0, 1.78, 1.12);
@@ -223,9 +320,11 @@ export function buildAnimal(kind, colors = {}) {
       tuft.position.set(0, 2.1 - i * 0.22, 0.52 - i * 0.12);
       g.add(tuft);
     }
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.7, 5), mat(0x6b4a2e));
-    tail.position.set(0, 0.85, -0.85);
-    tail.rotation.x = 2.6;
+    // the tail: rooted at the top of the rump (narrow end), falling down
+    // and back into a full brush — it used to float behind her, upside down
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.85, 6), mat(0x6b4a2e));
+    tail.rotation.x = 0.35;
+    tail.position.set(0, 1.08 - 0.4, -0.7 - 0.15);
     g.add(tail);
   } else if (kind === 'salamander') {
     // low, long, warm — built for flat rocks and cave floors
@@ -625,6 +724,214 @@ export function buildAnimal(kind, colors = {}) {
     tailB.rotation.x = -0.7;
     g.add(tailB);
     g.scale.setScalar(1.1);
+  } else if (kind === 'frog') {
+    // a frog is mostly a head with opinions: squat and round, eyes up top
+    // like two periscopes, a wide calm smile, feet that mean business.
+    // colors: body, belly, feet, spots (all optional)
+    parts.bodyY = 0.42;
+    body.position.y = parts.bodyY;
+    body.scale.set(1.3, 0.78, 1.15);
+    parts.headY = 0.8;
+    head.scale.set(1.2, 0.78, 1.0);
+    head.position.set(0, parts.headY, 0.22);
+    const white = mat(0xfaf7ee);
+    for (const [i, sx] of [[0, -1], [1, 1]]) {
+      const bulb = new THREE.Mesh(ico(0.16, 1), white);
+      bulb.position.set(sx * 0.26, 1.08, 0.36);
+      g.add(bulb);
+      parts.eyes[i].position.set(sx * 0.27, 1.1, 0.51);
+      parts.eyes[i].scale.setScalar(1.25);
+    }
+    const smile = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.035, 0.05), mat(0x2e3a2a));
+    smile.position.set(0, 0.76, 0.63);
+    g.add(smile);
+    const belly = new THREE.Mesh(ico(0.34), mat(colors.belly ?? 0xf1ecc4));
+    belly.scale.set(1.05, 0.7, 0.55);
+    belly.position.set(0, 0.36, 0.42);
+    g.add(belly);
+    if (colors.spots) {
+      for (const [x, y, z] of [[-0.22, 0.72, -0.2], [0.26, 0.66, -0.05], [0.02, 0.78, -0.38], [-0.38, 0.5, 0.05]]) {
+        const spot = new THREE.Mesh(ico(0.07, 0), mat(colors.spots));
+        spot.position.set(x, y, z);
+        g.add(spot);
+      }
+    }
+    // four legs, still — front ones straight, back ones folded like springs
+    for (const leg of parts.legs) g.remove(leg);
+    parts.legs.length = 0;
+    const footMat = mat(colors.feet ?? colors.body ?? 0x6ab04a);
+    const frontGeo = new THREE.CylinderGeometry(0.07, 0.06, 0.3, 5);
+    frontGeo.translate(0, -0.15, 0);
+    for (const sx of [-1, 1]) {
+      const leg = new THREE.Mesh(frontGeo, bodyMat);
+      leg.position.set(sx * 0.3, 0.32, 0.36);
+      const foot = new THREE.Mesh(ico(0.09, 0), footMat);
+      foot.scale.set(1.3, 0.4, 1.3);
+      foot.position.set(0, -0.3, 0.05);
+      leg.add(foot);
+      g.add(leg);
+      parts.legs.push(leg);
+      const thigh = new THREE.Mesh(ico(0.24, 0), bodyMat);
+      thigh.scale.set(0.75, 0.62, 1.25);
+      thigh.position.set(sx * 0.46, 0.26, -0.18);
+      g.add(thigh);
+      const backGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.12, 5);
+      backGeo.translate(0, -0.06, 0);
+      const back = new THREE.Mesh(backGeo, bodyMat);
+      back.position.set(sx * 0.5, 0.12, 0.02);
+      const bfoot = new THREE.Mesh(ico(0.11, 0), footMat);
+      bfoot.scale.set(1.3, 0.35, 1.6);
+      bfoot.position.set(0, -0.08, 0.08);
+      back.add(bfoot);
+      g.add(back);
+      parts.legs.push(back);
+    }
+  } else if (kind === 'dolphin') {
+    // a dolphin with legs. four of them. in sneakers. nobody asks.
+    body.scale.set(0.95, 0.9, 1.55);
+    head.scale.set(0.95, 0.9, 1.05);
+    head.position.set(0, 1.12, 0.55);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.22, 1.2, 0.86));
+    const beak = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 0.42, 7), headMat);
+    beak.rotation.x = Math.PI / 2;
+    beak.position.set(0, 1.02, 1.02);
+    g.add(beak);
+    const smile = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.025, 0.25), mat(0x3a4a5c));
+    smile.position.set(0, 0.95, 0.98);
+    g.add(smile);
+    const belly = new THREE.Mesh(ico(0.38), mat(colors.belly ?? 0xdde8ee));
+    belly.scale.set(0.9, 0.6, 1.3);
+    belly.position.set(0, 0.48, 0.1);
+    g.add(belly);
+    const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.45, 4), bodyMat);
+    dorsal.scale.z = 0.35;
+    dorsal.rotation.x = -0.35;
+    dorsal.position.set(0, 1.18, -0.2);
+    g.add(dorsal);
+    for (const sx of [-1, 1]) {
+      const fluke = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.5, 4), bodyMat);
+      fluke.scale.set(1, 1, 0.3);
+      fluke.rotation.set(0, 0, sx * Math.PI / 2);
+      fluke.position.set(sx * 0.24, 0.72, -0.82);
+      g.add(fluke);
+    }
+    for (const leg of parts.legs) {
+      const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.24), mat(0xfaf7ee));
+      shoe.position.set(0, -0.38, 0.04);
+      leg.add(shoe);
+    }
+  } else if (kind === 'whale') {
+    // a blue whale. the largest animal that has ever lived. exactly this big.
+    body.scale.set(1.2, 1.0, 1.7);
+    head.scale.set(1.25, 0.95, 1.2);
+    head.position.set(0, 1.0, 0.55);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.34, 0.98, 0.9));
+    const chin = new THREE.Mesh(ico(0.4), mat(colors.belly ?? 0xc9d8e2));
+    chin.scale.set(1.2, 0.5, 1.2);
+    chin.position.set(0, 0.62, 0.55);
+    g.add(chin);
+    for (let i = 0; i < 4; i++) { // throat grooves, chunky
+      const groove = new THREE.Mesh(new THREE.BoxGeometry(0.6 - i * 0.06, 0.03, 0.03), mat(0x6f8fa8));
+      groove.position.set(0, 0.5 + i * 0.07, 0.95 - i * 0.03);
+      g.add(groove);
+    }
+    const blow = new THREE.Mesh(ico(0.07, 0), mat(0x2e3e50));
+    blow.position.set(0, 1.4, 0.45);
+    g.add(blow);
+    for (const sx of [-1, 1]) {
+      const fluke = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.62, 4), bodyMat);
+      fluke.scale.set(1, 1, 0.3);
+      fluke.rotation.set(0, 0, sx * Math.PI / 2);
+      fluke.position.set(sx * 0.3, 0.75, -1.02);
+      g.add(fluke);
+    }
+  } else if (kind === 'fishfolk') {
+    // a round fish on two... four... on legs. out for a jog.
+    body.scale.set(1.05, 1.05, 1.0);
+    head.visible = false;
+    parts.eyes.forEach((e, i) => { e.position.set((i ? 1 : -1) * 0.34, 0.86, 0.36); e.scale.setScalar(1.7); });
+    const lips = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.04, 5, 8), mat(colors.lips ?? 0xff8a8a));
+    lips.position.set(0, 0.62, 0.6);
+    g.add(lips);
+    const tailF = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.5, 4), mat(colors.fin ?? 0xffd23e));
+    tailF.scale.set(0.25, 1, 1);
+    tailF.rotation.x = -Math.PI / 2;
+    tailF.position.set(0, 0.64, -0.68);
+    g.add(tailF);
+    const topFin = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.35, 4), mat(colors.fin ?? 0xffd23e));
+    topFin.scale.z = 0.3;
+    topFin.position.set(0, 1.18, -0.05);
+    g.add(topFin);
+    for (const sx of [-1, 1]) {
+      const side = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), mat(colors.fin ?? 0xffd23e));
+      side.scale.z = 0.3;
+      side.rotation.z = sx * 1.9;
+      side.position.set(sx * 0.52, 0.6, 0.05);
+      g.add(side);
+    }
+    for (let i = 0; i < 3; i++) { // stripes, like a candy
+      const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.46 - i * 0.02, 0.035, 4, 12), mat(colors.stripe ?? 0xfff6e8));
+      stripe.rotation.y = Math.PI / 2;
+      stripe.position.set(0, 0.64, -0.2 + i * 0.22);
+      stripe.scale.set(1, 1.05, 1);
+      g.add(stripe);
+    }
+  } else if (kind === 'octopus') {
+    // mostly head, eight arms, all opinions
+    for (const leg of parts.legs) g.remove(leg);
+    parts.legs.length = 0;
+    body.visible = false;
+    head.scale.set(1.35, 1.5, 1.35);
+    head.position.set(0, 1.05, 0);
+    parts.eyes.forEach((e, i) => { e.position.set((i ? 1 : -1) * 0.22, 0.98, 0.52); e.scale.setScalar(1.5); });
+    const armGeo = new THREE.CylinderGeometry(0.1, 0.04, 0.8, 5);
+    armGeo.translate(0, -0.4, 0);
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      const arm = new THREE.Mesh(armGeo, headMat);
+      arm.position.set(Math.sin(a) * 0.32, 0.55, Math.cos(a) * 0.32);
+      arm.rotation.set(Math.cos(a) * 0.9, 0, -Math.sin(a) * 0.9);
+      g.add(arm);
+      if (k < 4) parts.legs.push(arm); // the gait wiggles four of them. the other four have tenure.
+    }
+  } else if (kind === 'crab') {
+    // low and wide, eyes on stalks, walks sideways on principle
+    body.scale.set(1.4, 0.55, 0.95);
+    body.position.y = parts.bodyY = 0.42;
+    head.visible = false;
+    for (const [i, sx] of [[0, -1], [1, 1]]) {
+      const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 4), bodyMat);
+      stalk.position.set(sx * 0.18, 0.75, 0.32);
+      g.add(stalk);
+      parts.eyes[i].position.set(sx * 0.18, 0.92, 0.34);
+      parts.eyes[i].scale.setScalar(1.3);
+      const claw = new THREE.Mesh(ico(0.16, 0), bodyMat);
+      claw.scale.set(1, 0.7, 1.3);
+      claw.position.set(sx * 0.62, 0.5, 0.42);
+      g.add(claw);
+    }
+    parts.legs.forEach((leg, i) => { leg.position.x *= 2.2; leg.position.y = 0.36; leg.rotation.z = (i % 2 ? -1 : 1) * 0.5; });
+    parts.headY = 0.42;
+  } else if (kind === 'otter') {
+    body.scale.set(0.9, 0.85, 1.45);
+    head.position.set(0, 1.08, 0.5);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.16, 1.16, 0.86));
+    const muzzle = new THREE.Mesh(ico(0.18), mat(colors.muzzle ?? 0xe8d8c0));
+    muzzle.scale.set(1.2, 0.8, 0.8);
+    muzzle.position.set(0, 1.0, 0.84);
+    g.add(muzzle);
+    const nose = new THREE.Mesh(ico(0.05, 0), NOSE_MAT);
+    nose.position.set(0, 1.06, 0.98);
+    g.add(nose);
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(ico(0.07, 0), headMat);
+      ear.position.set(sx * 0.3, 1.38, 0.42);
+      g.add(ear);
+    }
+    const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.7, 4, 6), bodyMat);
+    tail.rotation.x = Math.PI / 2 - 0.2;
+    tail.position.set(0, 0.55, -0.95);
+    g.add(tail);
   } else if (kind === 'cat') {
     const earGeo = new THREE.ConeGeometry(0.14, 0.28, 4);
     for (const sx of [-1, 1]) {
@@ -642,7 +949,75 @@ export function buildAnimal(kind, colors = {}) {
     if (o.isMesh) o.castShadow = true;
   });
   g.userData.parts = parts;
+  BUILT.push(g);
   return g;
+}
+
+// Everybody breathes and blinks — shopkeepers behind counters, campers in
+// their chairs, you. A soft rise and fall of the body, a blink every few
+// seconds, and now and then a little glance to one side. Nothing here
+// touches what the walk cycle drives (leg swing, bob heights), so it layers
+// quietly on top of any other animation.
+const BUILT = [];
+export function idleAll(t) {
+  for (const g of BUILT) {
+    if (!g.parent) continue;
+    const p = g.userData.parts;
+    if (!p.idle) {
+      p.idle = {
+        seed: Math.random() * 100,
+        bodySY: p.body.scale.y,
+        headX: p.head.position.x,
+        eyeSY: p.eyes.map((e) => e.scale.y),
+        eyeX: p.eyes.map((e) => e.position.x),
+      };
+    }
+    const d = p.idle, u = t + d.seed;
+    p.body.scale.y = d.bodySY * (1 + Math.sin(u * 1.7) * 0.025);
+    if (p.wings) {
+      // a slow open-and-settle, and now and then a quick flutter
+      const fl = (u % 9) < 0.8 ? Math.sin(u * 22) * 0.25 : 0;
+      p.wings.forEach((w, i) => { w.rotation.y = w.userData.baseY + (i ? -1 : 1) * (Math.sin(u * 0.9) * 0.1 + fl); });
+    }
+    // a blink: ~0.15s shut every 3-5 seconds
+    const shut = (u % (3.3 + (d.seed % 1.7))) < 0.14;
+    // a glance: drift a touch to one side and back, every ten seconds or so
+    const gl = Math.max(0, Math.sin(u * 0.55)) ** 6 * Math.sign(Math.sin(u * 0.13 + 1)) * 0.05;
+    p.head.position.x = d.headX + gl;
+    p.eyes.forEach((e, i) => {
+      e.scale.y = d.eyeSY[i] * (shut ? 0.12 : 1);
+      e.position.x = d.eyeX[i] + gl;
+    });
+    // anyone who's been standing in one spot a while — a shopkeeper at the
+    // counter, a camper by the fire, a heron at the door — shifts about:
+    // looks this way and that, rocks their weight, shuffles a foot. (It stops
+    // the moment they walk: whatever moves them owns them then.)
+    const dt = d.lastT === undefined ? 0 : Math.min(0.1, Math.max(0, t - d.lastT));
+    d.lastT = t;
+    const moved = d.px === undefined || Math.abs(g.position.x - d.px) + Math.abs(g.position.z - d.pz) > 0.002;
+    d.px = g.position.x;
+    d.pz = g.position.z;
+    d.still = moved ? 0 : (d.still || 0) + dt;
+    const fidget = !g.userData.noFidget && (g.userData.fidget || d.still > 3);
+    const k = fidget ? Math.min(1, (d.still > 3 ? d.still - 3 : 1)) : 0;
+    const turn = k * (Math.sin(u * 0.35) * 0.22 + Math.sin(u * 0.9) * 0.06);
+    g.rotation.y += turn - (d.turn || 0);
+    d.turn = turn;
+    p.body.rotation.z = k * Math.sin(u * 0.8) * 0.05;
+    if (fidget && p.legs.length) {
+      // a foot shuffle now and then
+      const sh = u % 7;
+      const lift = sh < 0.4 ? Math.sin((sh / 0.4) * Math.PI) * 0.35 : 0;
+      p.legs[0].rotation.x = lift;
+    }
+    if (g.userData.fidget) {
+      // the ones who man a post all day get an occasional bounce, too
+      const ph = u % 11;
+      const hop = ph < 0.5 ? Math.sin((ph / 0.5) * Math.PI) * 0.1 : 0;
+      g.position.y += hop - (d.hop || 0);
+      d.hop = hop;
+    }
+  }
 }
 
 // Shared walk cycle: diagonal leg pairs plus a happy little body bob.
@@ -689,7 +1064,7 @@ const ROSTER = [
   { kind: 'duck', body: 0xf5f2e9 },
   { kind: 'duck', body: 0x9b7d54, head: 0x2f7d4f }, // mallard
   { kind: 'horse', body: 0xc98f5a, range: 'far' },   // Marigold, of the Far Isle
-  { kind: 'salamander', body: 0xe8743a, range: 'far' }, // Ember — Far Isle resident, cave regular
+  { kind: 'salamander', body: 0xe8743a, range: 'volcano' }, // Ember — the volcano's own, by her fire
   { kind: 'boar', body: 0x6e5a44, head: 0x6e5a44, range: 'north' }, // Tusk, of the moss
   { kind: 'cow', body: 0xf2ead8, head: 0xf2ead8, range: 'north' }, // Butterpat
   { kind: 'mouse', body: 0xb8a890, range: 'everywhere' },          // Crumb, of the MouseBoat
@@ -702,11 +1077,12 @@ const ROSTER = [
 function rangeOf(spec) {
   if (spec.range === 'far') return { x: ISLAND2.x, z: ISLAND2.z, R: ISLAND2.r - 2 };
   if (spec.range === 'north') return { x: ISLAND3.x, z: ISLAND3.z, R: ISLAND3.r - 2 };
+  if (spec.range === 'volcano') return { x: VOLCANO_SHELF.x + 1, z: VOLCANO_SHELF.z + 1, R: VOLCANO_SHELF.r };
   if (spec.range === 'cave') return { x: SITES.cave.x, z: SITES.cave.z, R: 11 };
   if (spec.range === 'grove') return { x: ISLAND5.x, z: ISLAND5.z + 10, R: ISLAND5.r + 12 };
   // Crumb claims every shore, but a sailor of naps stays near his bunk —
-  // you'll usually find him in MouseBoat waters, off the north isle
-  if (spec.range === 'everywhere') return { x: ISLAND3.x + 5, z: ISLAND3.z + 5, R: 55 };
+  // he keeps to the North Isle, within sight of the MouseBoat
+  if (spec.range === 'everywhere') return { x: ISLAND3.x, z: ISLAND3.z, R: ISLAND3.r + 1 };
   return { x: 0, z: 0, R: ISLAND_RADIUS };
 }
 
@@ -716,7 +1092,8 @@ export function createAnimals() {
 
   for (const spec of ROSTER) {
     const g = buildAnimal(spec.kind, { body: spec.body, head: spec.head });
-    const swims = spec.kind === 'duck';
+    // ducks float; crocodiles cruise low with just the eyes showing
+    const swims = spec.kind === 'duck' || spec.kind === 'croc';
 
     // ducks start on the beach, everyone else on grass near their range
     const range = rangeOf(spec);
@@ -748,6 +1125,7 @@ export function createAnimals() {
     animals.push({
       g,
       swims,
+      long: spec.kind === 'croc', // mostly snout: a second collision circle up front
       sprite,
       range,
       state: 'idle',
@@ -778,6 +1156,49 @@ export function createAnimals() {
     return false;
   }
 
+  // may a walks-er step to (nx,nz)? the island's rules (or, for swimmers,
+  // just the solid things), and nobody walks THROUGH the player or each
+  // other — they stop, or the goal-walker's sidesteps find a way around
+  function free(a, nx, nz, playerPos) {
+    // (a body, not a point — unless they're already wedged somewhere, in
+    // which case any legal step out is fine)
+    const gp0 = a.g.position;
+    if (a.swims ? solidAt(nx, nz) : !(islandCanStand(nx, nz, 0.28) ||
+      (islandCanWalk(nx, nz) && !islandCanStand(gp0.x, gp0.z, 0.28)))) return false;
+    const gp = a.g.position;
+    const pd = Math.hypot(nx - playerPos.x, nz - playerPos.z);
+    if (pd < 0.95 && pd < Math.hypot(gp.x - playerPos.x, gp.z - playerPos.z)) return false;
+    for (const o of animals) {
+      // (friends mid-meetup count as "away" for chores, but they're very
+      // much standing there — nobody walks through them)
+      if (o === a || (o.away && !o.meeting) || o.riding || !o.g.visible) continue;
+      const op = o.g.position;
+      const d = Math.hypot(nx - op.x, nz - op.z);
+      if (d < 1.1 && d < Math.hypot(gp.x - op.x, gp.z - op.z)) return false;
+    }
+    return true;
+  }
+
+  function planRoute(a) {
+    const gl = a.goal;
+    const from = islandOf(a.g.position.x, a.g.position.z), to = islandOf(gl.x, gl.z);
+    gl.via = [];
+    if (!from || !to || from === to) return;
+    const route = findRoute(from, to);
+    if (!route) { // no way there from here: say so, don't pace the shore
+      a.goal = null;
+      a.state = 'idle';
+      a.timer = rand(1, 3);
+      gl.fail?.(a);
+      return;
+    }
+    for (const hop of route) {
+      if (hop.link.kind === 'rail') { gl.via.push({ rail: hop.link, from: hop.from }); break; }
+      const path = hop.link.a === hop.from ? hop.link.path : [...hop.link.path].reverse();
+      gl.via.push(...path.map((p) => ({ x: p.x, z: p.z })));
+    }
+  }
+
   function update(dt, t, playerPos) {
     for (const a of animals) {
       if (a.away) continue; // home for the evening — houses.js hosts them now
@@ -792,40 +1213,86 @@ export function createAnimals() {
       // (they have somewhere to be; they'd nod if we'd modeled nodding).
       // Set { x, z, r?, done?, fail? } on any animal; movement respects the
       // same rules as wandering, with a few sidestep angles for shrubbery.
-      if (a.goal) {
-        const dx = a.goal.x - g.position.x;
-        const dz = a.goal.z - g.position.z;
-        const dist = Math.hypot(dx, dz);
-        if (dist < (a.goal.r ?? 1.2)) {
-          const done = a.goal.done;
+      if (a.busy) {
+        // fishing, bug-hunting: feet planted, attention elsewhere — but a
+        // passing visitor still gets a glance
+        if (distP < 3.4) g.rotation.y = turnToward(g.rotation.y, Math.atan2(dxp, dzp), dt, 3);
+      } else if (a.goal) {
+        // another island? plan the way there once: over bridges on foot,
+        // or to a station for the train. unreachable goals give up at once
+        // instead of pacing a shoreline forever (the Ember bug).
+        if (a.goal.via === undefined) planRoute(a);
+        const gl0 = a.goal;
+        const head = gl0?.via?.[0];
+        if (!gl0) {
+          // (planRoute gave up; nothing to do this frame)
+        } else if (head?.rail) {
+          // at the rail hop: queue for the train; this goal resumes after
+          const resume = gl0;
+          resume.via.shift();
+          resume.via = undefined; // re-plan from wherever the train leaves us
           a.goal = null;
-          a.state = 'idle';
-          a.timer = rand(0.5, 1.5);
-          done?.(a);
-        } else {
-          const base = Math.atan2(dx, dz);
-          let stepped = false;
-          for (const off of [0, 0.6, -0.6, 1.2, -1.2]) {
-            const ang = base + off;
-            const nx = g.position.x + Math.sin(ang) * a.speed * dt;
-            const nz = g.position.z + Math.cos(ang) * a.speed * dt;
-            if (a.swims ? !nearBlocker(nx, nz) : islandCanWalk(nx, nz)) {
-              g.rotation.y = turnToward(g.rotation.y, ang, dt, 6);
-              g.position.x = nx;
-              g.position.z = nz;
-              stepped = true;
-              break;
-            }
+          if (head.rail.board(a, head.from)) {
+            a.resume = resume;
+          } else {
+            a.goal = resume; // queue full — try again shortly
+            a.state = 'idle';
+            a.timer = rand(2, 4);
           }
-          walking = stepped;
-          if (!stepped) {
-            a.goal.stuck = (a.goal.stuck ?? 0) + dt;
-            if (a.goal.stuck > 8) {
-              const gl = a.goal;
+        } else {
+          const tgt = head || gl0;
+          const dx = tgt.x - g.position.x;
+          const dz = tgt.z - g.position.z;
+          const dist = Math.hypot(dx, dz);
+          if (head && dist < 1.4) {
+            gl0.via.shift(); // waypoint reached; on to the next
+            gl0.best = Infinity;
+          } else if (!head && dist < (gl0.r ?? 1.2)) {
+            const done = gl0.done;
+            a.goal = null;
+            a.state = 'idle';
+            a.timer = rand(0.5, 1.5);
+            done?.(a);
+            // a trip interrupted by a train ride picks up where it left off
+            // (not while standing in a train queue — after the ride)
+            if (!a.goal && a.resume && !a.queued) { a.goal = a.resume; a.resume = null; }
+          } else {
+            const base = Math.atan2(dx, dz);
+            let stepped = false;
+            // skirt obstacles: once a way round is chosen, keep to that side
+            // (so a wall is followed, not dithered at), and let go of it after
+            // a couple of clear straight steps
+            const sd = gl0.side || (Math.random() < 0.5 ? 1 : -1);
+            for (const off of [0, 0.6 * sd, 1.2 * sd, 1.75 * sd, 2.3 * sd, -0.6 * sd, -1.2 * sd, -1.75 * sd]) {
+              const ang = base + off;
+              const nx = g.position.x + Math.sin(ang) * a.speed * dt;
+              const nz = g.position.z + Math.cos(ang) * a.speed * dt;
+              if (free(a, nx, nz, playerPos)) {
+                g.rotation.y = turnToward(g.rotation.y, ang, dt, 6);
+                g.position.x = nx;
+                g.position.z = nz;
+                stepped = true;
+                if (off === 0) {
+                  gl0.clear = (gl0.clear ?? 0) + dt;
+                  if (gl0.clear > 1.2) gl0.side = 0;
+                } else {
+                  gl0.clear = 0;
+                  gl0.side = Math.sign(off);
+                }
+                break;
+              }
+            }
+            walking = stepped;
+            // honest progress check: stepping back and forth along a wall
+            // is not getting anywhere. no real progress for 12s → give up.
+            if (dist < (gl0.best ?? Infinity) - 0.5) { gl0.best = dist; gl0.since = 0; }
+            gl0.since = (gl0.since ?? 0) + dt;
+            if (gl0.since > 12) {
               a.goal = null;
+              a.resume = null;
               a.state = 'idle';
               a.timer = rand(1, 3);
-              gl.fail?.(a);
+              gl0.fail?.(a);
             }
           }
         }
@@ -859,7 +1326,7 @@ export function createAnimals() {
           const nz = g.position.z + (dz / dist) * a.speed * dt;
           // ducks may swim where walkers can't — but nobody walks through
           // a building: swimmers skip the water rule, not the blockers
-          if (a.swims ? !nearBlocker(nx, nz) : islandCanWalk(nx, nz)) {
+          if (free(a, nx, nz, playerPos)) {
             g.rotation.y = turnToward(g.rotation.y, Math.atan2(dx, dz), dt, 6);
             g.position.x = nx;
             g.position.z = nz;
@@ -872,12 +1339,12 @@ export function createAnimals() {
       }
 
       // settle onto land or float in water
-      const h = terrainHeight(g.position.x, g.position.z);
+      const h = islandGroundHeight(g.position.x, g.position.z);
       if (a.swims && h < WATER_Y - 0.05) {
-        g.position.y = WATER_Y - 0.24 + Math.sin(t * 2 + a.phase) * 0.05;
+        g.position.y = WATER_Y - (a.long ? 0.5 : 0.24) + Math.sin(t * 2 + a.phase) * 0.05;
         a.walk += (0 - a.walk) * Math.min(1, dt * 8);
       } else {
-        g.position.y = h;
+        g.position.y = Math.max(h, WATER_Y - 0.3);
         a.walk += ((walking ? 1 : 0) - a.walk) * Math.min(1, dt * 8);
       }
 

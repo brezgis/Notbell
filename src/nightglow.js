@@ -28,9 +28,15 @@ export function glowWindow(glass, { warm = 0xffe9a0, max = 0.55 } = {}) {
 
 // Steady glow, gated like a lighthouse: clear daylight → off; night / rain /
 // snow / fog → on. Lerped so it fades up at dusk instead of snapping. No sine.
+let level = 0; // the shared 0..1 ramp, for things that aren't panes (the lighthouse beam)
+export function glowLevel() {
+  return level;
+}
+
 export function updateNightGlow(dt) {
   const on = isNight() || currentWeather() !== 'clear';
   const k = Math.min(1, dt * 1.5);
+  level += ((on ? 1 : 0) - level) * k;
   for (const p of panes) {
     const target = on ? p.max : 0;
     p.m.emissiveIntensity += (target - p.m.emissiveIntensity) * k;

@@ -3,10 +3,12 @@
 
 import * as THREE from 'three';
 import {
-  WATER_Y, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND4, ISLAND5, ISLAND5_SOUTH,
-  ISLAND5_HAND, ISLAND6, ISLAND6_WEST, ISLAND7, ISLAND7_FLATS, TEXAS, VOLCANO, terrainHeight,
+  WATER_Y, ISLAND_RADIUS, ISLAND2, ISLAND2_EAST, ISLAND3, ISLAND4, ISLAND5, ISLAND5_SOUTH,
+  ISLAND5_HAND, ISLAND6, ISLAND6_WEST, ISLAND6_BEACH, ISLAND7, ISLAND7_FLATS, ISLAND7_BACK, ISLAND7_NECK, TEXAS, VOLCANO, VOLCANO_SHELF, terrainHeight,
 } from './terrain.js';
 import { splash } from './audio.js';
+import { register } from './interact.js';
+import * as ui from './ui.js';
 import { rand, pick } from './utils.js';
 
 // the bright water: a coral shelf roughly between the islands and the mountain
@@ -15,6 +17,7 @@ export const REEF = { x: 58, z: -72, r: 16 };
 const LAND = [
   { x: 0, z: 0, r: ISLAND_RADIUS },
   ISLAND2,
+  ISLAND2_EAST,
   ISLAND3,
   ISLAND4,
   ISLAND5,
@@ -22,10 +25,14 @@ const LAND = [
   ...ISLAND5_HAND,
   ISLAND6,
   ISLAND6_WEST,
+  ISLAND6_BEACH,
   ISLAND7,
   ISLAND7_FLATS,
+  ISLAND7_BACK,
+  ISLAND7_NECK,
   TEXAS,
   VOLCANO,
+  VOLCANO_SHELF,
 ];
 
 function mat(color, rough = 0.6) {
@@ -51,39 +58,76 @@ export function createOceanLife() {
     return tex;
   })();
 
+  // each fin has a name, a patch, and things to say to anyone who swims or
+  // rows close enough to hear. (they get the teeth question a lot.)
   const orbits = [
-    { cx: 50, cz: -16, r: 13 },                       // the strait
-    { cx: -30, cz: 40, r: 16 },                        // south of home
-    { cx: ISLAND2.x + 20, cz: ISLAND2.z + 24, r: 14 }, // off the Far Isle
+    { cx: 50, cz: -16, r: 13, name: 'Gummy', body: 0x8fb3cc, lines: [
+      'Oh! Hi! Don’t mind the teeth. I have a lot of them. I brush every single one. It takes all morning.',
+      'I patrol the strait! Nothing ever happens. I LOVE it here.',
+      'Somebody on the pier dropped half a sandwich once. I gave it back. They screamed, but I think it was a thank-you scream.',
+      'Did you know sharks never stop growing teeth? I try not to think about it. It’s a lot of teeth.',
+    ] },
+    { cx: -30, cz: 40, r: 16, name: 'Aunt Doris', body: 0x9aa8c4, lines: [
+      'Hello, dear. You’re swimming too far out without a snack. Here — well, I haven’t got hands. Imagine I gave you a biscuit.',
+      'Forty years I’ve circled this bit of sea. Round and round. You’d be amazed what you notice, going round.',
+      'Tell the ducks I said hello. They never stay to chat. Everyone’s in such a hurry.',
+      'I’d knit, if I could. Something warm for the lighthouse keeper. She’s always up so late.',
+    ] },
+    { cx: ISLAND2.x + 20, cz: ISLAND2.z + 24, r: 14, name: 'Finnegan', body: 0x86b8b8, lines: [
+      'Be honest. If I did a flip right now, would you think I was a dolphin? …Don’t answer. I’m still working on the flip.',
+      'The dolphins say I’m “very enthusiastic.” I think that’s good. I’m going to decide that’s good.',
+      '*squeaks, hopefully* …That was dolphin for hello. I think. I’m learning from a tape.',
+      'Whale went by yesterday. Huge. Didn’t even say hi. I said hi, though. You have to say hi.',
+    ] },
   ];
+  const BELLY = mat(0xf2efe6);
+  const CHEEK = new THREE.MeshBasicMaterial({ color: 0xf2a0a8 });
+  const SHINE = new THREE.MeshBasicMaterial({ color: 0xffffff });
   for (const orbit of orbits) {
+    const skin = mat(orbit.body);
     const shark = new THREE.Group();
-    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.0, 4), mat(0x6e7e8e));
-    fin.scale.z = 0.4;
-    fin.position.y = 0.45;
+    // a softer, rounder fin — a sail, not a warning
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 5), skin);
+    fin.scale.z = 0.45;
+    fin.position.set(0, 0.52, -0.15);
+    fin.rotation.x = -0.35;
     shark.add(fin);
-    const back = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), mat(0x6e7e8e));
-    back.scale.set(0.8, 0.35, 2.2);
-    back.position.y = 0.05;
+    const back = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 1), skin);
+    back.scale.set(0.85, 0.5, 1.9);
+    back.position.y = 0.08;
     shark.add(back);
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.58, 4), mat(0x6e7e8e));
+    const belly = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1), BELLY);
+    belly.scale.set(0.78, 0.4, 1.7);
+    belly.position.set(0, -0.02, 0.08);
+    shark.add(belly);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.58, 4), skin);
     tail.scale.x = 0.18; // thin side-to-side — a caudal fin, not a paddle
-    tail.position.set(0, 0.1, -1.35); // lifted so its corner meets the torso's rear
-    tail.rotation.x = -0.25; // swept back, the way a tail that means it is
-    tail.receiveShadow = true;
+    tail.position.set(0, 0.1, -1.25);
+    tail.rotation.x = -0.25;
     shark.add(tail);
-    // a face, so everyone can see the friendliness
-    const snout = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), mat(0x6e7e8e));
-    snout.scale.set(0.85, 0.6, 1.0);
-    snout.position.set(0, 0.22, 1.05);
-    shark.add(snout);
+    // a big round face held up out of the water, so the friendliness shows
+    const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 1), skin);
+    head.scale.set(1, 0.85, 0.95);
+    head.position.set(0, 0.34, 0.95);
+    shark.add(head);
+    const chin = new THREE.Mesh(new THREE.IcosahedronGeometry(0.34, 1), BELLY);
+    chin.scale.set(0.95, 0.6, 0.9);
+    chin.position.set(0, 0.2, 1.08);
+    shark.add(chin);
     for (const sx of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(0x222222, 0.3));
-      eye.position.set(sx * 0.17, 0.4, 1.12);
+      const eye = new THREE.Mesh(new THREE.IcosahedronGeometry(0.08, 1), mat(0x222222, 0.3));
+      eye.position.set(sx * 0.2, 0.46, 1.28);
       shark.add(eye);
+      const shine = new THREE.Mesh(new THREE.IcosahedronGeometry(0.028, 0), SHINE);
+      shine.position.set(sx * 0.2 + 0.025, 0.5, 1.35);
+      shark.add(shine);
+      const cheek = new THREE.Mesh(new THREE.CircleGeometry(0.07, 8), CHEEK);
+      cheek.position.set(sx * 0.3, 0.33, 1.24);
+      cheek.rotation.y = sx * 0.5;
+      shark.add(cheek);
     }
-    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.025, 5, 8, Math.PI), mat(0x2e3640, 0.5));
-    smile.position.set(0, 0.16, 1.3);
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.022, 5, 8, Math.PI), mat(0x2e3640, 0.5));
+    smile.position.set(0, 0.31, 1.43);
     smile.rotation.z = Math.PI; // the arc smiles up
     shark.add(smile);
     const heart = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -93,10 +137,18 @@ export function createOceanLife() {
     heart.position.y = 1.6;
     heart.visible = false;
     shark.add(heart);
-    shark.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    shark.traverse((o) => { if (o.isMesh && !o.material.isMeshBasicMaterial) o.castShadow = true; });
     shark.userData = { orbit, a: rand(0, Math.PI * 2), speed: rand(0.1, 0.16), heart, tail, heartT: 0, shy: 0 };
     sharks.push(shark);
     group.add(shark);
+    register({
+      getPos: () => shark.position, r: 3.6,
+      label: () => `say hi to ${orbit.name}`,
+      use: () => {
+        shark.userData.chat = 5; // stays put while you talk
+        ui.say(orbit.lines[Math.floor(Math.random() * orbit.lines.length)], { speaker: orbit.name, voice: 380 });
+      },
+    });
   }
 
   // ------------------------------------------------------------ whales ----
@@ -157,12 +209,35 @@ export function createOceanLife() {
 
   // -------------------------------------------------------- the reef ----
   // coral just under the surface; the water brightens where it lives
-  const reefGlow = new THREE.Mesh(
-    new THREE.CircleGeometry(REEF.r, 22),
-    new THREE.MeshBasicMaterial({ color: 0x57c8d8, transparent: true, opacity: 0.22, depthWrite: false })
-  );
-  reefGlow.rotation.x = -Math.PI / 2;
-  reefGlow.position.set(REEF.x, WATER_Y + 0.04, REEF.z);
+  // (an organic outline, not a coin: a lobed shape with a couple of
+  // shallower satellite patches, two tones of bright water)
+  const reefShape = (R, ph, lobes) => {
+    const sh = new THREE.Shape();
+    for (let i = 0; i <= 40; i++) {
+      const a = (i / 40) * Math.PI * 2;
+      const r = R * (1 + 0.18 * Math.sin(lobes * a + ph) + 0.1 * Math.sin((lobes + 2) * a + ph * 2.3) + 0.06 * Math.sin(9 * a));
+      const x = Math.cos(a) * r, y = Math.sin(a) * r;
+      if (i === 0) sh.moveTo(x, y); else sh.lineTo(x, y);
+    }
+    return new THREE.ShapeGeometry(sh, 1);
+  };
+  const reefGlow = new THREE.Group();
+  const reefMats = [];
+  for (const [ox, oz, R, col, op, ph, lobes] of [
+    [0, 0, REEF.r, 0x57c8d8, 0.22, 0.4, 3],
+    [2, -1, REEF.r * 0.6, 0x8fe8e0, 0.2, 2.1, 4],
+    [REEF.r * 0.95, REEF.r * 0.5, REEF.r * 0.35, 0x57c8d8, 0.18, 1.3, 3],
+    [-REEF.r * 0.8, REEF.r * 0.7, REEF.r * 0.28, 0x57c8d8, 0.16, 4.4, 2],
+  ]) {
+    const m = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op * 1.3, depthWrite: false, blending: THREE.AdditiveBlending });
+    m.userData.base = op;
+    reefMats.push(m);
+    const patch = new THREE.Mesh(reefShape(R, ph, lobes), m);
+    patch.rotation.x = -Math.PI / 2;
+    // riding just above the tallest waves (±0.38), so the swell can't hide it
+    patch.position.set(REEF.x + ox, WATER_Y + 0.42 + reefMats.length * 0.01, REEF.z + oz);
+    reefGlow.add(patch);
+  }
   group.add(reefGlow);
   const coralColors = [0xff6b81, 0xff9430, 0xc77dff, 0xffd23e, 0x8fce7a];
   for (let i = 0; i < 26; i++) {
@@ -198,15 +273,26 @@ export function createOceanLife() {
   const mantas = [];
   for (let i = 0; i < 3; i++) {
     const manta = new THREE.Group();
-    const wingGeo = new THREE.PlaneGeometry(2.2, 1.3);
-    wingGeo.rotateX(-Math.PI / 2); // wings lie flat with the body, as wings do
-    wingGeo.translate(1.1, 0, 0);
-    const topMat = new THREE.MeshStandardMaterial({
-      color: 0x2e3e50, side: THREE.DoubleSide, roughness: 0.6, flatShading: true,
-    });
-    const left = new THREE.Mesh(wingGeo, topMat);
-    left.scale.x = -1;
-    const right = new THREE.Mesh(wingGeo, topMat);
+    // a manta is a diamond: each wing a swept triangle hinged at the body
+    // (dark on top, pale beneath), flapping slow as breathing
+    const wingGeo = new THREE.BufferGeometry();
+    wingGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+      0, 0, 0.9, 2.3, 0, -0.35, 0, 0, -0.7, // top face
+      0, 0, 0.9, 0, 0, -0.7, 2.3, 0, -0.35, // (and its back)
+    ], 3));
+    wingGeo.computeVertexNormals();
+    const topMat = new THREE.MeshStandardMaterial({ color: 0x2e3e50, side: THREE.DoubleSide, roughness: 0.6, flatShading: true });
+    const left = new THREE.Group(), right = new THREE.Group();
+    for (const [holder, sx] of [[left, -1], [right, 1]]) {
+      const w = new THREE.Mesh(wingGeo, topMat);
+      w.scale.x = sx;
+      holder.add(w);
+      const under = new THREE.Mesh(wingGeo, mat(0xe8eef2, 0.6));
+      under.scale.set(sx * 0.92, 1, 0.9);
+      under.position.y = -0.03;
+      holder.add(under);
+      holder.position.x = sx * 0.3;
+    }
     manta.add(left, right);
     const bodyM = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), mat(0x2e3e50, 0.6));
     bodyM.scale.set(0.7, 0.35, 1.6);
@@ -238,7 +324,7 @@ export function createOceanLife() {
   }
 
   function update(dt, t, playerPos) {
-    reefGlow.material.opacity = 0.16 + Math.sin(t * 0.9) * 0.07;
+    for (const [k, m] of reefMats.entries()) m.opacity = m.userData.base * (0.75 + Math.sin(t * 0.9 + k) * 0.3);
 
     for (const manta of mantas) {
       const u = manta.userData;
@@ -250,11 +336,12 @@ export function createOceanLife() {
         WATER_Y - u.depth + lift * 0.45,
         REEF.z + Math.sin(u.a) * u.r * 0.8
       );
-      manta.rotation.y = -u.a + Math.PI / 2;
-      manta.rotation.z = Math.sin(t * 0.8 + u.phase) * 0.1;
-      const flap = Math.sin(t * 1.6 + u.phase) * 0.45;
-      u.wings.left.rotation.z = flap;
-      u.wings.right.rotation.z = -flap;
+      // face where it's going (the path's tangent), banking into the turn
+      manta.rotation.y = Math.atan2(-Math.sin(u.a) * u.r, Math.cos(u.a) * u.r * 0.8);
+      manta.rotation.z = -0.18 + Math.sin(t * 0.8 + u.phase) * 0.06;
+      const flap = Math.sin(t * 1.6 + u.phase) * 0.4;
+      u.wings.left.rotation.z = -flap;
+      u.wings.right.rotation.z = flap;
     }
 
     for (const shark of sharks) {
@@ -263,7 +350,8 @@ export function createOceanLife() {
       const dz = playerPos.z - shark.position.z;
       const dp = Math.hypot(dx, dz);
       const pause = dp < 9 ? Math.max(0, 1 - (9 - dp) / 6) : 1; // slows near you
-      u.a += u.speed * dt * (0.35 + 0.65 * pause);
+      if (u.chat > 0) u.chat -= dt;
+      else u.a += u.speed * dt * (0.35 + 0.65 * pause);
       // fins need depth — skip ahead past any shallows on the orbit
       for (let guard = 0; guard < 24; guard++) {
         const nx = u.orbit.cx + Math.cos(u.a) * u.orbit.r;
@@ -276,7 +364,8 @@ export function createOceanLife() {
         WATER_Y - 0.1 + Math.sin(t * 1.4 + u.a * 3) * 0.06,
         u.orbit.cz + Math.sin(u.a) * u.orbit.r
       );
-      shark.rotation.y = -u.a; // face along the orbit
+      // face along the orbit — or, mid-chat, toward whoever's talking
+      shark.rotation.y = u.chat > 0 ? Math.atan2(dx, dz) : -u.a;
       u.tail.rotation.y = Math.sin(t * 3 + u.a) * 0.4;
       if (dp < 8 && u.heartT <= 0) {
         u.heartT = 6; // a moment of cross-species affection, then cooldown

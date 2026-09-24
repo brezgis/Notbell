@@ -14,6 +14,15 @@ import { jingle, kaching, splash, tone } from './audio.js';
 import { rand, pick, turnToward } from './utils.js';
 import { addIslandInfo } from './fieldguide.js';
 import { glowWindow } from './nightglow.js';
+import { isNight } from './calendar.js';
+
+// fruit hangs on the OUTSIDE of a round crown (radius R, centre cy, squashed
+// by sy) — tucked inside the leaves, nobody could tell the tree was ripe
+function onCrown(fruit, a, y, R, cy, sy) {
+  const dy = Math.min(0.95, Math.abs(y - cy) / (R * sy));
+  const r = R * Math.sqrt(1 - dy * dy) + 0.1;
+  fruit.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
+}
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -76,7 +85,7 @@ export function createIsland5(player) {
     { x: M.x - 6, z: M.z - 2, r: 6.4 + TREE_STRUCTURE_CLEARANCE },
     { x: M.x + 6, z: M.z - 2, r: 6.4 + TREE_STRUCTURE_CLEARANCE },
     { x: M.x, z: M.z + 1.9, r: 4.5 },
-    { x: M.x, z: M.z + 6, r: 2.0 + TREE_STRUCTURE_CLEARANCE },
+    { x: M.x, z: M.z + 6, r: 5.0 + 2.2 }, // the whole court, not just the fountain
     { ...groveStop, r: 5.2 },
   ];
   const placedTrees = [];
@@ -140,11 +149,12 @@ export function createIsland5(player) {
       for (let f = 0; f < 4; f++) {
         const a = (f / 4) * Math.PI * 2 + rand(-0.3, 0.3);
         const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.17, 0), mat(0xff9430, 0.6));
-        fruit.position.set(Math.cos(a) * 1.2, 2.2 + rand(0, 0.6), Math.sin(a) * 1.2);
+        onCrown(fruit, a, 2.2 + rand(0, 0.6), 1.5, 2.4, 0.9);
         tree.add(fruit);
         oranges.push(fruit);
       }
       tree.position.set(tx, ty - 0.05, tz);
+      zones.addBlocker(tx, tz, 0.6, 'tree'); // trunks are solid
       tree.traverse((o) => { if (o.isMesh) o.castShadow = true; });
       group.add(tree);
       const ot = { oranges, regrow: 0 };
@@ -184,9 +194,13 @@ export function createIsland5(player) {
       const wing = box(4, 3.6, 5.5, 0xe8dcc4);
       wing.position.set(sx, 1.8, 0.5);
       ext.add(wing);
-      const wingRoof = new THREE.Mesh(new THREE.ConeGeometry(3.4, 1.6, 4), mat(0x5a6a80));
-      wingRoof.position.set(sx, 4.3, 0.5);
-      wingRoof.rotation.y = Math.PI / 4;
+      // a hipped roof that covers the whole wing (4×5.5), eaves on the walls:
+      // square pyramid turned square-on in the geometry, then stretched
+      const wingGeo = new THREE.ConeGeometry(3.4, 1.6, 4);
+      wingGeo.rotateY(Math.PI / 4);
+      const wingRoof = new THREE.Mesh(wingGeo, mat(0x5a6a80));
+      wingRoof.position.set(sx, 3.6 + 0.8, 0.5);
+      wingRoof.scale.set(1.0, 1, 1.3);
       wingRoof.castShadow = true;
       ext.add(wingRoof);
     }
@@ -242,20 +256,36 @@ export function createIsland5(player) {
       if (o.material.color && o.material.color.getHex() === 0xbfe6f2) glowWindow(o); // every manor window glows
     });
     group.add(ext);
-    zones.addBlocker(M.x - 6, M.z - 2, 6.4);
-    zones.addBlocker(M.x + 6, M.z - 2, 6.4);
+    // the house, the wings, the portico columns: rectangles, not balloons
+    zones.addBlockerBox(M.x, M.z - 2, 11, 7, 0, 0.05);
+    for (const sx of [-7.5, 7.5]) zones.addBlockerBox(M.x + sx, M.z - 1.5, 4, 5.5, 0, 0.05);
+    for (const sx of [-2.2, 2.2]) zones.addBlocker(M.x + sx, M.z + 1.7, 0.32);
 
-    // gravel court + fountain where the grandchildren orbit
-    const court = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 0.08, 14), mat(0xd9d2c0, 0.95));
-    court.position.set(M.x, my + 0.06, M.z + 6);
+    // gravel court + fountain where the grandchildren orbit — on a proper
+    // stone footing that reaches the ground all the way round (it used to be
+    // a paper-thin disc: buried on the uphill side, floating on the down)
+    let courtLow = my;
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+      courtLow = Math.min(courtLow, terrainHeight(M.x + Math.cos(a) * 4.6, M.z + 6 + Math.sin(a) * 4.6));
+    }
+    let courtHigh = my;
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+      courtHigh = Math.max(courtHigh, terrainHeight(M.x + Math.cos(a) * 4.2, M.z + 6 + Math.sin(a) * 4.2));
+    }
+    const courtTop = courtHigh + 0.12;
+    const courtH = courtTop - (courtLow - 0.4);
+    const court = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.75, courtH, 14), mat(0xd9d2c0, 0.95));
+    court.position.set(M.x, courtTop - courtH / 2, M.z + 6);
+    court.receiveShadow = true;
     group.add(court);
+    zones.addSurfaceDisc(M.x, M.z + 6, 4.95, courtTop); // (to the lip of the footing — no wading in its edge)
     const fbasin = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.3, 0.5, 10), mat(0xb9c0b9));
-    fbasin.position.set(M.x, my + 0.25, M.z + 6);
+    fbasin.position.set(M.x, courtTop + 0.25, M.z + 6);
     const fwater = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.1, 10),
       new THREE.MeshStandardMaterial({ color: 0x57c8d8, roughness: 0.2, emissive: 0x1a4a52, emissiveIntensity: 0.3 }));
-    fwater.position.set(M.x, my + 0.5, M.z + 6);
+    fwater.position.set(M.x, courtTop + 0.5, M.z + 6);
     group.add(fbasin, fwater);
-    zones.addBlocker(M.x, M.z + 6, 2.0);
+    zones.addBlocker(M.x, M.z + 6, 1.35);
 
     // the three grandchildren: small, fast, and everywhere on this island.
     // they sprint, they sniff, they vanish into the mansion and reappear —
@@ -642,16 +672,24 @@ export function createIsland5(player) {
     });
 
     // ---------------- the grand staircase, and what it leads to ----------
+    // it rises toward the back wall, foot to the room, and it is SOLID —
+    // treads down to the floor, a banister you can't walk through
     for (let step = 0; step < 5; step++) {
-      const tread = box(2.2, 0.3, 0.7, 0x8a5a3a);
-      tread.position.set(B.x + 8.6, 0.15 + step * 0.32, B.z - 4.8 + step * 0.62);
+      const h = 0.3 + step * 0.32;
+      const tread = box(2.2, h, 0.62, 0x8a5a3a);
+      tread.position.set(B.x + 8.6, h / 2, B.z - 2.3 - step * 0.62);
       group.add(tread);
     }
     const banister = box(0.1, 1.0, 3.4, 0xd9a440);
-    banister.position.set(B.x + 7.4, 1.0, B.z - 3.4);
+    banister.position.set(B.x + 7.45, 1.25, B.z - 3.6);
     group.add(banister);
+    for (let k = 0; k < 4; k++) {
+      const spindle = box(0.08, 0.9, 0.08, 0xd9a440);
+      spindle.position.set(B.x + 7.45, 0.45 + k * 0.3, B.z - 2.1 - k * 0.85);
+      group.add(spindle);
+    }
     register({
-      pos: new THREE.Vector3(B.x + 8.4, 0, B.z - 5.4), r: 2.0, zone: 'manor',
+      pos: new THREE.Vector3(B.x + 8.6, 0, B.z - 1.3), r: 1.9, zone: 'manor',
       label: 'climb the grand staircase',
       use: () => zones.go('manor_up'),
     });
@@ -675,6 +713,7 @@ export function createIsland5(player) {
       blockers: [
         { x: B.x + 3, z: B.z + 2, r: 2.2 },
         { x: B.x - 9.5, z: B.z - 2, r: 1.4 },
+        { x: B.x + 8.5, z: B.z - 3.95, w: 2.5, d: 3.4 }, // the staircase
       ],
       spawn: { x: B.x, z: B.z + 6.4, rotY: Math.PI },
       lighting: {
@@ -716,16 +755,63 @@ export function createIsland5(player) {
     const deskU = box(2.4, 1.0, 1.1, 0x6b4a2e);
     deskU.position.set(U.x + 2, 0.5, U.z - 4.1);
     group.add(deskU);
-    const winU = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.6),
-      new THREE.MeshBasicMaterial({ color: 0x1a2a5e }));
+    // a real window: painted view (sea, sky, and HER — the little volcano
+    // the Baron keeps an eye on), a wooden frame with a cross of muntins,
+    // and a sill deep enough for a cup of tea. The view follows the clock.
+    function paintView(night) {
+      const cv = document.createElement('canvas');
+      cv.width = 220; cv.height = 160;
+      const c = cv.getContext('2d');
+      const sky = c.createLinearGradient(0, 0, 0, 110);
+      sky.addColorStop(0, night ? '#0d1a3a' : '#7cc6ee');
+      sky.addColorStop(1, night ? '#2a3a66' : '#d8f0f8');
+      c.fillStyle = sky;
+      c.fillRect(0, 0, 220, 110);
+      if (night) {
+        c.fillStyle = '#eef4ff';
+        for (const [x, y] of [[24, 18], [70, 34], [120, 14], [168, 30], [200, 12], [96, 52], [40, 60]]) c.fillRect(x, y, 2, 2);
+      }
+      c.fillStyle = night ? '#16284a' : '#3fa6d8'; // the sea
+      c.fillRect(0, 108, 220, 52);
+      c.fillStyle = night ? '#1c1a22' : '#6e5a4e'; // the volcano, asleep
+      c.beginPath();
+      c.moveTo(70, 112); c.lineTo(112, 58); c.lineTo(128, 58); c.lineTo(170, 112);
+      c.closePath(); c.fill();
+      c.fillStyle = night ? '#2a2630' : '#8a766a';
+      c.beginPath(); c.moveTo(112, 58); c.lineTo(128, 58); c.lineTo(138, 72); c.lineTo(104, 72); c.closePath(); c.fill();
+      c.fillStyle = night ? 'rgba(200,200,220,0.25)' : 'rgba(255,255,255,0.7)'; // one lazy wisp
+      c.beginPath(); c.arc(124, 46, 7, 0, Math.PI * 2); c.arc(134, 36, 9, 0, Math.PI * 2); c.fill();
+      c.fillStyle = night ? '#1a3322' : '#4f9a52'; // Grove's own treetops in the foreground
+      for (const x of [10, 36, 186, 212]) { c.beginPath(); c.arc(x, 150, 22, 0, Math.PI * 2); c.fill(); }
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+    const viewDay = paintView(false), viewNight = paintView(true);
+    const winU = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.6), new THREE.MeshBasicMaterial({ map: viewDay }));
     winU.position.set(U.x + 5, 2.6, U.z - 4.78);
     group.add(winU);
-    for (let i = 0; i < 6; i++) {
-      const star = new THREE.Mesh(new THREE.IcosahedronGeometry(0.025, 0),
-        new THREE.MeshBasicMaterial({ color: 0xeef4ff }));
-      star.position.set(U.x + 4.2 + (i % 3) * 0.7, 2.3 + Math.floor(i / 3) * 0.7, U.z - 4.77);
-      group.add(star);
+    for (const [w, h, x, y] of [
+      [2.5, 0.16, 0, 0.88], [2.5, 0.16, 0, -0.88], [0.16, 1.9, -1.17, 0], [0.16, 1.9, 1.17, 0], // frame
+      [0.08, 1.6, 0, 0], [2.2, 0.08, 0, 0.1], // muntins
+    ]) {
+      const bar = box(w, h, 0.12, 0xf3ead8);
+      bar.position.set(U.x + 5 + x, 2.6 + y, U.z - 4.72);
+      group.add(bar);
     }
+    const sill = box(2.8, 0.14, 0.45, 0xf3ead8);
+    sill.position.set(U.x + 5, 1.66, U.z - 4.6);
+    group.add(sill);
+    const sillCup = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.14, 8), mat(0xfaf4e8, 0.5));
+    sillCup.position.set(U.x + 5.8, 1.8, U.z - 4.6);
+    group.add(sillCup);
+    let viewT = 0;
+    updates.push((dt) => {
+      if (zones.current() !== 'manor_up' || (viewT -= dt) > 0) return;
+      viewT = 2;
+      const want = isNight() ? viewNight : viewDay;
+      if (winU.material.map !== want) { winU.material.map = want; winU.material.needsUpdate = true; }
+    });
     const scope = new THREE.Group();
     const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.2, 8), mat(0xd9a440, 0.4));
     tube.rotation.x = -0.7;
@@ -960,19 +1046,33 @@ export function createIsland5(player) {
   // ------------------------------------------------------ the hot springs ----
   const springPools = [];
   const spy = terrainHeight(SP.x, SP.z);
-  for (const [ox, oz, r] of [[-2.5, -1, 2.2], [2.2, 1.5, 1.8], [0.2, -3.5, 1.4]]) {
+  // three pools, bigger than they were, and no two the same shape — hot
+  // water finds its own edges; nobody poured these from a compass
+  for (const [ox, oz, r] of [[-2.9, -1.1, 2.7], [2.8, 1.8, 2.2], [0.3, -4.4, 1.75]]) {
     const px = SP.x + ox, pz = SP.z + oz;
     const py = terrainHeight(px, pz);
+    const ph = rand(0, Math.PI * 2);
+    const edge = (a) => r * (1 + 0.16 * Math.sin(3 * a + ph) + 0.08 * Math.sin(5 * a + ph * 1.7));
     const rim = [];
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2;
+    const nStones = Math.round(r * 5);
+    for (let i = 0; i < nStones; i++) {
+      const a = (i / nStones) * Math.PI * 2;
+      const e = edge(a) + 0.3;
       const stone = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.3, 0.5), 0), mat(0x9a948a));
-      stone.position.set(px + Math.cos(a) * (r + 0.3), py + 0.15, pz + Math.sin(a) * (r + 0.3));
+      stone.position.set(px + Math.cos(a) * e, py + 0.15, pz + Math.sin(a) * e);
       stone.castShadow = true;
       group.add(stone);
       rim.push(stone);
     }
-    const water = new THREE.Mesh(new THREE.CircleGeometry(r, 14),
+    const outline = new THREE.Shape();
+    for (let i = 0; i <= 28; i++) {
+      const a = (i / 28) * Math.PI * 2;
+      // shape space is (x, y) → world (x, -z) after the -π/2 tilt below
+      const e = edge(a);
+      if (i === 0) outline.moveTo(Math.cos(a) * e, -Math.sin(a) * e);
+      else outline.lineTo(Math.cos(a) * e, -Math.sin(a) * e);
+    }
+    const water = new THREE.Mesh(new THREE.ShapeGeometry(outline, 1),
       new THREE.MeshStandardMaterial({
         color: 0xa8d8d0, transparent: true, opacity: 0.85,
         roughness: 0.1, emissive: 0x2a544c, emissiveIntensity: 0.3,
@@ -1103,11 +1203,12 @@ export function createIsland5(player) {
     for (let f = 0; f < 5; f++) {
       const fa = (f / 5) * Math.PI * 2 + rand(-0.2, 0.2);
       const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.21, 0), mat(0xff9430, 0.55));
-      fruit.position.set(Math.cos(fa) * 1.25, 2.1 + rand(0, 0.7), Math.sin(fa) * 1.25);
+      onCrown(fruit, fa, 2.1 + rand(0, 0.7), 1.45, 2.35, 1);
       tree.add(fruit);
       fruits.push(fruit);
     }
     tree.position.set(tx, ty - 0.05, tz);
+    zones.addBlocker(tx, tz, 0.6, 'tree'); // trunks are solid
     tree.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(tree);
     const ot = { oranges: fruits, regrow: 0 };
@@ -1141,6 +1242,7 @@ export function createIsland5(player) {
     back.position.set(bx2 - Math.sin(ry2) * 0.32, by2 + 0.85, bz2 - Math.cos(ry2) * 0.32);
     back.rotation.y = ry2;
     group.add(bench, back);
+    zones.addBlockerBox(bx2 - Math.sin(ry2) * 0.1, bz2 - Math.cos(ry2) * 0.1, 2.0, 0.95, ry2, 0.02);
   }
   register({
     pos: new THREE.Vector3(SP.x - 4.5, 0, SP.z + 4.5), r: 2.2,
@@ -1154,6 +1256,7 @@ export function createIsland5(player) {
     const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.7, 0.6, 8), mat(0x9a948a));
     nozzle.position.set(gx, gy + 0.3, gz);
     group.add(nozzle);
+    zones.addBlocker(gx, gz, 0.72);
     const jet = [];
     for (let k = 0; k < 6; k++) {
       const puff = new THREE.Mesh(new THREE.IcosahedronGeometry(0.25, 0),
@@ -1206,11 +1309,12 @@ export function createIsland5(player) {
         const a = (f / 6) * Math.PI * 2 + rand(-0.25, 0.25);
         const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 0),
           mat(peachy ? 0xffb38a : 0xff9430, 0.55));
-        fruit.position.set(Math.cos(a) * 1.35, 2.15 + rand(0, 0.8), Math.sin(a) * 1.35);
+        onCrown(fruit, a, 2.15 + rand(0, 0.8), 1.6, 2.5, 0.9);
         tree.add(fruit);
         fruits.push(fruit);
       }
       tree.position.set(tx, ty - 0.05, tz);
+      zones.addBlocker(tx, tz, 0.6, 'tree'); // trunks are solid
       tree.traverse((o) => { if (o.isMesh) o.castShadow = true; });
       group.add(tree);
       const ot = { oranges: fruits, regrow: 0 };

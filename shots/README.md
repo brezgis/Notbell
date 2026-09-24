@@ -16,12 +16,43 @@ there's no package.json here on purpose.) Chrome is expected at
 
 ## Running
 
+Needs Node ≥ 18 (the system `node` on north is v12 — put
+`~/.nvm/versions/node/v22.22.0/bin` first on PATH). Probes talk to
+`PORT` (default 8123; 8123 is often already taken on north, so e.g.
+`python3 ../serve.py 8130` and `export PORT=8130`).
+
 ```sh
-python3 ../serve.py            # from repo root: serves 8123 (worktrees: pick 8124+)
+python3 ../serve.py 8130       # from repo root
 node smoke.mjs                 # boot + move + door round-trip; PASS/FAIL, no shots
 LABEL=before node canon.mjs    # the canonical tour → out/before/NN-*.png
 LABEL=after  node canon.mjs    # …after your change → out/after/NN-*.png
+node clip_audit.mjs            # collision audit → out/<LABEL>/clip_audit.json
+VIEWS=@views.json node views.mjs   # any list of camera views → shots + a contact sheet
 ```
+
+`views.mjs` takes `[{ "n": name, "x", "z", "y"?, "yaw", "pitch", "dist",
+"zone"?, "px"/"pz"? (where to park the player), "find"? ("#rrggbb" — aim at
+the first mesh of that color) }]`. `SHOW=1` draws every blocker outline on
+the ground (red structures, green trees/rocks, blue keepouts); `NIGHT=1`,
+`WEATHER=rain`.
+
+`clip_audit.mjs` samples every spot a body can stand on the islands and
+reports solid meshes the body would be inside — walls you can walk into,
+plinths you sink through, trunks you ghost past. Bounding boxes flatter
+round things, so triage its list by eye; the top of the list is what
+matters.
+
+`roof_audit.mjs` samples every roofed wall's top edges and reports any
+that poke out through the roof (the classic: a prism roof whose eaves sit
+below the wall top).
+
+Behavior probes: `probe_life.mjs` (no villager teleports; errands and
+bedtime are walks), `probe_route.mjs` (a Far Isle villager walks to the
+Notbell plaza over the footbridge, never in the sea), `probe_ride.mjs` (the
+Grove Line end to end), `probe_rail.mjs` (every station, both ends),
+`probe_pastime.mjs` (someone goes fishing), `probe_reach.mjs` (every
+interactable can still be walked up to), `probe_dive.mjs` (suit up, dive
+to the Dropped Crown, ride a bubble to the Glow).
 
 `canon.mjs` visits ~20 stable vantages (every island, key interiors, the
 village at night and in rain). Compare the pairs by eye. Probes never start
@@ -55,9 +86,10 @@ await browser.close();
 - **Night** = Date pinned to 12:30 by `boot()` + `window.__notbellTz = 9`
   (`night(page, true)`), then ~7s for the sky to recompute. Don't pin
   midnight directly — some probes need to toggle day/night in one session.
-- **No camera API.** The trailing camera boots looking north (−z);
-  `zones.go` only turns the player. To frame south-facing detail, `orbit()`
-  (synthetic drag). `place()` re-runs the fade so the camera snaps.
+- **Camera:** `view(page, {x, y?, z}, {yaw, pitch, dist})` aims the camera
+  at any point without moving the player (the `__notbell.cam` debug hook);
+  `view(page, null)` hands it back. The older `orbit()` (synthetic drag) still
+  works. The trailing camera boots looking north (−z).
 - **Dialogue** types out and has a ~250ms close debounce. `advance()` and
   `choose()` read `#dialog`/`#choices` display state — never fire blind
   KeyE volleys.
@@ -66,16 +98,19 @@ await browser.close();
   test the welcome itself, e.g. the wake-up flows).
 - Mobile: `boot({ mobile: true })` emulates iPhone 13; touch controls
   dispatch synthetic key events, so `press/walk` still work.
-- **Villagers walk now** (B7): `ambient.forceMeeting()` returns while the
+- **Villagers walk now**: `ambient.forceMeeting()` returns while the
   guest is still walking over — poll for an animal with `meeting &&
-  !meeting.pending` before asserting bubbles. Train riders queue via
-  `__notbell.bridge.debug.enqueue(end, animal)`; a full ride is ~35 game
-  seconds ≈ 3 real minutes headless.
+  !meeting.pending` before asserting bubbles. Errands walk to the door
+  first (`errand.phase === 'going'`). Train riders queue via
+  `__notbell.<bridge|northline|farline>.debug.enqueue(stationIdx, animal)`
+  (the strait line still accepts 'A'/'B'); `debug.hurry()` skips the
+  current wait. A full ride is ~35 game seconds ≈ 3 real minutes headless.
 
 ## Layout
 
 - `lib.mjs` — the harness (tracked)
-- `smoke.mjs`, `canon.mjs` — canonical probes (tracked)
+- `smoke.mjs`, `canon.mjs`, `views.mjs`, `clip_audit.mjs` — canonical
+  probes and tools (tracked), plus the behavior probes above
 - `audit_b18.mjs` — computed geometry audit (tracked): flags floating walls,
   buried decks, and undersized prism/cone roofs island-wide, with positions
   and gap sizes. Run after any build work. Note: plinths and stilts are

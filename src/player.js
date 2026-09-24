@@ -12,6 +12,32 @@ const WALK_SPEED = 4.6;
 const RUN_SPEED = 8.2;
 const COFFEE_MULT = 1.35; // Luna's Lantern Roast is not decaf
 const SWIM_MULT = 0.55;   // the sea charges a convenience fee
+const SKATE_SPEED = 14.5; // Pip's skateboard: ultimate zoomability
+const MOVE_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
+// Pip's skateboard: a plank, four wheels, and a stripe for speed
+function buildSkateboard() {
+  const g = new THREE.Group();
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.07, 1.35),
+    new THREE.MeshStandardMaterial({ color: 0xe8743a, flatShading: true, roughness: 0.6 }));
+  deck.position.y = 0.13;
+  g.add(deck);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.075, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0xfff3da, flatShading: true, roughness: 0.6 }));
+  stripe.position.y = 0.135;
+  g.add(stripe);
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0xf2cf5b, flatShading: true, roughness: 0.5 });
+  for (const sx of [-0.24, 0.24]) {
+    for (const sz of [-0.45, 0.45]) {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.07, 7), wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(sx, 0.07, sz);
+      g.add(w);
+    }
+  }
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
 
 // the bell-shaped brass helmet of Tansy's salvage divers
 function buildHelmet() {
@@ -77,6 +103,7 @@ function warmUp(g) {
 export function createPlayer() {
   const avatar = state.avatar || { kind: 'cat', body: 0xf0c98f };
   const group = buildAnimal(avatar.kind, { body: avatar.body });
+  group.userData.noFidget = true; // you face where YOU choose
   warmUp(group);
 
   group.position.set(
@@ -92,12 +119,25 @@ export function createPlayer() {
   group.add(lantern);
 
   const keys = new Set();
+  // double-tap any direction to run (it stays a run until you let go)
+  let lastTap = { code: null, t: 0 };
+  let runLatch = false;
   addEventListener('keydown', (e) => {
+    if (MOVE_KEYS.includes(e.code) && !e.repeat) {
+      const now = performance.now();
+      if (lastTap.code === e.code && now - lastTap.t < 300) runLatch = true;
+      lastTap = { code: e.code, t: now };
+    }
     keys.add(e.code);
     if (e.code.startsWith('Arrow')) e.preventDefault();
   });
-  addEventListener('keyup', (e) => keys.delete(e.code));
-  addEventListener('blur', () => keys.clear());
+  addEventListener('keyup', (e) => {
+    keys.delete(e.code);
+    if (!MOVE_KEYS.some((k) => keys.has(k))) runLatch = false;
+  });
+  addEventListener('blur', () => { keys.clear(); runLatch = false; });
+  let board = null;
+  let skating = false;
 
   let walk = 0;
   let helmet = null;
@@ -114,11 +154,42 @@ export function createPlayer() {
   function swimWater(x, z) {
     return zones.current() === 'island' &&
       terrainHeight(x, z) <= WATER_Y + 0.12 &&
+      !zones.seaBlocked(x, z) && // even a duck can't swim through rock
+      !zones.solidAt(x, z) &&
       Math.hypot(x - 40, z - 40) < 220; // the archipelago's waters end somewhere
   }
 
+  // a body, not a point: your shoulders stop at the wall, not your nose.
+  // (if you're somehow already overlapping something — a door spawn, a
+  // villager's house that grew around you — any step that isn't deeper
+  // into trouble is allowed, so nobody is ever pinned in place)
+  const BODY_R = 0.3;
+  // villagers are solid too (main.js hands us the list). a crocodile is
+  // mostly snout, so crocs get a second circle out front.
+  function bumpsSomeone(x, z) {
+    if (zones.current() !== 'island') return false;
+    const p = group.position;
+    for (const a of self.bodies) {
+      if ((a.away && !a.meeting) || a.riding || !a.g.visible) continue;
+      const ap = a.g.position;
+      if (Math.abs(ap.y - p.y) > 1.2) continue;
+      const circles = a.long
+        ? [[ap.x, ap.z, 0.75], [ap.x + Math.sin(a.g.rotation.y) * 1.5, ap.z + Math.cos(a.g.rotation.y) * 1.5, 0.55]]
+        : [[ap.x, ap.z, 0.7]];
+      for (const [cx, cz, r] of circles) {
+        const dNew = Math.hypot(x - cx, z - cz);
+        // blocked only when stepping INTO them (stepping away always works)
+        if (dNew < r + BODY_R && dNew < Math.hypot(p.x - cx, p.z - cz)) return true;
+      }
+    }
+    return false;
+  }
   function passable(x, z) {
-    return zones.canWalk(x, z) || (canSwim() && swimWater(x, z));
+    if (bumpsSomeone(x, z)) return false;
+    if (canSwim() && swimWater(x, z)) return true;
+    if (zones.canStand(x, z, BODY_R)) return true;
+    const p = group.position;
+    return zones.canWalk(x, z) && !zones.canStand(p.x, p.z, BODY_R);
   }
 
   function update(dt, t, camYaw = 0) {
@@ -134,9 +205,10 @@ export function createPlayer() {
     if (!ui.isBusy()) { // conversations deserve your feet's full attention
       x = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
       z = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
-      running = keys.has('ShiftLeft') || keys.has('ShiftRight');
+      running = keys.has('ShiftLeft') || keys.has('ShiftRight') || runLatch;
     }
     const moving = x !== 0 || z !== 0;
+    const skateNow = moving && running && !swimming && countItem('skateboard') > 0;
 
     if (moving) {
       // keys follow the camera: W is always "away from you", wherever you look
@@ -148,26 +220,32 @@ export function createPlayer() {
       const len = Math.hypot(x, z);
       x /= len;
       z /= len;
-      let speed = running ? RUN_SPEED : WALK_SPEED;
+      let speed = skateNow ? SKATE_SPEED : running ? RUN_SPEED : WALK_SPEED;
       if (coffeeActive()) speed *= COFFEE_MULT;
       if (swimming) speed *= SWIM_MULT;
-      const nx = group.position.x + x * speed * dt;
-      const nz = group.position.z + z * speed * dt;
-
-      // slide along walls and shorelines instead of stopping dead
-      if (passable(nx, nz)) {
-        group.position.x = nx;
-        group.position.z = nz;
-      } else if (passable(nx, group.position.z)) {
-        group.position.x = nx;
-      } else if (passable(group.position.x, nz)) {
-        group.position.z = nz;
+      if (zones.current() === 'crown') speed *= 0.8; // water is thick; the view is worth it
+      // small sub-steps, so a fast skater can't hop clean over a thin rail
+      const dist = speed * dt;
+      const steps = Math.max(1, Math.ceil(dist / 0.22));
+      for (let i = 0; i < steps; i++) {
+        const nx = group.position.x + (x * dist) / steps;
+        const nz = group.position.z + (z * dist) / steps;
+        // slide along walls and shorelines instead of stopping dead
+        if (passable(nx, nz)) {
+          group.position.x = nx;
+          group.position.z = nz;
+        } else if (passable(nx, group.position.z)) {
+          group.position.x = nx;
+        } else if (passable(group.position.x, nz)) {
+          group.position.z = nz;
+        } else break;
       }
 
       group.rotation.y = turnToward(group.rotation.y, Math.atan2(x, z), dt, 14);
     }
 
     const onMoon = zones.current() === 'moon';
+    const underwater = zones.current() === 'crown';
     if (swimming) {
       group.position.y = WATER_Y - 0.28 + Math.sin(t * 2.1) * 0.05;
       walk += ((moving ? 0.4 : 0.15) - walk) * Math.min(1, dt * 6);
@@ -179,14 +257,30 @@ export function createPlayer() {
         // a sixth of the gravity, six times the joy
         group.position.y += Math.abs(Math.sin(t * 4.2)) * 0.24 * walk;
         animateGait(group, t, walk, 7);
+      } else if (underwater) {
+        // down in the Crown: a floaty, bobbing wade
+        group.position.y += 0.15 + Math.sin(t * 1.6) * 0.1;
+        animateGait(group, t, walk, 5);
+      } else if (skateNow) {
+        // feet planted on the plank, gliding — a little bob over the seams
+        group.position.y += 0.18 + Math.abs(Math.sin(t * 9)) * 0.02;
+        animateGait(group, t, 0.05, 4);
       } else {
         animateGait(group, t, walk, running || coffeeActive() ? 14 : 10);
       }
     }
+    // the board is out when you're skating, tucked away when you're not
+    if (skateNow !== skating) {
+      skating = skateNow;
+      if (!board) board = buildSkateboard();
+      if (skating) group.add(board);
+      else group.remove(board);
+    }
+    if (board && skating) board.position.y = -0.2;
 
     // the bubble helmet is not optional. Dr. Hazel was very clear.
-    if (onMoon !== bubbleOn) {
-      bubbleOn = onMoon;
+    if ((onMoon || underwater) !== bubbleOn) {
+      bubbleOn = onMoon || underwater;
       if (!bubble) bubble = buildBubble();
       const head = group.userData.parts.head;
       if (bubbleOn) head.add(bubble);
@@ -233,10 +327,11 @@ export function createPlayer() {
     group.userData.parts = fresh.userData.parts;
     group.userData.hatMesh = null;
     helmetOn = false; // the old head took the helmet with it
+    skating = false;  // and the board went with the old body
     bubbleOn = false; // and the bubble
     applyHat(group, state.wearing);
   }
 
-  const self = { group, update, swapBody, riding: false };
+  const self = { group, update, swapBody, riding: false, bodies: [] };
   return self;
 }

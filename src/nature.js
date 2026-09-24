@@ -6,6 +6,7 @@ import { SEASON, isNight } from './calendar.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
+import { play as playTool } from './tools.js';
 import { jingle } from './audio.js';
 
 function mat(color, roughness = 0.95) {
@@ -21,7 +22,7 @@ const LEAF_COLORS = {
 };
 const LEAF_MATS = (LEAF_COLORS[SEASON] || LEAF_COLORS.summer).map((c) => mat(c));
 const PINE_MAT = mat(0x2f7d4f);
-const FRUIT_MAT = mat(0xff9430, 0.7);
+const FRUIT_MAT = mat(0xff5f45, 0.6); // sunset-red: reads against green, gold AND rust leaves
 const ROCK_MAT = mat(0x9aa0a6);
 const STEM_MAT = mat(0x4e9a45);
 const PETAL_MATS = [mat(0xff6b81, 0.8), mat(0xffd23e, 0.8), mat(0xffffff, 0.8), mat(0xc77dff, 0.8)];
@@ -57,8 +58,15 @@ function makeTree(withFruit) {
     g.userData.fruits = [];
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2 + rand(-0.3, 0.3);
-      const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.19, 1), FRUIT_MAT);
-      fruit.position.set(Math.cos(a) * 1.3, 2.6 + rand(-0.2, 0.3), Math.sin(a) * 1.3);
+      const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 1), FRUIT_MAT);
+      // on the OUTSIDE of the leaves, where you can see it's worth picking:
+      // come in from beyond the canopy until we touch leaf, then sit there
+      const y = 2.35 + rand(-0.2, 0.3);
+      let r = 2.6;
+      while (r > 0.5 && !blobs.some(([bx, by, bz, br]) =>
+        Math.hypot(Math.cos(a) * r - bx, y - by, Math.sin(a) * r - bz) < br)) r -= 0.05;
+      r += 0.08;
+      fruit.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
       g.add(fruit);
       g.userData.fruits.push(fruit);
     }
@@ -271,24 +279,10 @@ function straitKeepouts() {
   const tB = findShore(dLen - 14, -0.5);
   const A = { x: dir.x * tA, z: dir.z * tA };
   const B = { x: dir.x * tB, z: dir.z * tB };
-  const len = Math.hypot(B.x - A.x, B.z - A.z);
-  const along = { x: (B.x - A.x) / len, z: (B.z - A.z) / len };
-  const perp = { x: -along.z, z: along.x };
-  function railPlatform(t, inland) {
-    const sp = {
-      x: A.x + along.x * t * len + perp.x * 6,
-      z: A.z + along.z * t * len + perp.z * 6,
-    };
-    return {
-      x: sp.x + along.x * inland * 1.4 - perp.x * 1.8,
-      z: sp.z + along.z * inland * 1.4 - perp.z * 1.8,
-    };
-  }
+  // (the rail line's stations reserve their own ground — see railway.js)
   return [
     { ...A, r: 8.0 },
     { ...B, r: 8.0 },
-    { ...railPlatform(0, -3), r: 10.0 },
-    { ...railPlatform(1, 3), r: 10.0 },
   ];
 }
 
@@ -297,7 +291,7 @@ const TREE_KEEPOUTS = [
   { x: SITES.town2.x - 6, z: SITES.town2.z - 3, r: 7.1 },
   { x: SITES.town2.x + 6, z: SITES.town2.z - 4, r: 7.4 },
   { x: SITES.garden2.x, z: SITES.garden2.z, r: 5.0 },
-  { x: SITES.bones.x + 2, z: SITES.bones.z, r: 5.2 },
+  { x: SITES.bones.x, z: SITES.bones.z, r: 9.5 }, // the Old Singer, all sixteen units of her
 ];
 
 function clearOfTreeKeepouts(x, z) {
@@ -348,6 +342,7 @@ export function scatterNature() {
       add(tree, spot);
       treeSpots.push(spot);
       obstacles.push({ x: spot.x, z: spot.z, r: 2 });
+      zones.addBlocker(spot.x, spot.z, 0.45, 'tree'); // trunks are solid
       if (tree.userData.fruits) {
         const ft = { fruits: tree.userData.fruits, regrow: 0 };
         fruitTrees.push(ft);
@@ -373,6 +368,7 @@ export function scatterNature() {
     if (spot) {
       add(makePine(), spot);
       obstacles.push({ x: spot.x, z: spot.z, r: 2 });
+      zones.addBlocker(spot.x, spot.z, 0.9, 'tree'); // the low skirt of boughs, too
     }
   }
   for (let i = 0; i < 60; i++) {
@@ -386,8 +382,10 @@ export function scatterNature() {
   for (let i = 0; i < 14; i++) {
     const spot = tryPlace(-0.4, 6, 2.5, ISLAND_RADIUS + 4);
     if (spot) {
-      add(makeRock(), spot, 0.25);
+      const rock = makeRock();
+      add(rock, spot, 0.25);
       rockSpots.push(spot);
+      zones.addBlocker(spot.x, spot.z, rock.geometry.parameters.radius * 0.8, 'tree');
       obstacles.push({ x: spot.x, z: spot.z, r: 1.2 });
     }
   }
@@ -500,6 +498,7 @@ export function scatterNature() {
           ui.say(pick(NO_NET_LINES));
           return;
         }
+        playTool('net');
         if (Math.random() < 0.92) {
           b.visible = false;
           b.userData.respawn = rand(40, 90);
@@ -546,6 +545,7 @@ export function scatterNature() {
           ui.say('A Buttonshell Beetle! Four neat little holes in its shell. You need a net before it needs an alibi.');
           return;
         }
+        playTool('net');
         if (Math.random() < 0.88) {
           beetle.visible = false;
           data.respawn = rand(60, 130);
@@ -596,6 +596,7 @@ export function scatterNature() {
           ui.say(missLine);
           return;
         }
+        if (S.state.tools.net) playTool('net');
         if (Math.random() < chance) {
           mesh.visible = false;
           data.respawn = rand(50, 110);
@@ -671,6 +672,7 @@ export function scatterNature() {
           ui.say('It hovers, completely still, then isn’t where it was. A net might keep up. Might.');
           return;
         }
+        playTool('net');
         if (Math.random() < 0.8) {
           d.visible = false;
           d.userData.respawn = rand(45, 100);
@@ -716,6 +718,7 @@ export function scatterNature() {
           ui.say('It blinks at you, unhurried. Bring a net, and more importantly, bring gentleness.');
           return;
         }
+        playTool('net');
         if (Math.random() < 0.85) {
           f.visible = false;
           f.userData.caughtUntil = rand(60, 120);

@@ -9,12 +9,12 @@ import * as ui from './ui.js';
 
 // world window the chart covers (the world continues past the left edge;
 // the chart does not. ask the Labs about it, they think it's very funny)
-const MAP = { x0: -130, x1: 160, z0: -165, z1: 145, scale: 2 };
+const MAP = { x0: -130, x1: 200, z0: -165, z1: 145, scale: 2 }; // (Farther runs off the east edge, like the Labs off the west)
 
 const ISLAND_INFO = [
   {
     key: 'notbell',
-    name: 'Notbell Island', x: 0, z: 0, r: 40, icon: '🍃',
+    name: 'Notbell Isle', x: 0, z: 0, r: 40, icon: '🍃',
     blurb: 'Home. The island that lost its bell and kept the name. Village plaza, the Lantern Room, the museum, your cottage, the tide pools, the dock — and the cave where the old light sleeps.',
     folk: 'Pip · Luna · Fern · Chip · Clover · Biscuit · Howell · Puddle · the Admiral · Captain Brine · Murmur (sometimes)',
   },
@@ -104,7 +104,20 @@ const ZONE_PLACES = {
   general: '🥫 The Farther General',
 };
 
+// rooms built at runtime (the tents and RVs at Farther) name themselves
+export function addZonePlace(zone, name) {
+  ZONE_PLACES[zone] = name;
+}
+
+// whole worlds with neighborhoods of their own (the Dropped Crown) name
+// where you are within them
+const PLACE_NAMERS = {};
+export function addPlaceNamer(zone, fn) {
+  PLACE_NAMERS[zone] = fn;
+}
+
 export function placeName(zone, x, z) {
+  if (PLACE_NAMERS[zone]) return PLACE_NAMERS[zone](x, z);
   if (ZONE_PLACES[zone]) return ZONE_PLACES[zone];
   if (zone.startsWith('house_')) {
     const who = zone.slice(6).replace(/\b\w/g, (c) => c.toUpperCase());
@@ -273,7 +286,7 @@ function renderMap(player) {
   const info = document.createElement('div');
   info.className = 'info';
   info.innerHTML = `<h3>🗺️ The Notbell Archipelago</h3>
-    <div>The Notbell Archipelago — every island the volcano raised, back when she worked. The big one goes by Notbell Island, the way the main one always does.</div>
+    <div>The Notbell Archipelago — every island the volcano raised, back when she worked. The big one goes by Notbell Isle, the way the main one always does.</div>
     <div class="folk">Click an island for the gossip.</div>
     <div class="fg-hint">P or Esc to close</div>`;
   mapModal.appendChild(info);

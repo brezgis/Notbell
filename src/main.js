@@ -3,7 +3,7 @@ import { createTerrain, terrainHeight, SITES, ISLAND2 } from './terrain.js';
 import { createOcean } from './ocean.js';
 import { createSky } from './sky.js';
 import { scatterNature } from './nature.js';
-import { createAnimals } from './animals.js';
+import { createAnimals, idleAll } from './animals.js';
 import { createPlayer } from './player.js';
 import { createBuildings } from './buildings.js';
 import { createCave } from './cave.js';
@@ -22,21 +22,26 @@ import { createIsland3 } from './island3.js';
 import { createTexas } from './texas.js';
 import { createGhost } from './ghost.js';
 import { createBeachBall } from './beachball.js';
+import { createShells } from './shells.js';
+import { createStarfall } from './starfall.js';
 import { createBulko } from './bulko.js';
 import { createNorthline } from './northline.js';
 import { createFarline } from './farline.js';
 import { createIsland5 } from './island5.js';
 import { createIsland6 } from './island6.js';
 import { createFold } from './fold.js';
+import { createLabsGrounds } from './labsgrounds.js';
 import { createFarther } from './farther.js';
 import { createMoon } from './moon.js';
+import { createCrown } from './crown.js';
 import { wireHatKey } from './hats.js';
+import { initTools, updateTools, play as playTool } from './tools.js';
 import { initFieldGuide, markVisited, placeName } from './fieldguide.js';
 import { createMultiplayer } from './multiplayer.js';
 import { initControls, isTouchDevice } from './controls.js';
 import { initSettings } from './settings.js';
-import { setMood } from './audio.js';
-import { HOLIDAY, isNight, clockLabel } from './calendar.js';
+import { setMood, setAmbience } from './audio.js';
+import { HOLIDAY, isNight, clockLabel, hourNow } from './calendar.js';
 import { currentWeather } from './almanac.js';
 import * as almanac from './almanac.js';
 import { updateNightGlow } from './nightglow.js';
@@ -188,6 +193,7 @@ nameVillagers(animals.animals);
 const island3 = createIsland3(); // before houses: Crumb sleeps on the MouseBoat
 const texas = createTexas();
 const houses = createHouses(animals.animals, nature.obstacles);
+player.bodies = animals.animals; // villagers are solid to you, too
 const bridge = createBridge(player, animals.animals);
 const island2 = createIsland2();
 const ambient = createAmbient(animals.animals, scene);
@@ -196,6 +202,7 @@ const bulko = createBulko(player); // before boats: the ferry needs the dock
 const island6 = createIsland6(player); // ditto — the Persistent calls at the Labs
 const farther = createFarther(); // ditto again — the ferry calls at Farther Isle
 const moon = createMoon(player); // 384,000 km up and to the right
+const crown = createCrown(player); // and a long way down: the world under the reef
 const boats = createBoats(player);
 const island5 = createIsland5(player);
 const northline = createNorthline(player, animals.animals);
@@ -203,11 +210,15 @@ const farline = createFarline(player, animals.animals);
 const volcano = createVolcano();
 const ghost = createGhost(player);
 const beachBall = createBeachBall(player);
+const shells = createShells(); // the tide's slow shift
+const starfall = createStarfall(player); // clear nights: stars come loose
 const fishing = createFishing(player);
 const digging = createDigging();
 const tidePools = createTidePools();
-const fold = createFold(); // last of the creators: the Fold arrived late and touches nothing
+const fold = createFold(); // the Fold arrived late and touches nothing
+const labsGrounds = createLabsGrounds(); // after everything: it looks for open ground
 wireHatKey(player.group);
+initTools(player); // rod, net, shovel — in your paws when you use them
 initFieldGuide(player);
 initControls(); // thumbsticks for the touch-blessed; a no-op for everyone else
 initSettings(); // the quiet panel behind the title chip
@@ -219,8 +230,17 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group
+  island5.group, shells.group, starfall.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group, crown.group, labsGrounds.group
 );
+
+// name each module's root so debug probes (shots/clip_audit.mjs) can say
+// *whose* mesh is poking through what
+for (const [k, g] of Object.entries({
+  ocean, sky, nature, animals, buildings, cave, fishing, digging, tidePools,
+  houses, bridge, island2, oceanLife, boats, volcano, island3, ghost, beachBall, shells, starfall,
+  texas, bulko, island5, northline, farline, island6, fold, farther, moon, crown,
+})) if (g.group && !g.group.name) g.group.name = k;
+player.group.name = 'player';
 
 camera.position.copy(player.group.position).add(camOffset);
 ui.updateHUD();
@@ -318,12 +338,17 @@ if (w && w.day !== S.todayKey()) {
       playMorningSignal();
     })
     .catch(() => {});
-} else if (w && w.zone !== 'sea') {
+} else if (w) {
   camYaw = w.camYaw ?? camYaw;
   camPitch = w.camPitch ?? camPitch;
   camDist = w.camDist ?? camDist;
   refreshCamOffset();
-  zones.go(w.zone, { x: w.x, z: w.z, rotY: w.rotY }).catch(() => {});
+  // out rowing when the page closed? back in the same boat, same water
+  if (w.zone === 'sea') {
+    if (!boats.resumeRowing({ x: w.x, z: w.z, rotY: w.rotY })) S.state.rowing = null;
+  } else {
+    zones.go(w.zone, { x: w.x, z: w.z, rotY: w.rotY }).catch(() => {});
+  }
 }
 
 addEventListener('beforeunload', () => {
@@ -343,8 +368,15 @@ renderer.setAnimationLoop(() => {
   const zone = zones.current();
   const outdoors = zone === 'island' || zone === 'sea';
 
+  // interiors live far out over the (endless-looking) sea — indoors, the sea
+  // and the sky go away, so a room reads as a room, not a raft on the ocean
+  ocean.group.visible = outdoors;
+  sky.group.visible = outdoors;
+
   player.update(dt, t, camYaw);
+  updateTools(dt);
   animals.update(dt, t, playerPos);
+  idleAll(t);
   if (outdoors) {
     // the open world only spends effort when you can see it
     ocean.update(t);
@@ -358,16 +390,20 @@ renderer.setAnimationLoop(() => {
     digging.update(dt);
     tidePools.update(dt, t);
     beachBall.update(dt, t, playerPos);
+    shells.update(dt, t, playerPos);
+    starfall.update(dt, t);
     texas.update(dt, t, playerPos);
-    island5.update(dt, t, playerPos);
     northline.update(dt, t);
     farline.update(dt, t);
+    labsGrounds.update(dt, t, playerPos);
   }
   bulko.update(dt, t, playerPos);
+  island5.update(dt, t, playerPos); // the manor staff keep their rounds indoors too
   island6.update(dt, t, playerPos); // gates itself by zone (labs life is indoors too)
   fold.update(dt, t, playerPos); // ditto — the kirk keeps its own hours
   farther.update(dt, t, playerPos); // ditto — the General keeps store hours (all of them)
   if (zone === 'moon') moon.update(dt, t, playerPos);
+  if (zone === 'crown') crown.update(dt, t, playerPos);
   if (zone === 'cave') cave.update(dt, t);
   ghost.update(dt, t, playerPos); // walls are a rumor
   buildings.update(dt, t, playerPos);
@@ -388,11 +424,27 @@ renderer.setAnimationLoop(() => {
       cafe: 'cafe', cave: 'cave', church: 'church', museum: 'museum',
       shop: 'shop', grocery: 'shop', bulko: 'bulko', manor: 'manor',
       manor_up: 'manor', cellar: 'cave', moon: 'night', labs: 'shop',
-      post: 'shop', kirk: 'church', general: 'shop',
+      post: 'shop', kirk: 'church', general: 'shop', crown: 'reef',
     };
-    setMood(MOODS[zone] ?? (zone === 'island' || zone === 'sea'
-      ? (HOLIDAY ? 'holiday' : currentWeather() !== 'clear' ? 'rain' : isNight() ? 'night' : 'day')
+    const outdoors = zone === 'island' || zone === 'sea';
+    const wx = currentWeather();
+    const h = hourNow();
+    const timeMood = h >= 5 && h < 9 ? 'morning' : h >= 17 && h < 20 ? 'evening' : isNight() ? 'night' : 'day';
+    setMood(MOODS[zone] ?? (outdoors
+      ? (HOLIDAY ? 'holiday' : wx === 'rain' || wx === 'snow' || wx === 'fog' ? wx : timeMood)
       : 'indoors'));
+    // the world underneath the music: surf by the shore, wind up high,
+    // birds by day, crickets by night
+    let wet = 0;
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      if (terrainHeight(playerPos.x + Math.cos(a) * 9, playerPos.z + Math.sin(a) * 9) < -0.4) wet++;
+    }
+    setAmbience({
+      outdoors,
+      night: isNight(), weather: wx, coast: wet / 8,
+      high: Math.max(0, Math.min(1, (terrainHeight(playerPos.x, playerPos.z) - 4) / 8)),
+    });
   }
 
   // remember where you are, so refreshing isn't a teleport home
@@ -408,9 +460,10 @@ renderer.setAnimationLoop(() => {
     S.save();
   }
 
-  camGoal.copy(playerPos).add(camOffset);
-  camera.position.lerp(camGoal, 1 - Math.exp(-dt * 4));
-  lookGoal.copy(playerPos);
+  const focus = camFocus || playerPos; // probes may point the camera elsewhere
+  camGoal.copy(focus).add(camOffset);
+  camera.position.lerp(camGoal, camFocus ? 1 : 1 - Math.exp(-dt * 4));
+  lookGoal.copy(focus);
   lookGoal.y += 1.2;
   camera.lookAt(lookGoal);
   updateOcclusion();
@@ -420,15 +473,27 @@ renderer.setAnimationLoop(() => {
 
 document.getElementById('loading')?.remove();
 
-// debug/testing hook (used by shots/shoot.js)
-window.__notbell = { zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline, farline };
+// debug/testing hook (used by the shots/ harness). cam.view() aims the
+// camera at any point without moving the player; cam.view(null) lets go.
+let camFocus = null;
+const cam = {
+  view(p, o = {}) {
+    camFocus = p ? new THREE.Vector3(p.x, p.y ?? terrainHeight(p.x, p.z), p.z) : null;
+    if (o.yaw !== undefined) camYaw = o.yaw;
+    if (o.pitch !== undefined) camPitch = o.pitch;
+    if (o.dist !== undefined) camDist = o.dist;
+    refreshCamOffset();
+  },
+  get: () => ({ yaw: camYaw, pitch: camPitch, dist: camDist }),
+};
+window.__notbell = { cam, boats, interact, playTool, zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline, farline };
 
 // a small welcome the first time — and everyone gets to choose who they are
 (async () => {
   if (!S.hasFlag('woke')) {
     S.setFlag('woke');
     await ui.say([
-      'You wake up on Notbell Island — heart of the Notbell Archipelago, home of a real economy and famously no bell.',
+      'You wake up on Notbell Isle — heart of the Notbell Archipelago, home of a real economy and famously no bell.',
       'The villagers are friendly. The magpie who runs the shop has something for you. And the islands, if you bring them enough small treasures, have a story to tell.',
     ]);
   }

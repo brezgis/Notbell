@@ -17,13 +17,17 @@ Longer references live in `docs/`:
 
 ```sh
 python3 serve.py            # serves on 8123 with no-cache headers
-python3 serve.py 8124       # any other port (parallel worktrees each get their own)
+python3 serve.py 8130       # any other port (8123 is often taken on north)
 ```
 
 Visual verification uses the puppeteer harness in `shots/` — see
-`shots/README.md`. **Every visual change gets a before/after screenshot.**
-Judging a visual change by code inspection or game state alone is not
-verification here.
+`shots/README.md` (needs Node ≥ 18: the system `node` on north is 12, use
+`~/.nvm/versions/node/v22.22.0/bin`; set `PORT` to match the server).
+**Every visual change gets a before/after screenshot.** Judging a visual
+change by code inspection or game state alone is not verification here.
+For collision work, `shots/clip_audit.mjs` measures every walkable spot
+against every solid mesh, and `SHOW=1 node views.mjs` draws the blocker
+outlines into the screenshots.
 
 ## The rules
 
@@ -56,6 +60,12 @@ verification here.
 8. **The player's lantern glow is canon.** Never remove or dim it.
 9. **New solid meshes set `castShadow` and `receiveShadow`.** Glowing/emissive
    things cast no shadow.
+   **…and they are solid.** Anything a body shouldn't pass through gets a
+   blocker (`zones.addBlockerBox` for rectangles — walls, counters, pews;
+   `addBlocker` circles for posts, trunks, rocks). Anything raised you
+   *should* be able to stand on (plinths, porches, platforms, pads) is a
+   `zones.addSurface*`, not a slab you wade through. Foundations reach the
+   ground on their lowest corner.
 10. **Respect the performance budget.** No new `PointLight`s in the outdoor
     world — glow is emissive material, not light (see VISUAL_CANON). One
     1024px shadow map. Outdoor systems only update when the player is
@@ -69,29 +79,33 @@ verification here.
 
 ## File tiers
 
-**Edit freely** (data and leaves — safe for any agent):
+**Edit freely** (data and leaves):
 
 - `src/catalog.js` — pure data: items, prices, blurbs, fish tables, lore text
 - `src/villagers.js` — names, dialogue, friendships (keep voices; rule 5)
 - New leaf modules built from a recipe in `docs/FEATURE_RECIPES.md`
 - `shots/` probe scripts
 
-**Edit carefully** (shared seams and hot files — small diffs, screenshot proof;
-these also force serialization between parallel work lanes):
+**Edit carefully** (shared seams and hot files — small diffs, screenshot proof):
 
-- `src/buildings.js`, `src/houses.js`, `src/animals.js`, `src/boats.js`
+- `src/buildings.js`, `src/houses.js`, `src/animals.js`, `src/boats.js`,
+  `src/railway.js` (every train line is built from it)
 - `src/island2.js`, `src/island3.js`, `src/island5.js`, `src/island6.js`,
-  `src/bulko.js`, `src/moon.js`, `src/nature.js`
+  `src/bulko.js`, `src/moon.js`, `src/nature.js`, `src/fold.js`, `src/farther.js`
 - `src/ui.js`, `src/state.js`, `src/audio.js`, `src/almanac.js`,
-  `src/fieldguide.js`
+  `src/fieldguide.js`, `src/ambient.js`
 
-**Don't touch without lead approval** (topology, physics, the game loop, and
-load-bearing invariants):
+**Load-bearing** (topology, physics, the game loop, invariants — change
+deliberately, say why in the commit, and re-run the smoke test, the canon
+tour, and the clip audit afterward):
 
 - `src/main.js` — renderer, camera, occlusion, the one update loop
-- `src/zones.js` — walkability, crossings, interiors, zone lighting
-- `src/terrain.js` — the heightmap IS the world; everything samples it
-- `src/player.js` — movement, swimming, the lantern glow (rule 8)
+- `src/zones.js` — walkability, blockers/surfaces/keepouts, crossings,
+  sea walls, interiors, zone lighting
+- `src/terrain.js` — the heightmap IS the world; everything samples it.
+  Changing it moves things (sites are found by scanning it) — check every
+  island afterward.
+- `src/player.js` — movement, body collision, swimming, the lantern glow (rule 8)
 - `src/calendar.js` — **must keep zero imports** (everything consults it at
   module load; a cycle here bricks the boot)
 - `src/utils.js` — the seeded PRNG; changing it reshuffles every world
@@ -100,18 +114,14 @@ load-bearing invariants):
 
 ## Workflow
 
-- `FIXES_PLAN.md` and `CODEX_TASKS.md` are **local-only** working docs
-  (git-excluded); don't expect them on other checkouts.
-- One task = one git worktree off `main`:
-  `git worktree add -b codex/<slug> ../notbell-<slug> main`, then point
-  `shots/node_modules` at any `node_modules` that has puppeteer-core (a
-  relative symlink — see `shots/README.md`) and serve on your own port.
-  Commit on the branch; **never merge to main yourself** — review and merge
-  happen on `main`.
-- Parallel lanes are safe **iff their tasks touch disjoint files** (see the
-  hot-file list above).
-- `main` is the integrate/verify/deploy station. Deploy (lead only, exact
-  bare form — it's permission-matched):
+- Work on a branch off `main` (`git switch -c <topic>`); commit in small,
+  reviewable steps with before/after screenshots checked. Anna reviews and
+  merges; `main` is what deploys. (The old one-worktree-per-Codex-lane setup
+  is retired — one person/agent at a time works better on this codebase.
+  If you do run parallel worktrees, give each its own server port.)
+- The open-ideas list lives in `docs/BACKLOG.md` (tracked). The old
+  `FIXES_PLAN.md` / `CODEX_TASKS.md` trackers are local-only history.
+- Deploy (Anna only, exact bare form — it's permission-matched):
 
   ```sh
   rsync -az --exclude shots --exclude .git --exclude serve.py index.html src vendor README.md package.json favicon.svg your-server:/var/www/notbell/

@@ -2,7 +2,7 @@
 // the villagers each have their own door to (politely) knock on.
 
 import * as THREE from 'three';
-import { SITES, terrainHeight, clearOfSites } from './terrain.js';
+import { SITES, VOLCANO_SHELF, terrainHeight, clearOfSites } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
@@ -51,7 +51,7 @@ const KNOCKS = {
   Howell: 'Scratch marks on the door. Like a wolf’s. EXACTLY like a wolf’s. A note: “OUT. PRACTICING. AWOO.”',
   Bramble: 'The whole house leans comfortably to one side, like it sat down years ago and saw no reason to get up. Bramble is elsewhere, probably also sitting.',
   Marigold: 'A long house with a tall door. A horseshoe hangs above it, ends up, holding the luck in like a bowl. Nobody home — listen for hooves on the bridge.',
-  Ember: 'A low round hut, warm to the touch even from outside. A sign: “IF NOT HERE, AT THE CAVE. IF NOT AT THE CAVE, IT IS RAINING AND I AM EVERYWHERE.”',
+  Ember: 'A low round hut at the foot of the volcano, warm to the touch even from outside. A sign: “IF NOT HERE, BY THE FIRE. IF NOT BY THE FIRE, KNOCK LOUDER, I AM NAPPING ON A ROCK.”',
   Butterpat: 'A wide, calm house smelling of butter and cut grass. A note: “GRAZING. IT’S ALL GRAZING, REALLY, IF YOU THINK ABOUT IT.”',
   Crumb: 'The MouseBoat rocks gently at its mooring. A tiny sign: “CAPTAIN OUT. CRUMBS ACCEPTED IN THE TIN.” There is, indeed, a tin.',
 };
@@ -67,15 +67,15 @@ const SCHEDULE = {
   Marigold: [20, 5],
   Butterpat: [19, 6],
   Crumb: [22, 6],   // sleeps on deck, under whatever the sky is doing
-  Ember: [21, 7],   // nights in her hut on the Far Isle…
+  Ember: [21, 7],   // nights in her hut at the volcano's foot
 };
-const EMBER_CAVE_HOURS = [11, 16]; // …middays in the cave, rain permitting (she prefers it not to permit)
 
 function isHomeNow(name) {
   if (!SCHEDULE[name]) return false;
   if (currentWeather() !== 'clear') {
-    // rain sends everyone in — except the wolf (drama) and the salamander (joy)
-    if (name === 'Ember') return false;
+    // rain sends everyone in — except the wolf (drama). (The salamander
+    // goes in too: the rain hisses on her fire, and she hisses back, and
+    // they agree to give each other some space.)
     if (name !== 'Howell') return true;
   }
   const [s, e] = SCHEDULE[name];
@@ -181,6 +181,41 @@ function makeCottage({ wall, roof, door }, scale = 1) {
   win.position.set(-1.3 * scale, 1.5 * scale, 2.0 * scale);
   g.add(win);
   return g;
+}
+
+// Every house gets a mailbox by the path: a post, a rounded tin box in the
+// house's roof color, and a little red flag. (The mail itself is still
+// being sorted at the post office — Moss is thorough.)
+function makeMailbox(color) {
+  const g = new THREE.Group();
+  const post = box(0.12, 1.0, 0.12, 0x6b4a2e);
+  post.position.y = 0.5;
+  g.add(post);
+  const body = box(0.34, 0.24, 0.55, color);
+  body.position.y = 1.08;
+  g.add(body);
+  const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.55, 8, 1, false, 0, Math.PI), mat(color));
+  lid.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+  lid.position.y = 1.2;
+  lid.castShadow = true;
+  g.add(lid);
+  const flagPole = box(0.03, 0.3, 0.03, 0xb0453a);
+  flagPole.position.set(0.19, 1.2, -0.1);
+  g.add(flagPole);
+  const flag = box(0.03, 0.1, 0.16, 0xb0453a);
+  flag.position.set(0.19, 1.32, -0.02);
+  g.add(flag);
+  g.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
+  return g;
+}
+
+function placeMailbox(group, x, z, rotY, color) {
+  const mb = makeMailbox(color);
+  mb.position.set(x, terrainHeight(x, z), z);
+  mb.rotation.y = rotY;
+  group.add(mb);
+  zones.addBlocker(x, z, 0.3);
+  return mb;
 }
 
 // Houses near a slope get honest wooden stilts under their low corners,
@@ -505,7 +540,15 @@ export function createHouses(animals, obstacles = []) {
   cottage.position.set(home.x, hy, home.z - 1.5);
   group.add(cottage);
   addStilts(group, home.x, home.z - 1.5, hy, COTTAGE_BODY_HALF_W * 1.15, COTTAGE_BODY_HALF_D * 1.15, 0);
-  zones.addBlocker(home.x, home.z - 1.5, 3.4);
+  zones.addBlockerBox(home.x, home.z - 1.5, 4.9 * 1.15, 4.3 * 1.15, 0, 0.05); // the footing's footprint
+
+  // your mailbox, by the garden path
+  placeMailbox(group, home.x + 3.6, home.z + 2.2, 0, 0x5b8bc9);
+  register({
+    pos: new THREE.Vector3(home.x + 3.6, 0, home.z + 2.2), r: 1.6,
+    label: 'check your mailbox',
+    use: () => ui.say('Empty, but freshly swept. A note inside, in careful pawwriting: “Mail service begins once sorting is complete. —Moss, Postmaster. P.S. Sorting is going well.”'),
+  });
 
   // window boxes, because it is YOUR house
   for (const sx of [-1, 1]) {
@@ -829,6 +872,8 @@ export function createHouses(animals, obstacles = []) {
         const h = terrainHeight(x, z);
         if (h < 0.8 || h > 6.5) continue;
         if (!clearOfSites(x, z, 2.5)) continue;
+        // not on a railway, a station ramp, a bridge foot, or another building
+        if (zones.nearAnything(x, z, 3.6)) continue;
         if (taken.some((q) => Math.hypot(q.x - x, q.z - z) < 7)) continue;
         // never drop a house on a villager — its blocker would trap them
         if (animals.some((a) => Math.hypot(a.g.position.x - x, a.g.position.z - z) < 3.4)) continue;
@@ -882,16 +927,38 @@ export function createHouses(animals, obstacles = []) {
     }
 
     if (!name || !KNOCKS[name]) continue; // ducks handled below
-    const spot = houseSpotNear(a.g.position.x, a.g.position.z);
+    // Ember's hut has one proper address: the back of her black-sand shelf,
+    // under the volcano, door toward her fire and the sea (the general
+    // search wants grass and hills; a salamander wants a lava field)
+    const spot = name === 'Ember'
+      ? { x: VOLCANO_SHELF.x - 3.5, z: VOLCANO_SHELF.z - 1.5, h: terrainHeight(VOLCANO_SHELF.x - 3.5, VOLCANO_SHELF.z - 1.5) }
+      : houseSpotNear(a.g.position.x, a.g.position.z);
     if (!spot) continue;
     const style = HOUSE_STYLES[name];
     const house = makeCottage(style, 0.8);
     house.position.set(spot.x, spot.h, spot.z);
-    // face the house roughly toward its villager's patch
-    house.rotation.y = Math.atan2(a.g.position.x - spot.x, a.g.position.z - spot.z);
+    // face the house toward its villager's patch — but only a way whose
+    // doorstep you can actually walk up to (dry, open, not a cliff); some
+    // used to open straight onto the sea
+    {
+      const want = Math.atan2(a.g.position.x - spot.x, a.g.position.z - spot.z);
+      let best = want, bestScore = -Infinity;
+      for (let k = 0; k < 16; k++) {
+        const ry = want + (k / 16) * Math.PI * 2;
+        let score = -Math.abs(Math.atan2(Math.sin(ry - want), Math.cos(ry - want))); // prefer facing home
+        for (const d of [3.2, 4.5, 6]) {
+          const x = spot.x + Math.sin(ry) * d, z = spot.z + Math.cos(ry) * d;
+          const h = terrainHeight(x, z);
+          if (h < 0.35 || !zones.islandCanWalk(x, z) || zones.nearAnything(x, z, 0.8)) score -= 10;
+          if (Math.abs(h - spot.h) > 1.3) score -= 4;
+        }
+        if (score > bestScore) { bestScore = score; best = ry; }
+      }
+      house.rotation.y = best;
+    }
     group.add(house);
     addStilts(group, spot.x, spot.z, spot.h, COTTAGE_BODY_HALF_W * 0.8, COTTAGE_BODY_HALF_D * 0.8, house.rotation.y);
-    zones.addBlocker(spot.x, spot.z, 2.6);
+    zones.addBlockerBox(spot.x, spot.z, 4.9 * 0.8, 4.3 * 0.8, house.rotation.y, 0.05);
 
     const doorWorld = new THREE.Vector3(
       spot.x + Math.sin(house.rotation.y) * 2.4, 0,
@@ -901,6 +968,21 @@ export function createHouses(animals, obstacles = []) {
       z: spot.z + Math.cos(house.rotation.y) * 3.2,
       rotY: house.rotation.y,
     };
+
+    // their mailbox: front-right of the house, by the path, flag and all
+    {
+      const ry = house.rotation.y, c = Math.cos(ry), sn = Math.sin(ry);
+      const lx = 2.4, lz = 2.9;
+      const mx = spot.x + lx * c + lz * sn, mz = spot.z - lx * sn + lz * c;
+      if (zones.islandCanWalk(mx, mz)) {
+        placeMailbox(group, mx, mz, ry, style.roof);
+        register({
+          pos: new THREE.Vector3(mx, 0, mz), r: 1.4,
+          label: `look at ${name}’s mailbox`,
+          use: () => ui.say(`${name}’s mailbox. It is not your mail, and you are not that kind of neighbor. The little flag is down.`),
+        });
+      }
+    }
 
     // ----- their room, furnished to taste
     const B = { x: 300, z: 320 + villagerIdx * 80 };
@@ -969,56 +1051,79 @@ export function createHouses(animals, obstacles = []) {
     });
   }
 
-  // Ember keeps a second address: the cave, at her appointed hours
-  const ember = households.find((vh) => vh.name === 'Ember');
-  if (ember) {
-    ember.caveSeat = { x: -295.5, z: -4 };
-    let caveIdx = 0;
-    register({
-      getPos: () => ember.a.g.position, r: 2.6, zone: 'cave',
-      enabled: () => !!ember.inCave,
-      label: 'talk to Ember',
-      use: () => {
-        const lines = HOME_LINES.Ember;
-        ui.say(lines[caveIdx++ % lines.length], { speaker: 'Ember', voice: ember.a.identity.voice });
-      },
-    });
-  }
-
-  function emberCaveTime() {
-    if (currentWeather() !== 'clear') return false; // rain days are outside days
-    const h = hourNow();
-    return h >= EMBER_CAVE_HOURS[0] && h < EMBER_CAVE_HOURS[1];
-  }
-
   // the clock (and the weather) decides who's in
   let schedulePoll = 0;
+  // Going home is a WALK: at bedtime a villager heads for their own front
+  // door (finishing whatever they were doing), and only once they reach it
+  // do they go in. Only if they truly can't get there — stranded across the
+  // water by a late train — does the island quietly tuck them in anyway.
+  function arriveHome(vh) {
+    const a = vh.a;
+    vh.walking = false;
+    vh.tries = 0;
+    a.bedtime = false;
+    a.goal = null;
+    vh.home = true;
+    a.home = true;
+    a.away = true;
+    if (vh.mode === 'cave') {
+      a.g.position.set(vh.caveSeat.x, 0, vh.caveSeat.z);
+      a.g.rotation.y = Math.PI / 2;
+    } else {
+      a.g.position.set(vh.seat.x, vh.seat.y ?? 0, vh.seat.z);
+      a.g.rotation.y = 0; // facing the door, ready for visitors
+    }
+  }
+
+  function doorFor(vh) {
+    return vh.mode === 'cave' ? (zones.doorOf('cave') || vh.doorOut) : vh.doorOut;
+  }
+
+  function sendHome(vh) {
+    const a = vh.a;
+    const door = doorFor(vh);
+    vh.walking = true;
+    a.bedtime = true;
+    a.goal = {
+      x: door.x, z: door.z, r: 1.4,
+      done: () => { if (vh.walking) arriveHome(vh); },
+      fail: () => {
+        vh.tries = (vh.tries || 0) + 1;
+        if (vh.tries >= 3 && vh.walking) arriveHome(vh); // re-sent from update otherwise
+      },
+    };
+  }
+
   function applySchedules(force = false) {
     for (const vh of households) {
       let mode;
       if (vh.forced !== undefined) mode = vh.forced ? 'house' : 'out';
-      else if (vh.name === 'Ember' && emberCaveTime()) mode = 'cave';
       else mode = isHomeNow(vh.name) ? 'house' : 'out';
       if (!force && mode === vh.mode) continue;
+      const was = vh.mode;
       vh.mode = mode;
-      const homeNow = mode !== 'out';
-      vh.home = homeNow;
-      vh.inCave = mode === 'cave';
-      vh.a.home = homeNow;
-      vh.a.away = homeNow || !!vh.a.errand;
-      if (mode === 'cave') {
-        vh.a.g.position.set(vh.caveSeat.x, 0, vh.caveSeat.z);
-        vh.a.g.rotation.y = Math.PI / 2;
-      } else if (mode === 'house') {
-        vh.a.g.position.set(vh.seat.x, vh.seat.y ?? 0, vh.seat.z);
-        vh.a.g.rotation.y = 0; // facing the door, ready for visitors
-      } else {
-        vh.a.g.position.set(vh.doorOut.x, terrainHeight(vh.doorOut.x, vh.doorOut.z), vh.doorOut.z);
-        vh.a.g.rotation.y = vh.doorOut.rotY;
-        vh.a.state = 'idle';
-        vh.a.timer = rand(1, 3);
+      if (mode !== 'out') {
+        // at load, when forced, or when moving house→cave: no walk to stage
+        if (force || vh.forced !== undefined || was !== 'out' || vh.a.riding) arriveHome(vh);
+        else sendHome(vh);
+        continue;
       }
+      vh.walking = false;
+      vh.a.bedtime = false;
+      vh.home = false;
+      vh.inCave = false;
+      vh.a.home = false;
+      vh.a.away = !!vh.a.errand;
+      // out the front door into the morning (or out of the cave mouth, and
+      // an amble home from there)
+      const exit = was === 'cave' ? (zones.doorOf('cave') || vh.doorOut) : vh.doorOut;
+      vh.a.g.position.set(exit.x, terrainHeight(exit.x, exit.z), exit.z);
+      vh.a.g.rotation.y = vh.doorOut.rotY;
+      if (was === 'cave' && !force) vh.a.goal = { x: vh.doorOut.x, z: vh.doorOut.z, r: 2 };
+      vh.a.state = 'idle';
+      vh.a.timer = rand(1, 3);
     }
+    for (const vh of households) vh.inCave = vh.home && vh.mode === 'cave';
   }
   applySchedules(true);
   updates.push((dt, t, playerPos) => {
@@ -1029,6 +1134,8 @@ export function createHouses(animals, obstacles = []) {
     }
     const zone = zones.current();
     for (const vh of households) {
+      // homeward-bound but knocked off course (a chat, a train)? head off again
+      if (vh.walking && !vh.a.goal && !vh.a.riding && !vh.a.errand && !vh.a.meeting) sendHome(vh);
       if (vh.home) {
         vh.a.g.visible = vh.inCave ? zone === 'cave' : zone === vh.zoneId;
       } else if (!vh.a.errand && !vh.a.meeting && !vh.a.riding) {
@@ -1054,21 +1161,24 @@ export function createHouses(animals, obstacles = []) {
   });
 
   // ----- the ducks' beach nest
-  const duck = animals.find((a) => a.swims);
+  const duck = animals.find((a) => a.swims && !a.long);
   if (duck) {
     const nx = duck.g.position.x, nz = duck.g.position.z;
     const nest = new THREE.Group();
+    // every stick rests on the sand under IT — on a sloped beach a flat ring
+    // of driftwood used to dig in on the high side and hover on the low
+    const ny = Math.max(terrainHeight(nx, nz), 0.05);
     for (let i = 0; i < 8; i++) {
       const ang = (i / 8) * Math.PI * 2;
       const stick = box(0.7, 0.12, 0.14, 0xa97c50);
-      stick.position.set(Math.cos(ang) * 0.8, 0.1, Math.sin(ang) * 0.8);
+      const sx = Math.cos(ang) * 0.8, sz = Math.sin(ang) * 0.8;
+      stick.position.set(sx, Math.max(terrainHeight(nx + sx, nz + sz), 0.05) - ny + 0.07, sz);
       stick.rotation.y = ang + Math.PI / 2 + rand(-0.3, 0.3);
       nest.add(stick);
     }
     const pillow = box(0.6, 0.18, 0.6, 0xbfe6f2);
     pillow.position.y = 0.12;
     nest.add(pillow);
-    const ny = Math.max(terrainHeight(nx, nz), 0.05);
     nest.position.set(nx, ny, nz);
     group.add(nest);
     register({

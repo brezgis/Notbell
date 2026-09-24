@@ -1,4 +1,4 @@
-// The café gallery. Three framed homages, painted right here in code in a
+// The café gallery. Framed homages (all after public-domain painters), painted right here in code in a
 // chunky island style — legally distinct, emotionally identical. If you
 // drop real images into an art/ folder (scream.png, dance.png, autumn.png),
 // they'll hang instead.
@@ -399,6 +399,200 @@ function drawWanderer(ctx, w, h) {
   ctx.stroke();
 }
 
+
+// ----- "Water Lilies" (after Monet; the pond behind the Grove, probably)
+function drawLilies(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#6e9ab8');
+  g.addColorStop(1, '#3f6e7a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  // reflected sky, in soft horizontal strokes
+  for (let i = 0; i < 26; i++) {
+    ctx.fillStyle = ['rgba(200,220,235,0.35)', 'rgba(120,170,160,0.35)', 'rgba(90,120,170,0.3)'][i % 3];
+    ctx.fillRect((i * 53) % w, (i * 37) % h, 40 + (i % 4) * 12, 5);
+  }
+  // pads and blooms
+  for (let i = 0; i < 11; i++) {
+    const x = ((i * 71) % 100) / 100 * w, y = ((i * 43) % 100) / 100 * h;
+    ctx.fillStyle = ['#5a8a4a', '#6e9a52', '#4f7a44'][i % 3];
+    ctx.beginPath();
+    ctx.ellipse(x, y, 24, 9, 0, 0.3, Math.PI * 2);
+    ctx.lineTo(x, y);
+    ctx.fill();
+    if (i % 2 === 0) {
+      ctx.fillStyle = i % 4 ? '#f2b8c6' : '#fff4f0';
+      ctx.beginPath();
+      ctx.arc(x + 4, y - 3, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+// ----- "A Sunday on the Island" (after Seurat, in dots, obviously)
+function drawJatte(ctx, w, h) {
+  ctx.fillStyle = '#9ec8e0';
+  ctx.fillRect(0, 0, w, h * 0.35);
+  ctx.fillStyle = '#5a9a4a';
+  ctx.fillRect(0, h * 0.35, w, h * 0.65);
+  ctx.fillStyle = '#4a8ab0';
+  ctx.fillRect(0, h * 0.3, w * 0.35, h * 0.12); // the river
+  // the dots, everywhere, patiently
+  for (let i = 0; i < 900; i++) {
+    const x = (i * 97) % w, y = (i * 61 + (i >> 3)) % h;
+    ctx.fillStyle = y < h * 0.35 ? 'rgba(255,255,240,0.35)' : ['rgba(230,220,120,0.4)', 'rgba(40,90,50,0.35)'][i % 2];
+    ctx.fillRect(x, y, 2, 2);
+  }
+  // strollers with parasols
+  for (const [px, py, col] of [[0.55, 0.62, '#2e2a26'], [0.75, 0.55, '#8a3a4a'], [0.3, 0.7, '#3a4a7a']]) {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.ellipse(w * px, h * py, 9, 26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(w * px, h * (py - 0.1), 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f3efe2';
+    ctx.beginPath();
+    ctx.arc(w * px + 4, h * (py - 0.14), 16, Math.PI, 0);
+    ctx.fill();
+  }
+}
+
+// ----- "Red Fuji" (after Hokusai: Fine Wind, Clear Morning)
+function drawRedFuji(ctx, w, h) {
+  ctx.fillStyle = '#3f7ab8';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)'; // the rippled clouds
+  ctx.lineWidth = 3;
+  for (let r = 0; r < 5; r++) {
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += 6) ctx.lineTo(x, 22 + r * 12 + Math.sin(x * 0.12 + r) * 3);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#c2452c';
+  ctx.beginPath();
+  ctx.moveTo(-10, h);
+  ctx.lineTo(w * 0.52, h * 0.38);
+  ctx.lineTo(w + 10, h);
+  ctx.fill();
+  ctx.fillStyle = '#f3efe2'; // the snow, dripping down in fingers
+  ctx.beginPath();
+  ctx.moveTo(w * 0.44, h * 0.47);
+  ctx.lineTo(w * 0.52, h * 0.38);
+  ctx.lineTo(w * 0.6, h * 0.47);
+  for (let i = 0; i < 5; i++) ctx.lineTo(w * (0.58 - i * 0.03), h * (0.47 + (i % 2) * 0.05));
+  ctx.fill();
+  ctx.fillStyle = '#3f6a3a';
+  ctx.fillRect(0, h * 0.9, w, h * 0.1);
+}
+
+// ----- "The Smile" (after Leonardo. she knows something about the bell)
+function drawSmile(ctx, w, h) {
+  ctx.fillStyle = '#6e7a5a';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#8a9a7a'; // the dreamy winding landscape
+  ctx.beginPath();
+  ctx.moveTo(0, h * 0.35);
+  ctx.quadraticCurveTo(w * 0.3, h * 0.2, w * 0.5, h * 0.4);
+  ctx.quadraticCurveTo(w * 0.8, h * 0.25, w, h * 0.38);
+  ctx.lineTo(w, 0);
+  ctx.lineTo(0, 0);
+  ctx.fill();
+  ctx.fillStyle = '#2e2a22'; // dress and hair
+  ctx.beginPath();
+  ctx.ellipse(w * 0.5, h * 0.95, w * 0.42, h * 0.38, 0, Math.PI, 0);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(w * 0.5, h * 0.36, w * 0.2, h * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#d9b48a';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.5, h * 0.37, w * 0.13, h * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(w * 0.44, h * 0.5, w * 0.12, h * 0.1);
+  ctx.fillStyle = '#2e2a22';
+  ctx.fillRect(w * 0.44, h * 0.34, 5, 3);
+  ctx.fillRect(w * 0.53, h * 0.34, 5, 3);
+  ctx.strokeStyle = '#7a4a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(w * 0.5, h * 0.4, 7, 0.4, Math.PI - 0.4); // the smile. it is a small one.
+  ctx.stroke();
+  ctx.fillStyle = '#d9b48a'; // folded hands
+  ctx.beginPath();
+  ctx.ellipse(w * 0.5, h * 0.82, w * 0.14, h * 0.04, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ----- "The Last Tow" (after Turner: The Fighting Temeraire)
+function drawTemeraire(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h * 0.7);
+  g.addColorStop(0, '#6e8ab0');
+  g.addColorStop(0.55, '#f2b86a');
+  g.addColorStop(1, '#e8743a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#ffd98a';
+  ctx.beginPath();
+  ctx.arc(w * 0.8, h * 0.62, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#5a7a9a';
+  ctx.fillRect(0, h * 0.68, w, h * 0.32);
+  ctx.fillStyle = 'rgba(255,200,120,0.5)';
+  ctx.fillRect(w * 0.72, h * 0.68, w * 0.16, h * 0.3); // the sun on the water
+  // the old ship, pale as a ghost; the little dark tug ahead of it
+  ctx.fillStyle = '#e8e0d0';
+  ctx.fillRect(w * 0.12, h * 0.58, w * 0.28, h * 0.08);
+  for (const mx of [0.17, 0.26, 0.35]) ctx.fillRect(w * mx, h * 0.25, 3, h * 0.33);
+  ctx.fillStyle = '#2e2a26';
+  ctx.fillRect(w * 0.44, h * 0.62, w * 0.12, h * 0.05);
+  ctx.fillRect(w * 0.49, h * 0.52, 5, h * 0.1);
+  ctx.fillStyle = 'rgba(80,70,60,0.6)';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.47, h * 0.45, 12, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ----- "The Sleeping Traveler" (after Rousseau: The Sleeping Gypsy)
+function drawSleeper(ctx, w, h) {
+  ctx.fillStyle = '#1e2a4a';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#f3efe2';
+  ctx.beginPath();
+  ctx.arc(w * 0.82, h * 0.16, 11, 0, Math.PI * 2);
+  ctx.fill();
+  for (let i = 0; i < 18; i++) ctx.fillRect((i * 83) % w, (i * 29) % (h * 0.45), 2, 2);
+  ctx.fillStyle = '#c9a86a'; // the dunes
+  ctx.fillRect(0, h * 0.62, w, h * 0.38);
+  ctx.fillStyle = '#6a7ab0'; // the sleeper, striped robe
+  ctx.fillRect(w * 0.18, h * 0.74, w * 0.46, h * 0.07);
+  ctx.fillStyle = '#e8c547';
+  for (let i = 0; i < 5; i++) ctx.fillRect(w * (0.2 + i * 0.09), h * 0.74, 4, h * 0.07);
+  ctx.fillStyle = '#5a3a2a';
+  ctx.beginPath();
+  ctx.arc(w * 0.16, h * 0.77, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#8a5a3a'; // the mandolin, the jug
+  ctx.beginPath();
+  ctx.ellipse(w * 0.7, h * 0.79, 9, 6, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // the lion, sniffing, entirely unbothered
+  ctx.fillStyle = '#b8864a';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.52, h * 0.58, w * 0.16, h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#7a5230';
+  ctx.beginPath();
+  ctx.arc(w * 0.36, h * 0.55, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#b8864a';
+  ctx.beginPath();
+  ctx.arc(w * 0.35, h * 0.56, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(w * 0.62, h * 0.52, 3, 16); // tail
+}
+
 // ------------------------------------------------------------- frames ----
 
 export const GALLERY = [
@@ -447,6 +641,36 @@ export const GALLERY = [
     title: 'Wanderer above the Fog',
     label: '“Wanderer above the Fog.” After Friedrich. The Listeners consider it a documentary about a very good day.',
   },
+  {
+    id: 'art_lilies', draw: drawLilies, w: 288, h: 224, frame: 0x8fa36a,
+    title: 'Water Lilies',
+    label: '“Water Lilies.” After Monet. Mochi insists it is the pond behind the springs and that she is the lily on the left. She is not in it. She is in spirit.',
+  },
+  {
+    id: 'art_jatte', draw: drawJatte, w: 288, h: 224, frame: 0xd9c08f,
+    title: 'A Sunday on the Island',
+    label: '“A Sunday on the Island.” After Seurat, dot by dot by dot. Luna says it took the painter two years. The copy took Luna two evenings and a very small brush.',
+  },
+  {
+    id: 'art_redfuji', draw: drawRedFuji, w: 288, h: 224, frame: 0x16140f,
+    title: 'Red Fuji',
+    label: '“Red Fuji — Fine Wind, Clear Morning.” After Hokusai. Ember says it is obviously a portrait of the volcano, just better lit.',
+  },
+  {
+    id: 'art_smile', draw: drawSmile, w: 224, h: 288, frame: 0xa97c50,
+    title: 'The Smile',
+    label: '“The Smile.” After Leonardo. Her eyes follow you around the café. Luna finds it reassuring. Pip finds it bad for business.',
+  },
+  {
+    id: 'art_temeraire', draw: drawTemeraire, w: 288, h: 224, frame: 0xd9a440,
+    title: 'The Last Tow',
+    label: '“The Last Tow.” After Turner. Captain Brine stood in front of it for an hour and then went outside and patted the Persistent for no reason.',
+  },
+  {
+    id: 'art_sleeper', draw: drawSleeper, w: 288, h: 224, frame: 0x2e3e5c,
+    title: 'The Sleeping Traveler',
+    label: '“The Sleeping Traveler.” After Rousseau. The lion is just checking. Everyone at the café agrees the lion is just checking.',
+  },
 ];
 
 export function artPiece(id) {
@@ -486,16 +710,19 @@ function makeFramed(piece) {
 
 export { makeFramed };
 
-// Hang this week's exhibition in the café. Three pieces rotate weekly —
+// Hang today's exhibition in the café. Four pieces, a new wall daily —
 // Luna calls it "the show"; prints are for sale, originals are forever.
 export function hangCafeArt(group, B) {
   const spots = [
     { x: B.x - 6.75, y: 2.4, z: B.z - 1.2, rotY: Math.PI / 2 },  // west wall
     { x: B.x - 6.75, y: 2.4, z: B.z + 1.9, rotY: Math.PI / 2 },
-    { x: B.x + 6.75, y: 2.4, z: B.z + 0.4, rotY: -Math.PI / 2 }, // east wall
+    { x: B.x + 6.75, y: 2.4, z: B.z + 1.3, rotY: -Math.PI / 2 }, // east wall
+    { x: B.x + 6.75, y: 2.4, z: B.z - 1.9, rotY: -Math.PI / 2 },
   ];
-  const week = Math.floor(Date.now() / (7 * 86400 * 1000));
-  const showing = [0, 3, 6].map((k) => GALLERY[(week + k) % GALLERY.length]);
+  // the show changes every day now: four pieces, stepping through the
+  // collection so tomorrow's wall shares nothing with today's
+  const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+  const showing = [0, 4, 8, 12].map((k) => GALLERY[(day * 4 + k) % GALLERY.length]);
 
   showing.forEach((piece, i) => {
     const framed = makeFramed(piece);

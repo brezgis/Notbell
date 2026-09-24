@@ -61,6 +61,7 @@ export function createMultiplayer(player, scene) {
 
   function makeAvatar(kind, name) {
     const group = buildAnimal(kind || 'cat', { body: 0xc9a06a });
+    group.userData.noFidget = true;
     group.visible = false;
     if (name) group.add(nameSprite(name));
     scene.add(group);

@@ -28,6 +28,8 @@ export const state = {
   name: null,         // what the islanders call you
   tz: 0,              // clock nudge in hours (0 = trust the device)
   where: null,        // { zone, x, z, rotY, camYaw, camPitch, camDist }
+  rowboats: [],       // per rowboat: { x, z, rotY } where you last left it (null = at the pier)
+  rowing: null,       // index of the rowboat you're out in, if any
 };
 
 let saveTimer = 0;
@@ -78,6 +80,8 @@ export function load() {
         market: { day: '', sold: {}, ...(data.market || {}) },
         digs: { day: '', n: 0, ...(data.digs || {}) },
         errands: { day: '', n: 0, ...(data.errands || {}) },
+        rowboats: Array.isArray(data.rowboats) ? data.rowboats : [],
+        rowing: Number.isInteger(data.rowing) ? data.rowing : null,
       });
     }
   } catch { /* corrupted save: start fresh */ }

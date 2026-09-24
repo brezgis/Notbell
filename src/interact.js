@@ -51,3 +51,13 @@ addEventListener('keydown', (e) => {
   if (ui.isBusy() || ui.justClosed()) return; // dialogue owns this press
   best?.use();
 });
+
+// debug: every static interactable (the reachability probe checks each one
+// can still be stood near after collision changes)
+export function debugList() {
+  return interactables.filter((it) => it.pos).map((it) => ({
+    x: it.pos.x, z: it.pos.z, r: it.r,
+    zone: typeof it.zone === 'function' ? null : it.zone,
+    label: typeof it.label === 'function' ? it.label() : it.label,
+  }));
+}

@@ -103,7 +103,8 @@ export function createIsland2() {
     ext.position.set(gSpot.x, gy, gSpot.z);
     ext.traverse((o) => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
     group.add(ext);
-    zones.addBlocker(gSpot.x, gSpot.z, 4.1);
+    zones.addBlockerBox(gSpot.x, gSpot.z, 6.4, 5.4, 0, 0.05);
+    for (const ox of [-2.2, -1.2, 1.4]) zones.addBlocker(gSpot.x + ox, gSpot.z + 3.2, 0.45); // the crates
 
     // interior
     const roomStart = group.children.length;
@@ -171,6 +172,7 @@ export function createIsland2() {
     barnStool.position.set(B.x - 2.5, 0.3, B.z - 3.9);
     group.add(barnStool);
     const barnaby = buildAnimal('lobster', { body: 0xd84f4f });
+    barnaby.userData.fidget = true;
     barnaby.position.set(B.x - 2.5, 0.6, B.z - 3.9);
     group.add(barnaby);
     wireBob(barnaby, updates);
@@ -216,22 +218,39 @@ export function createIsland2() {
     const nave = box(5.4, 4.4, 7, 0xd8d4c8);
     nave.position.y = 2.2;
     ext.add(nave);
-    const roofGeo = new THREE.CylinderGeometry(2.95, 2.95, 7.4, 3, 1, false, Math.PI / 2);
+    // across the ridge a 3-prism spans 1.73×r: the 5.4-wide nave needs r ≈ 3.5
+    const roofGeo = new THREE.CylinderGeometry(3.47, 3.47, 7.4, 3, 1, false, Math.PI / 2);
     roofGeo.rotateZ(Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, mat(0x5a6a80));
-    roof.scale.y = 1.1;
-    roof.position.y = 5.2;
+    roof.scale.y = 0.77;
+    roof.position.y = 4.4 + 3.47 * 0.77 / 2; // eaves on the wall top; same apex as ever
     roof.rotation.y = Math.PI / 2; // ridge runs along the nave
     roof.castShadow = true;
     ext.add(roof);
-    // the belfry: an arch with no bell in it. on purpose.
-    const towerA = box(0.5, 2.6, 0.5, 0xd8d4c8);
-    towerA.position.set(-0.9, 7.0, 0);
-    const towerB = box(0.5, 2.6, 0.5, 0xd8d4c8);
-    towerB.position.set(0.9, 7.0, 0);
-    const lintel = box(2.4, 0.5, 0.6, 0xd8d4c8);
-    lintel.position.set(0, 8.4, 0);
-    ext.add(towerA, towerB, lintel);
+    // the belfry: a proper bell-cote over the front gable, standing clear of
+    // the roof — a solid base on the ridge, a tall open arch, a little cap.
+    // And no bell in it. On purpose. (It used to be two stubby posts half
+    // sunk in the roof, which read as a chimney that had given up.)
+    const BZ = 2.4, ridgeY = 4.4 + 3.47 * 0.77; // apex of the roof
+    const cote = box(1.9, 1.5, 1.5, 0xd8d4c8);
+    cote.position.set(0, ridgeY + 0.35, BZ);
+    ext.add(cote);
+    for (const sx of [-0.78, 0.78]) {
+      const post = box(0.34, 1.9, 1.3, 0xd8d4c8);
+      post.position.set(sx, ridgeY + 1.1 + 0.95, BZ);
+      ext.add(post);
+    }
+    const lintel = box(1.9, 0.36, 1.4, 0xd8d4c8);
+    lintel.position.set(0, ridgeY + 3.18, BZ);
+    ext.add(lintel);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(1.45, 1.3, 4), mat(0x5a6a80));
+    cap.rotation.y = Math.PI / 4;
+    cap.position.set(0, ridgeY + 3.36 + 0.65, BZ);
+    ext.add(cap);
+    // where the bell would hang: a hook, and nothing on it
+    const hook = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.03, 4, 8, Math.PI * 1.4), mat(0x6a6a6a, 0.4));
+    hook.position.set(0, ridgeY + 2.85, BZ);
+    ext.add(hook);
     // tall door + a strip of colored glass above it
     const door = box(1.3, 2.3, 0.2, 0x4a3a5a);
     door.position.set(0, 1.15, 3.51);
@@ -246,7 +265,7 @@ export function createIsland2() {
     ext.position.set(cSpot.x, cy, cSpot.z);
     ext.traverse((o) => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
     group.add(ext);
-    zones.addBlocker(cSpot.x, cSpot.z, 4.4);
+    zones.addBlockerBox(cSpot.x, cSpot.z, 5.4, 7, 0, 0.05);
 
     // interior: long, hushed, lit through colored glass
     const roomStart = group.children.length;
@@ -343,6 +362,7 @@ export function createIsland2() {
     refreshCandles();
 
     const alder = buildAnimal('heron', { body: 0x8fa3b8 });
+    alder.userData.fidget = true;
     alder.position.set(B.x, 0.15, B.z - 5.2);
     alder.rotation.y = 0;
     group.add(alder);
@@ -356,6 +376,9 @@ export function createIsland2() {
       blockers: [
         { x: B.x, z: B.z - 5.6, r: 1.6 }, // dais
         { x: B.x - 3.2, z: B.z - 4.4, r: 0.9 }, // candles
+        // the pews are furniture, not fog
+        ...[0, 1, 2, 3].flatMap((r) => [-2.6, 2.6].map((sx) => (
+          { x: B.x + sx, z: B.z - 2.35 + r * 2.2, w: 3.6, d: 1.15 }))),
       ],
       spawn: { x: B.x, z: B.z + 6.8, rotY: Math.PI },
       lighting: {
@@ -364,6 +387,7 @@ export function createIsland2() {
         sunIntensity: 0,
       },
     });
+    zones.setDoor('church', { x: cSpot.x, z: cSpot.z + 4.8 });
     register({
       pos: new THREE.Vector3(cSpot.x, 0, cSpot.z + 4.2), r: 2.6,
       label: 'enter The Listening House',
@@ -401,6 +425,7 @@ export function createIsland2() {
       hedge.position.set(hx, terrainHeight(hx, hz) + 0.5, hz);
       hedge.rotation.y = a;
       group.add(hedge);
+      zones.addBlockerBox(hx, hz, 1.4, 1.0, a); // in through the gate, like a guest
     }
     // flower beds
     for (const [ox, oz] of [[-2.2, -1.6], [2.2, -1.6], [-2.2, 1.8], [2.2, 1.8]]) {
@@ -426,7 +451,7 @@ export function createIsland2() {
     const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 0.9, 7), mat(0x9aa0a6));
     spire.position.set(G.x, gy + 0.9, G.z);
     group.add(basin, water, spire);
-    zones.addBlocker(G.x, G.z, 2.0);
+    zones.addBlocker(G.x, G.z, 1.5);
     const drops = [];
     for (let i = 0; i < 8; i++) {
       const d = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0),
@@ -454,6 +479,7 @@ export function createIsland2() {
     const benchBack = box(2.0, 0.6, 0.15, 0xa97c50);
     benchBack.position.set(G.x, gy + 0.85, G.z + 3.9);
     group.add(bench, benchBack);
+    zones.addBlockerBox(G.x, G.z + 3.7, 2.0, 0.9, 0, 0.02);
     register({
       pos: new THREE.Vector3(G.x, 0, G.z + 3.2), r: 2.0,
       label: 'sit on the garden bench',
@@ -464,33 +490,56 @@ export function createIsland2() {
   // ====================================================== the Old Singer
   {
     const W = SITES.bones;
-    const wy = terrainHeight(W.x, W.z);
+    // she lies along whatever heading keeps every bone on dry sand — nose
+    // to tail is sixteen units, and she will not be hung off a cliff again
+    const LEN0 = -8, LEN1 = 8.2;
+    let heading = 0, best = -1;
+    for (let k = 0; k < 24; k++) {
+      const ang = (k / 24) * Math.PI * 2;
+      const c = Math.cos(ang), sn = Math.sin(ang);
+      let ok = 0;
+      for (let u = LEN0; u <= LEN1; u += 1) {
+        for (const v of [-2.4, 0, 2.4]) {
+          if (terrainHeight(W.x + u * c + v * sn, W.z - u * sn + v * c) > 0.1) ok++;
+        }
+      }
+      if (ok > best) { best = ok; heading = ang; }
+    }
+    const hc = Math.cos(heading), hs = Math.sin(heading);
+    const at = (u, v = 0) => ({ x: W.x + u * hc + v * hs, z: W.z - u * hs + v * hc });
+    const place = (m, u, lift, v = 0) => {
+      const p = at(u, v);
+      m.position.set(p.x, terrainHeight(p.x, p.z) + lift, p.z);
+    };
     const boneMat = mat(0xe8e4d8, 0.7);
     const skull = new THREE.Mesh(new THREE.IcosahedronGeometry(1.6, 1), boneMat);
     skull.scale.set(1.5, 0.75, 1.0);
-    skull.position.set(W.x - 4.2, wy + 0.4, W.z);
-    skull.rotation.y = 0.4;
+    place(skull, -5.6, 0.4);
+    skull.rotation.y = heading + 0.4;
     skull.castShadow = true;
     group.add(skull);
     for (let i = 0; i < 6; i++) {
       const ribR = 2.4 - i * 0.25;
       const rib = new THREE.Mesh(new THREE.TorusGeometry(ribR, 0.13, 6, 10, Math.PI), boneMat);
-      rib.position.set(W.x - 1 + i * 1.5, wy + 0.1, W.z);
-      rib.rotation.y = Math.PI / 2;
+      place(rib, -2.4 + i * 1.5, 0.1);
+      rib.rotation.y = heading + Math.PI / 2;
       rib.castShadow = true;
       group.add(rib);
       const vert = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 0), boneMat);
-      vert.position.set(W.x - 1 + i * 1.5 + 0.75, wy + 0.15, W.z);
+      place(vert, -2.4 + i * 1.5 + 0.75, 0.15);
       group.add(vert);
     }
     const tailBone = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.8, 5), boneMat);
-    tailBone.rotation.z = -Math.PI / 2;
-    tailBone.position.set(W.x + 8.6, wy + 0.2, W.z);
+    place(tailBone, 7.2, 0.2);
+    tailBone.rotation.set(0, heading, -Math.PI / 2);
     group.add(tailBone);
-    zones.addBlocker(W.x + 2, W.z, 2.2);
+    // solid ribs: walk around her, not through her
+    const mid = at(0.6);
+    zones.addBlockerBox(mid.x, mid.z, 5.2, 16, heading + Math.PI / 2, 0);
+    const plaque = at(-3.9, 3.4);
 
     register({
-      pos: new THREE.Vector3(W.x - 2.5, 0, W.z + 2.5), r: 2.6,
+      pos: new THREE.Vector3(plaque.x, 0, plaque.z), r: 2.6,
       label: 'read the weathered plaque',
       use: async () => {
         await ui.say([

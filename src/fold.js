@@ -252,7 +252,7 @@ export function createFold() {
     roofGeo.rotateZ(Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, mat(0x5c5348));
     roof.scale.y = 0.45;
-    roof.position.y = 3.4;
+    roof.position.y = 3.4 + 4.05 * 0.45 / 2; // eaves ON the wall top, not below it
     roof.castShadow = roof.receiveShadow = true;
     ext.add(roof);
     // door on the gable end, facing the green
@@ -271,10 +271,10 @@ export function createFold() {
     }
     // a wooden cod for a weathervane. wind-powered. permitted. beloved.
     const vanePost = box(0.08, 1.0, 0.08, 0x4a3f33);
-    vanePost.position.set(0, 5.3, 0);
+    vanePost.position.set(0, 6.55, 0);
     ext.add(vanePost);
     const vane = makeCod(0.75, 0xc9b99a);
-    vane.position.set(0, 5.8, 0);
+    vane.position.set(0, 7.05, 0);
     ext.add(vane);
     updates.push((dt) => { vane.rotation.y += dt * 0.22; }); // a very patient wind
     // two square windows a side, candle-warm after dark
@@ -290,8 +290,7 @@ export function createFold() {
     }
     ext.position.set(KX, ky, KZ);
     group.add(ext);
-    zones.addBlocker(KX - 2.1, KZ, 3.4);
-    zones.addBlocker(KX + 2.1, KZ, 3.4);
+    zones.addBlockerBox(KX, KZ, 9.4, 6.8, 0, 0.05);
 
     register({
       pos: new THREE.Vector3(KX + 5.4, 0, KZ), r: 2.2,
@@ -479,7 +478,7 @@ export function createFold() {
     roofGeo.rotateZ(Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, mat(0x6b5a48));
     roof.scale.y = 0.5;
-    roof.position.y = H;
+    roof.position.y = H + (D + 0.7) / 1.73 * 0.5 / 2; // eaves on the wall top
     roof.castShadow = roof.receiveShadow = true;
     g.add(roof);
     const door = box(1.0 * scale, 1.8 * scale, 0.15, 0x4a3a2c);
@@ -490,14 +489,24 @@ export function createFold() {
     pane.position.set(-1.2 * scale, 1.5 * scale, D / 2 + 0.03);
     g.add(pane);
     glowWindow(pane, { max: 0.38 });
+    // a window box: plain folk, not joyless folk
+    const wbox = box(0.9, 0.2, 0.3, 0x6e5843);
+    wbox.position.set(-1.2 * scale, 1.1 * scale, D / 2 + 0.18);
+    g.add(wbox);
+    for (let i = 0; i < 4; i++) {
+      const bloom = new THREE.Mesh(new THREE.IcosahedronGeometry(0.08, 0),
+        mat([0xe8c547, 0xf1ead9, 0xc97b8a, 0x9a7ac9][(i + (who.length % 4)) % 4], 0.7));
+      bloom.position.set(-1.2 * scale - 0.3 + i * 0.2, 1.28 * scale, D / 2 + 0.2);
+      g.add(bloom);
+    }
     const chimney = box(0.5, 1.7, 0.5, 0x8a8378);
-    chimney.position.set(W / 2 - 0.4, H + 0.7, -0.5);
+    chimney.position.set(W / 2 - 0.4, H + 1.3, -0.5);
     g.add(chimney);
     const rotY = Math.atan2(faceX - x, faceZ - z);
     g.rotation.y = rotY;
     g.position.set(x, y, z);
     group.add(g);
-    zones.addBlocker(x, z, Math.max(W, D) * 0.62);
+    zones.addBlockerBox(x, z, W + 0.5, D + 0.5, rotY, 0.05);
     const doorWorld = {
       x: x + Math.sin(rotY) * (D / 2 + 0.9),
       z: z + Math.cos(rotY) * (D / 2 + 0.9),
@@ -511,13 +520,87 @@ export function createFold() {
     return g;
   }
 
-  plainCottage(-193.5, -43.5, -193, -50, 0xd8d0bd, 'mercy');
-  plainCottage(-192.3, -56.8, -193, -50, 0xcfc7b2, 'patience');
-  plainCottage(-187.2, -59.6, -184, -67, 0xd3ccc0, 'obed');   // faces the barn
-  plainCottage(-204.2, -45.4, -199, -50, 0xd8d0bd, 'amos', 0.8); // the elder's hut, up by the stones
+  // laid out around a real green now, a good neighborly stride apart (they
+  // used to stand shoulder to shoulder with the kirk, which even plain folk
+  // found a bit much)
+  plainCottage(-191.5, -39.5, -191, -49, 0xd8d0bd, 'mercy');    // north of the green
+  plainCottage(-195.5, -60.5, -193, -50, 0xcfc7b2, 'patience'); // south, facing in
+  plainCottage(-188.5, -58.2, -184, -67, 0xd3ccc0, 'obed');     // faces the barn
+  plainCottage(-208, -42.5, -199, -45, 0xd8d0bd, 'amos', 0.8);  // the elder's hut, up by the stones
+
+  // ============================================ the little apple orchard ----
+  // north-east of the green, where the ground was empty and felt it
+  for (const [ax, az] of [[-184, -41.5], [-180.2, -42.8], [-182.6, -37.6], [-178.4, -38.9], [-186.2, -36.4]]) {
+    const ay = terrainHeight(ax, az);
+    if (ay < 0.6) continue;
+    const tree = makeOak(0x5a9a50);
+    tree.scale.setScalar(0.8 + rand(0, 0.15));
+    tree.rotation.y = rand(0, Math.PI * 2);
+    tree.position.set(ax, ay - 0.05, az);
+    for (let k = 0; k < 5; k++) {
+      const apple = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 0), mat(0xc4413a, 0.6));
+      const aa = (k / 5) * Math.PI * 2 + rand(-0.3, 0.3);
+      // out on the leaves where they show, not buried in them
+      const ay2 = 2.2 + rand(0, 0.6);
+      let ar = 2.6;
+      while (ar > 0.5 && ![[0, 2.9, 0, 1.55], [0.95, 2.45, 0.25, 1.0], [-0.85, 2.5, -0.3, 1.05]].some(([bx, by, bz, br]) =>
+        Math.hypot(Math.cos(aa) * ar - bx, ay2 - by, Math.sin(aa) * ar - bz) < br)) ar -= 0.05;
+      apple.position.set(Math.cos(aa) * (ar + 0.06), ay2, Math.sin(aa) * (ar + 0.06));
+      tree.add(apple);
+    }
+    group.add(tree);
+    zones.addBlocker(ax, az, 0.5, 'tree');
+  }
+  for (let i = 0; i < 26; i++) {
+    const fx = rand(-200, -178), fz = rand(-62, -34);
+    if (zones.nearBlocker(fx, fz, 1.2) || zones.solidAt(fx, fz) || terrainHeight(fx, fz) < 0.7) continue;
+    if (Math.hypot(fx - (-190), fz - (-50.5)) < 4) continue; // the green stays a green
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.3, 4), mat(0x4e9a45));
+    stem.position.set(fx, terrainHeight(fx, fz) + 0.15, fz);
+    const bloom = new THREE.Mesh(new THREE.IcosahedronGeometry(0.09, 0),
+      mat(pick([0xf1ead9, 0xe8c547, 0xb9a3e8, 0xe88a8a]), 0.7));
+    bloom.position.set(fx, terrainHeight(fx, fz) + 0.33, fz);
+    group.add(stem, bloom);
+  }
+  // mushrooms in the damp spots — under the orchard, by the hedges, and a
+  // fairy ring out past the kirk that nobody at the Fold will talk about
+  const capMats = [mat(0xc4413a, 0.7), mat(0xd9b48a, 0.8), mat(0xefe6d2, 0.8)];
+  const stalkMat = mat(0xf3ecdc, 0.9);
+  const shroom = (x, z, sc, ci) => {
+    const y = terrainHeight(x, z);
+    const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * sc, 0.07 * sc, 0.22 * sc, 5), stalkMat);
+    stalk.position.set(x, y + 0.11 * sc, z);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.17 * sc, 0.14 * sc, 7), capMats[ci]);
+    cap.position.set(x, y + 0.27 * sc, z);
+    group.add(stalk, cap);
+    if (ci === 0) { // the red ones get their spots
+      for (let k = 0; k < 3; k++) {
+        const dot = new THREE.Mesh(new THREE.IcosahedronGeometry(0.025 * sc, 0), stalkMat);
+        const a = k * 2.1;
+        dot.position.set(x + Math.cos(a) * 0.08 * sc, y + 0.29 * sc, z + Math.sin(a) * 0.08 * sc);
+        group.add(dot);
+      }
+    }
+  };
+  for (let i = 0; i < 34; i++) {
+    const fx = rand(-202, -178), fz = rand(-64, -32);
+    if (zones.nearBlocker(fx, fz, 0.6) || zones.solidAt(fx, fz) || terrainHeight(fx, fz) < 0.7) continue;
+    const n = 1 + Math.floor(rand(0, 3)); // they come in little families
+    for (let k = 0; k < n; k++) shroom(fx + rand(-0.4, 0.4), fz + rand(-0.4, 0.4), rand(0.8, 1.4), Math.floor(rand(0, 3)));
+  }
+  {
+    const RX = -203, RZ = -38;
+    if (terrainHeight(RX, RZ) > 0.6) {
+      for (let k = 0; k < 11; k++) {
+        const a = (k / 11) * Math.PI * 2;
+        const x = RX + Math.cos(a) * 1.6, z = RZ + Math.sin(a) * 1.6;
+        if (!zones.solidAt(x, z)) shroom(x, z, 1.1, 2);
+      }
+    }
+  }
 
   // ==================================================== the green: stall ----
-  const STALL = { x: -189, z: -47 };
+  const STALL = { x: -185.5, z: -47.5 }; // east edge of the green
   let mercy;
   {
     const sy = terrainHeight(STALL.x, STALL.z);
@@ -594,7 +677,7 @@ export function createFold() {
 
   // the well: a working one. wishes go in the bucket like everything else.
   {
-    const WX = -190.5, WZ = -53.2;
+    const WX = -190, WZ = -50.5; // the middle of the green
     const wy = terrainHeight(WX, WZ);
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.7, 8), mat(0x8a8378));
     ring.position.set(WX, wy + 0.35, WZ);
@@ -636,7 +719,7 @@ export function createFold() {
     roofGeo.rotateZ(Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, mat(0x6b5a48));
     roof.scale.y = 0.55;
-    roof.position.y = 3.2;
+    roof.position.y = 3.2 + (5 + 0.9) / 1.73 * 0.55 / 2;
     roof.castShadow = roof.receiveShadow = true;
     g.add(roof);
     // big doors on the gable end, one honestly ajar
@@ -655,8 +738,7 @@ export function createFold() {
     g.rotation.y = rotY;
     g.position.set(BARN.x, by, BARN.z);
     group.add(g);
-    zones.addBlocker(BARN.x - 1.8, BARN.z, 2.9);
-    zones.addBlocker(BARN.x + 1.8, BARN.z, 2.9);
+    zones.addBlockerBox(BARN.x, BARN.z, 7.3, 5.3, rotY, 0.05);
     // hay bales, stacked with the particular pride of stacked hay
     for (const [hx, hz, hr] of [[BARN.x + 4.4, BARN.z + 1.2, 0], [BARN.x + 4.6, BARN.z + 2.4, 0.4], [BARN.x + 4.5, BARN.z + 1.8, 0]]) {
       const bale = box(1.1, 0.7, 0.8, 0xd9b45a);
@@ -936,6 +1018,7 @@ export function createFold() {
       tree.rotation.y = rand(0, Math.PI * 2);
       tree.position.set(x, y - 0.05, z);
       group.add(tree);
+      zones.addBlocker(x, z, 0.8 * tree.scale.x, 'tree'); // a hedge you walk AROUND
     }
     // the stile: two steps over nothing in particular. built for the look of
     // the thing, and for sitting on, which is most of what stiles are for.
@@ -984,15 +1067,15 @@ export function createFold() {
   });
 
   addFolk('Obed', 'sheep', { head: 0x3a3630, wool: 0xece4d0 }, [
-    { x: -182, z: -65.5 }, { x: -186.5, z: -61.5 }, { x: -189.5, z: -55 },
-    { x: -186, z: -57.5 },
+    { x: -180.8, z: -62 }, { x: -185.5, z: -62.4 }, { x: -191, z: -55 },
+    { x: -185.5, z: -53.5 },
   ], OBED_CHAT, VOICE.obed, {
     hat: flatBrimHat(), speed: 1.2,
   });
 
   addFolk('Small Mercy', 'sheep', { head: 0x8a7a68, wool: 0xf6f1e4 }, [
-    { x: -191, z: -47.5 }, { x: -195.5, z: -46.5 }, { x: -195, z: -52.5 },
-    { x: -190.5, z: -51 }, { x: -188, z: -48.5 },
+    { x: -187.3, z: -50.8 }, { x: -189.6, z: -47.6 }, { x: -192.7, z: -49.8 },
+    { x: -190.4, z: -53.4 }, // round and round the well, as lambs do
   ], LAMB_CHAT, VOICE.lamb, {
     scale: 0.62, speed: 1.6, // small legs, big agenda
   });
@@ -1039,8 +1122,14 @@ export function createFold() {
         continue;
       }
       const step = Math.min(w.speed * dt, d);
-      w.g.position.x += (dx / d) * step;
-      w.g.position.z += (dz / d) * step;
+      const nx = w.g.position.x + (dx / d) * step, nz = w.g.position.z + (dz / d) * step;
+      if (playerPos && Math.hypot(playerPos.x - nx, playerPos.z - nz) < 1.0 &&
+          Math.hypot(playerPos.x - nx, playerPos.z - nz) < Math.hypot(playerPos.x - w.g.position.x, playerPos.z - w.g.position.z)) {
+        animateGait(w.g, t, 0); // you're in the way; they wait, politely
+        continue;
+      }
+      w.g.position.x = nx;
+      w.g.position.z = nz;
       w.g.position.y = terrainHeight(w.g.position.x, w.g.position.z);
       w.g.rotation.y = turnToward(w.g.rotation.y, Math.atan2(dx, dz), dt, 6);
       animateGait(w.g, t, 1);

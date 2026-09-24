@@ -118,7 +118,16 @@ export function applyHat(animal, hatId) {
   }
   if (!hatId || !builders[hatId]) return;
   const hat = builders[hatId]();
-  hat.position.y = 0.34;
+  // fit the head it's on: heads come in many sizes and squashes (a horse's
+  // is long, a mole's is flat), and a hat parented to a squashed head gets
+  // squashed too — so undo the head's scale, size the hat to the head, and
+  // seat it on the crown rather than at a fixed height
+  const r = head.geometry?.parameters?.radius ?? 0.42;
+  const hs = head.scale;
+  const worldR = r * Math.max(hs.x, hs.z);
+  const k = worldR / 0.42;
+  hat.scale.set(k / hs.x, k / hs.y, k / hs.z);
+  hat.position.y = r * 0.78;
   hat.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   head.add(hat);
   animal.userData.hatMesh = hat;

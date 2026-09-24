@@ -10,9 +10,11 @@ import { register } from './interact.js';
 import * as ui from './ui.js';
 import * as S from './state.js';
 import { buildAnimal } from './animals.js';
-import { plop, doorChime } from './audio.js';
+import { plop, doorChime, tone } from './audio.js';
+import { isFoggy } from './almanac.js';
+import { isNight } from './calendar.js';
 import { rand, turnToward } from './utils.js';
-import { glowWindow } from './nightglow.js';
+import { glowWindow, glowLevel } from './nightglow.js';
 import { BULKO_DOCK } from './bulko.js';
 import { LABS_DOCK } from './island6.js';
 import { FARTHER_DOCK } from './farther.js';
@@ -66,6 +68,7 @@ export function createBoats(player) {
 
   // ---------------------------------------------------------- the pier ----
   const PIER_LEN = 11;
+  const LAST = PIER_LEN - 1;
   for (let i = 0; i < PIER_LEN; i += 1) {
     const t = i + 0.5;
     const plank = box(2.6, 0.18, 1.0, i % 5 === 2 ? 0x96703f : 0xa97c50);
@@ -73,11 +76,28 @@ export function createBoats(player) {
     plank.rotation.y = outA;
     plank.receiveShadow = true;
     group.add(plank);
-    if (i % 3 === 0) {
+    if (i % 2 === 0 && i !== LAST) {
+      // legs all the way down to the sand, whatever the depth
       for (const side of [-1, 1]) {
-        const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 2.6, 6), mat(0x6b4a2e));
-        pile.position.set(D.x + ox * t + px * side * 1.2, -0.6, D.z + oz * t + pz * side * 1.2);
+        const lx = D.x + ox * t + px * side * 1.2, lz = D.z + oz * t + pz * side * 1.2;
+        const bot = Math.min(terrainHeight(lx, lz), WATER_Y) - 0.3, top = 0.5;
+        const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, top - bot, 6), mat(0x6b4a2e));
+        pile.position.set(lx, (top + bot) / 2, lz);
         group.add(pile);
+      }
+    }
+    if (i === LAST) {
+      // the front posts: the pier ends where two tall posts say it does
+      for (const side of [-1, 1]) {
+        const fx = D.x + ox * (t + 0.35) + px * side * 1.2, fz = D.z + oz * (t + 0.35) + pz * side * 1.2;
+        const fbot = Math.min(terrainHeight(fx, fz), WATER_Y) - 0.3, ftop = 1.55;
+        const fp = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, ftop - fbot, 6), mat(0x6b4a2e));
+        fp.position.set(fx, (ftop + fbot) / 2, fz);
+        fp.castShadow = true;
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.14 + 0.03, 0.14 + 0.03, 0.08, 6), mat(0x4f3622));
+        cap.position.y = (ftop - fbot) / 2 + 0.02;
+        fp.add(cap);
+        group.add(fp);
       }
     }
   }
@@ -102,8 +122,14 @@ export function createBoats(player) {
     const bz = D.z + oz * 7.6 + pz * (i === 0 ? -2.0 : -4.0);
     boat.position.set(bx, WATER_Y + 0.12, bz);
     boat.rotation.y = outA + rand(-0.3, 0.3);
+    // ...unless you left it somewhere else last time — boats remember
+    const saved = S.state.rowboats[i];
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.z)) {
+      boat.position.set(saved.x, WATER_Y + 0.12, saved.z);
+      boat.rotation.y = saved.rotY || 0;
+    }
     group.add(boat);
-    const data = { boat, inUse: false, oarPhase: 0, oarPower: 0 };
+    const data = { boat, i, inUse: false, oarPhase: 0, oarPower: 0 };
     boats.push(data);
 
     register({
@@ -119,13 +145,15 @@ export function createBoats(player) {
   const lastPlayerPos = new THREE.Vector3();
   let haveLastPlayerPos = false;
 
-  async function boardBoat(data) {
+  async function boardBoat(data, at = null) {
     plop();
-    await zones.go('sea', {
+    await zones.go('sea', at || {
       x: data.boat.position.x, z: data.boat.position.z,
       rotY: data.boat.rotation.y,
     });
     data.inUse = true;
+    S.state.rowing = data.i;
+    S.save();
     activeBoat = data;
     data.oarPhase = 0;
     data.oarPower = 0;
@@ -173,6 +201,11 @@ export function createBoats(player) {
       data.boat.rotation.y = player.group.rotation.y;
       group.add(data.boat);
       data.inUse = false;
+      S.state.rowboats[data.i] = {
+        x: data.boat.position.x, z: data.boat.position.z, rotY: data.boat.rotation.y,
+      };
+      S.state.rowing = null;
+      S.save();
       plop();
       await zones.go('island', { x: spot.x, z: spot.z, rotY: player.group.rotation.y });
       ui.toast('You hop ashore. The boat will wait — it’s good at that.', '⛵');
@@ -211,10 +244,10 @@ export function createBoats(player) {
   // ---------------------------------------------------------- the tugboat ----
   const tug = new THREE.Group();
   const hull = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.2, 1.2, 8), mat(0x2e3e5c));
-  hull.scale.z = 2.5;
+  hull.scale.z = 2.85; // long enough for a passenger aft of the cabin
   hull.position.y = 0.3;
   tug.add(hull);
-  const deck = box(2.6, 0.2, 6.4, 0xa97c50);
+  const deck = box(2.6, 0.2, 7.6, 0xa97c50);
   deck.position.y = 0.95;
   tug.add(deck);
   const cabin = box(1.6, 1.3, 1.8, 0xf3e6cf);
@@ -235,7 +268,7 @@ export function createBoats(player) {
   funnel.position.set(0, 1.6, 0.9);
   tug.add(funnel);
   const bumper = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.1, 6, 10), mat(0x2e2a26, 0.6));
-  bumper.position.set(0, 0.6, 3.2);
+  bumper.position.set(0, 0.6, 3.9);
   tug.add(bumper);
   tug.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   // moored across the pier from the rowboats, so walking the planks offers
@@ -428,9 +461,26 @@ export function createBoats(player) {
 
   function shallowAhead(ang, dist) {
     const a = tug.rotation.y + ang;
-    return terrainHeight(
-      tug.position.x + Math.sin(a) * dist,
-      tug.position.z + Math.cos(a) * dist) > WATER_Y - 0.55;
+    const x = tug.position.x + Math.sin(a) * dist, z = tug.position.z + Math.cos(a) * dist;
+    return terrainHeight(x, z) > WATER_Y - 0.55 || (!voyage?.via?.length && zones.seaBlocked(x, z));
+  }
+
+  // solid things in the sea (the North Isle arch) have gates — a tunnel, a
+  // high span. if the straight line crosses one, sail through its gate:
+  // line up on the near side, pass through, clear the far side.
+  function crosses(p, q, a, b) {
+    const o = (u, v, w) => Math.sign((v.x - u.x) * (w.z - u.z) - (v.z - u.z) * (w.x - u.x));
+    return o(p, q, a) !== o(p, q, b) && o(a, b, p) !== o(a, b, q);
+  }
+  function routeVia(from, to) {
+    const via = [];
+    for (const g of zones.getSeaGates()) {
+      if (!crosses(from, to, g.a, g.b)) continue;
+      const side = Math.sign((from.x - g.x) * g.nx + (from.z - g.z) * g.nz) || 1;
+      via.push({ x: g.x + g.nx * side * 10, z: g.z + g.nz * side * 10, k: Math.hypot(from.x - g.x, from.z - g.z) });
+      via.push({ x: g.x - g.nx * side * 10, z: g.z - g.nz * side * 10, k: Math.hypot(from.x - g.x, from.z - g.z) + 0.1 });
+    }
+    return via.sort((u, v) => u.k - v.k);
   }
 
   async function beginVoyage(destId, fromId) {
@@ -447,7 +497,7 @@ export function createBoats(player) {
       player.riding = true;
       return zones.go('sea', { x: from.sea.x, z: from.sea.z, rotY: heading });
     });
-    voyage = { dest, destId, story, speed: 0, elapsed: 0, storyFired: false, landing: false };
+    voyage = { dest, destId, story, speed: 0, elapsed: 0, storyFired: false, landing: false, via: routeVia(from.sea, dest.sea) };
     ui.toast('The Persistent clears her throat and gets going.', '⛴️');
   }
 
@@ -461,7 +511,7 @@ export function createBoats(player) {
       : 'The Persistent putters off home. Ring a buoy when you want a lift.', '⛴️');
     if (v.destId !== 'home') {
       // she sees herself home, trailing smoke over the horizon
-      voyage = { dest: STOPS.home, destId: 'home', ghost: true, speed: 4, elapsed: 0 };
+      voyage = { dest: STOPS.home, destId: 'home', ghost: true, speed: 4, elapsed: 0, via: routeVia(v.dest.sea, STOPS.home.sea) };
     } else {
       tug.position.set(tx, WATER_Y + 0.35, tz);
       tug.rotation.y = outA + 0.9;
@@ -527,6 +577,7 @@ export function createBoats(player) {
     b.position.set(x, terrainHeight(x, z), z);
     b.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     group.add(b);
+    zones.addBlocker(x, z, 0.55);
     return b;
   }
 
@@ -563,32 +614,100 @@ export function createBoats(player) {
     seg.castShadow = true;
     lh.add(seg);
   }
-  // the lamp room: glass, empty of light (the lamp lives at Luna's now)
+  // the lamp room: the OLD lamp lives at Luna's now (its light sleeps in the
+  // cave); what's up there today is a small electric lamp someone wired in,
+  // which turns a modest beam over the water after dark and in weather
   const lampRoom = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.5, 8),
     new THREE.MeshStandardMaterial({
       color: 0xbfe6f2, transparent: true, opacity: 0.4, roughness: 0.2, flatShading: true,
     }));
   lampRoom.position.y = 11.5;
   lh.add(lampRoom);
+  const bulb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 0), mat(0xfff4d0, 0.3));
+  bulb.position.y = 11.45;
+  glowWindow(bulb, { warm: 0xfff0c0, max: 1.6 });
+  lh.add(bulb);
   const cap = new THREE.Mesh(new THREE.ConeGeometry(1.3, 1.1, 9), mat(0xb0453a));
   cap.position.y = 12.8;
   cap.castShadow = true;
   lh.add(cap);
-  // the bell gallery: an open frame below the lamp room, hook and no bell
-  for (const sx of [-1, 1]) {
-    const arm = box(0.18, 1.2, 0.18, 0x55483a);
-    arm.position.set(sx * 0.8, 9.9, 0.9);
-    lh.add(arm);
+  // the bell's hook: back where a bell belongs — up in the lamp room,
+  // hanging on its chain from the roof, right over the little electric lamp.
+  // it sways. there is no wind in there. nobody has ever found out why.
+  const hookGroup = new THREE.Group();
+  const chainMat = mat(0x3a3a3a, 0.4);
+  for (let k = 0; k < 3; k++) {
+    const link = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.018, 4, 8), chainMat);
+    link.position.y = -0.12 - k * 0.11;
+    link.rotation.y = k % 2 ? Math.PI / 2 : 0;
+    hookGroup.add(link);
   }
-  const crossbar = box(1.9, 0.18, 0.18, 0x55483a);
-  crossbar.position.set(0, 10.5, 0.9);
-  lh.add(crossbar);
-  const hook = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 5, 8), mat(0x3a3a3a, 0.4));
-  hook.position.set(0, 10.3, 0.9);
-  lh.add(hook);
+  const hook = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 5, 8, Math.PI * 1.4), mat(0x3a3a3a, 0.35));
+  hook.position.y = -0.52;
+  hook.rotation.z = Math.PI * 0.8;
+  hookGroup.add(hook);
+  hookGroup.position.y = 12.25; // just under the cap
+  lh.add(hookGroup);
+  let hookBell = 0;
+  updates.push((dt, t, playerPos) => {
+    hookGroup.rotation.z = Math.sin(t * 0.7) * 0.12 + Math.sin(t * 1.9) * 0.03;
+    hookGroup.rotation.x = Math.sin(t * 0.53 + 1) * 0.08;
+    // on foggy nights, if you stand at the foot of the tower long enough,
+    // something up there rings once. very faint. probably the tide.
+    if (!playerPos) return;
+    const near = Math.hypot(playerPos.x - lhx, playerPos.z - lhz) < 6;
+    hookBell = near && (isFoggy() || isNight()) ? hookBell + dt : 0;
+    if (hookBell > 14) {
+      hookBell = -40;
+      tone(1320, { dur: 2.2, type: 'sine', vol: 0.018 });
+      tone(1980, { time: 0.02, dur: 1.6, type: 'sine', vol: 0.008 });
+    }
+  });
+  // a stone footing, sunk to the lowest ground under it: no tower hangs
+  let lowest = lhy;
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+    lowest = Math.min(lowest, terrainHeight(lhx + Math.cos(a) * 2.1, lhz + Math.sin(a) * 2.1));
+  }
+  const footH = lhy + 0.3 - (lowest - 0.5);
+  const footing = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.2, footH, 9), mat(0x9aa0a6, 0.95));
+  footing.position.y = 0.3 - footH / 2;
+  footing.castShadow = true;
+  footing.receiveShadow = true;
+  lh.add(footing);
+  // the beam: two faint cones, tip at the lamp, widening and fading out
+  // over the water, back to back, turning slowly. subtle is the point.
+  const fadeCv = document.createElement('canvas');
+  fadeCv.width = 4; fadeCv.height = 64;
+  const fctx = fadeCv.getContext('2d');
+  const fgrad = fctx.createLinearGradient(0, 0, 0, 64);
+  fgrad.addColorStop(0, '#fff'); // v=1: the tip, at the lamp
+  fgrad.addColorStop(1, '#000'); // v=0: the far, wide end
+  fctx.fillStyle = fgrad;
+  fctx.fillRect(0, 0, 4, 64);
+  const beamMat = new THREE.MeshBasicMaterial({
+    color: 0xfff1c0, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending, alphaMap: new THREE.CanvasTexture(fadeCv),
+  });
+  const BEAM_L = 18;
+  const beam = new THREE.Group();
+  for (const s of [-1, 1]) {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(1.6, BEAM_L, 10, 1, true), beamMat);
+    cone.rotation.z = -s * Math.PI / 2; // tip toward the lamp
+    cone.position.x = -s * BEAM_L / 2;
+    beam.add(cone);
+  }
+  beam.position.y = 11.45;
+  beam.visible = false;
+  lh.add(beam);
+  updates.push((dt) => {
+    const f = glowLevel();
+    beam.visible = f > 0.02;
+    beamMat.opacity = 0.26 * f;
+    beam.rotation.y -= dt * 0.35;
+  });
   lh.position.set(lhx, lhy, lhz);
   group.add(lh);
-  zones.addBlocker(lhx, lhz, 2.2);
+  zones.addBlocker(lhx, lhz, 2.35);
 
   const towardShore = Math.atan2(D.x - lhx, D.z - lhz);
   register({
@@ -598,9 +717,10 @@ export function createBoats(player) {
     label: 'stand at the old lighthouse',
     use: async () => {
       await ui.say([
-        'The tower still stands watch, white and rust-red, glass dark at the top.',
-        'Below the lamp room hangs an iron crossbar, and from it, an empty hook — polished, not rusted. Someone keeps it polished.',
+        'The tower still stands watch, white and rust-red, a small electric lamp at the top where the great one used to be.',
+        'Up in the lamp room, hanging from the roof on a short chain, is an empty hook — polished, not rusted. It is swaying. There is no wind up there. Someone keeps it polished.',
         'A small plate reads: “HER LIGHT KEEPS THE CAFÉ WARM. HER BELL KEEPS THE SEA COMPANY. THE HOOK KEEPS ITS SHAPE, IN CASE.”',
+        'Under it, a newer plate, screwed on slightly crooked: “ELECTRIC LAMP FITTED. IT IS NOT HER LIGHT. IT DOES ITS BEST.”',
       ]);
       if (!S.hasFlag('sawLighthouse')) {
         S.setFlag('sawLighthouse');
@@ -624,9 +744,12 @@ export function createBoats(player) {
     if (voyage) {
       const v = voyage;
       v.elapsed += dt;
-      const dx = v.dest.sea.x - tug.position.x;
-      const dz = v.dest.sea.z - tug.position.z;
-      const dist = Math.hypot(dx, dz);
+      // threading a gate? steer for it first (and don't dodge the gate's walls)
+      while (v.via?.length && Math.hypot(v.via[0].x - tug.position.x, v.via[0].z - tug.position.z) < 3) v.via.shift();
+      const aim = v.via?.length ? v.via[0] : v.dest.sea;
+      const dx = aim.x - tug.position.x;
+      const dz = aim.z - tug.position.z;
+      const dist = v.via?.length ? 99 : Math.hypot(dx, dz);
       // steer for the anchorage; the shallows get a respectful berth
       let want = Math.atan2(dx, dz);
       let dodging = false;
@@ -642,8 +765,10 @@ export function createBoats(player) {
           want = tug.rotation.y + 0.5;
         }
       }
-      tug.rotation.y = turnToward(tug.rotation.y, want, dt, dodging ? 1.7 : 1.0);
-      const targetSpeed = v.ghost ? 6 : dist < 10 ? 1.8 : 6.5;
+      // (close in, she turns gently — she used to pirouette round the
+      // anchorage, sweeping her stern through the dock)
+      tug.rotation.y = turnToward(tug.rotation.y, want, dt, dodging ? 1.7 : dist < 12 ? 0.45 : 1.0);
+      const targetSpeed = v.ghost ? 6 : dist < 12 ? Math.max(0.6, dist * 0.2) : 6.5;
       v.speed += (targetSpeed - v.speed) * Math.min(1, dt * 0.8);
       tug.position.x += Math.sin(tug.rotation.y) * v.speed * dt;
       tug.position.z += Math.cos(tug.rotation.y) * v.speed * dt;
@@ -651,10 +776,11 @@ export function createBoats(player) {
       if (!v.ghost) {
         // you, on deck, enjoying the spray
         const ry = tug.rotation.y;
+        // standing ON the aft deck (deck top is 1.05 up), clear of the cabin
         player.group.position.set(
-          tug.position.x - Math.sin(ry) * 2.0,
-          tug.position.y + 0.72,
-          tug.position.z - Math.cos(ry) * 2.0);
+          tug.position.x - Math.sin(ry) * 2.9,
+          tug.position.y + 1.05,
+          tug.position.z - Math.cos(ry) * 2.9);
         player.group.rotation.y = ry;
         // the story, told over open water
         if (!v.storyFired && v.elapsed > 2.2 && !ui.isBusy()) {
@@ -662,7 +788,7 @@ export function createBoats(player) {
           ui.say(v.story, { speaker: 'Captain Brine', voice: 340 });
         }
         // arrival — politely waits for Brine to finish the story
-        if (!v.landing && (dist < 2.2 || v.elapsed > 90) && v.storyFired && !ui.isBusy()) {
+        if (!v.landing && (dist < 5 || v.elapsed > 90) && v.storyFired && !ui.isBusy()) {
           v.landing = true;
           landVoyage();
         }
@@ -680,16 +806,16 @@ export function createBoats(player) {
         const ry = tug.rotation.y;
         for (const side of [-1, 1]) {
           spawnBit(wakeBits, 0xeaf6f8, 0.16, 26,
-            tug.position.x - Math.sin(ry) * 2.4 + Math.cos(ry) * side * 0.7,
+            tug.position.x - Math.sin(ry) * 4.4 + Math.cos(ry) * side * 0.7,
             WATER_Y + 0.05,
-            tug.position.z - Math.cos(ry) * 2.4 - Math.sin(ry) * side * 0.7);
+            tug.position.z - Math.cos(ry) * 4.4 - Math.sin(ry) * side * 0.7);
         }
       }
       smokeT -= dt;
       if (voyage && v.speed > 1 && smokeT <= 0) {
-        smokeT = 0.3;
+        smokeT = 0.55; // an easy chuff, not a chimney fire
         const ry = tug.rotation.y;
-        spawnBit(smokePuffs, 0x9aa3ad, 0.2, 12,
+        spawnBit(smokePuffs, 0xd8dde0, 0.2, 12,
           tug.position.x + Math.sin(ry) * 0.9,
           tug.position.y + 2.1,
           tug.position.z + Math.cos(ry) * 0.9);
@@ -698,7 +824,7 @@ export function createBoats(player) {
     // foam and smoke age out whether or not anyone is sailing
     for (const list of [wakeBits, smokePuffs]) {
       const isSmoke = list === smokePuffs;
-      const maxLife = isSmoke ? 2.2 : 1.5;
+      const maxLife = isSmoke ? 2.8 : 1.5;
       for (const bit of list) {
         if (!bit.m.visible) continue;
         bit.life += dt;
@@ -707,9 +833,9 @@ export function createBoats(player) {
           continue;
         }
         const k = bit.life / maxLife;
-        bit.m.material.opacity = 0.8 * (1 - k);
-        bit.m.scale.setScalar(1 + k * (isSmoke ? 2.6 : 1.8));
-        if (isSmoke) bit.m.position.y += dt * 1.1;
+        bit.m.material.opacity = (isSmoke ? 0.5 : 0.8) * (1 - k);
+        bit.m.scale.setScalar(1 + k * (isSmoke ? 1.3 : 1.8));
+        if (isSmoke) bit.m.position.y += dt * 0.55; // a lazy rise
       }
     }
     // Captain Brine watches you potter about the harbor
@@ -723,5 +849,13 @@ export function createBoats(player) {
     }
   }
 
-  return { group, update };
+  // refreshed mid-row? you're still out there, oars in hand
+  function resumeRowing(at) {
+    const data = boats[S.state.rowing];
+    if (!data || data.inUse) return false;
+    boardBoat(data, at);
+    return true;
+  }
+
+  return { group, update, resumeRowing };
 }

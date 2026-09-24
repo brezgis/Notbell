@@ -36,7 +36,7 @@ let shotN = 0;
 //         runs; false for probes that test the welcome itself)
 //       · mobile (emulate iPhone 13 + touch)
 export async function boot({
-  port = 8123, hour = 12.5, name = 'Sandy', weather = 'clear',
+  port = Number(process.env.PORT) || 8123, hour = 12.5, name = 'Sandy', weather = 'clear',
   seed = true, mobile = false,
 } = {}) {
   const browser = await puppeteer.launch({
@@ -222,4 +222,12 @@ export async function snap(page, name) {
   await page.screenshot({ path: file });
   console.log('shot:', path.relative(HERE, file));
   return file;
+}
+
+// Aim the camera at any world point without moving the player (debug hook
+// in main.js). opts: yaw (0 = looking north/-z), pitch (0.18..1.3), dist.
+// view(page, null) hands the camera back to the player.
+export async function view(page, p, opts = {}) {
+  await page.evaluate((pp, o) => window.__notbell.cam.view(pp, o), p, opts);
+  await sleep(opts.settle ?? 600);
 }

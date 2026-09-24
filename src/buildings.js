@@ -149,11 +149,21 @@ function makeShopExterior() {
     });
     g.add(side);
   }
-  // a big button for a sign, naturally
+  // a big button for a sign, naturally — up on the roof's peak like a
+  // weathervane (on the front wall the eaves ran straight through it)
   const sign = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.16, 10), mat(0xf2cf5b, 0.35));
   sign.rotation.x = Math.PI / 2;
-  sign.position.set(0, 3.9, 3.1);
+  sign.position.set(0, 6.55, 0);
   g.add(sign);
+  for (const [hx, hy] of [[-0.16, 0.12], [0.16, 0.12], [-0.16, -0.12], [0.16, -0.12]]) {
+    const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.2, 6), mat(0xb8902e, 0.5));
+    hole.rotation.x = Math.PI / 2;
+    hole.position.set(hx, 6.55 + hy, 0);
+    g.add(hole);
+  }
+  const finial = box(0.1, 0.5, 0.1, 0x55483a);
+  finial.position.set(0, 5.85, 0);
+  g.add(finial);
   return g;
 }
 
@@ -183,6 +193,50 @@ function makeCafeExterior() {
   );
   glow.position.set(2.4, 2.3, 3.3);
   g.add(glow);
+  // a chalkboard A-frame by the door, in Luna's handwriting
+  const board = new THREE.Group();
+  const cv = document.createElement('canvas');
+  cv.width = 160; cv.height = 200;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#23302a';
+  ctx.fillRect(0, 0, 160, 200);
+  ctx.strokeStyle = '#8a5a3a';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, 150, 190);
+  ctx.fillStyle = '#f3efe2';
+  ctx.textAlign = 'center';
+  ctx.font = '700 17px ui-rounded, "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('THE LANTERN', 80, 38);
+  ctx.fillText('ROOM', 80, 58);
+  ctx.font = 'italic 600 15px ui-rounded, "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('today:', 80, 90);
+  ctx.fillStyle = '#ffd98f';
+  ctx.font = '700 18px ui-rounded, "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('Lantern Roast', 80, 114);
+  ctx.fillStyle = '#f3efe2';
+  ctx.font = 'italic 600 14px ui-rounded, "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('the lamp is warm', 80, 148);
+  ctx.strokeStyle = '#f3efe2'; // a chalk cup, steaming
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(66, 160, 24, 18);
+  ctx.beginPath(); ctx.arc(93, 169, 5, -1.2, 1.2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(72, 156); ctx.quadraticCurveTo(76, 150, 72, 144); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(82, 156); ctx.quadraticCurveTo(86, 150, 82, 144); ctx.stroke();
+  const chalkTex = new THREE.CanvasTexture(cv);
+  chalkTex.colorSpace = THREE.SRGBColorSpace;
+  for (const side of [1, -1]) {
+    const leaf = box(0.8, 1.05, 0.06, 0x8a5a3a);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.95), new THREE.MeshBasicMaterial({ map: chalkTex }));
+    face.position.z = 0.035;
+    leaf.add(face);
+    leaf.position.set(0, 0.5, side * 0.2);
+    leaf.rotation.x = side * -0.36;
+    if (side < 0) leaf.rotation.y = Math.PI;
+    board.add(leaf);
+  }
+  board.position.set(-2.5, 0, 3.75);
+  board.rotation.y = 0.35; // angled to catch the plaza's eye
+  g.add(board);
   // chimney + drifting smoke
   const chimney = box(0.6, 1.2, 0.6, 0xb09a7e);
   chimney.position.set(1.7, 4.6, -1.2);
@@ -222,7 +276,7 @@ function makePostOfficeExterior() {
   roofGeo.rotateZ(Math.PI / 2);
   const roof = new THREE.Mesh(roofGeo, mat(0x4a6a9c));
   roof.scale.y = 0.42;
-  roof.position.y = 3.75;
+  roof.position.y = 3.35 + 3.3 * 0.42 / 2; // eaves on the wall top
   roof.castShadow = true;
   g.add(roof);
   const door = makeDoor(0x5a3d22);
@@ -244,13 +298,18 @@ function makePostOfficeExterior() {
   const letter = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.5, 6), mat(0xfff6e0, 0.9));
   bottle.add(glassB, neck, cork, letter);
   bottle.rotation.z = 1.15; // adrift, as received
-  bottle.position.set(0, 2.72, 2.66); // hung over the door, tucked under the eave
+  bottle.position.set(0, 2.85, 2.95); // hung out over the door on its bracket, clear of the eave
+  const bracket = box(0.08, 0.08, 0.5, 0x3a3a3a);
+  bracket.position.set(0, 3.2, 2.75);
+  g.add(bracket);
   bottle.traverse((o) => { o.castShadow = true; });
   g.add(bottle);
   // the pillar box: BULKO-buoy red, slot like a buttonhole
   const pillar = new THREE.Group();
-  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 1.5, 8), mat(0xb0453a));
-  drum.position.y = 0.75;
+  // (the drum runs down into the ground: the yard slopes away from the
+  // footing here, and a pillar box does not hover)
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 2.6, 8), mat(0xb0453a));
+  drum.position.y = 0.2;
   const cap = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.35, 8), mat(0x8f3831));
   cap.position.y = 1.65;
   const slot = box(0.5, 0.08, 0.06, 0x2a2a2a);
@@ -272,16 +331,19 @@ function makeMuseumExterior() {
   // straight up: a true ridge, at last. r sized to the WALL DEPTH: a
   // 3-cylinder spans 1.73×r across the ridge (6.5-deep walls need r≈4,
   // squashed back down with scale.y — same apex, honest eaves)
-  const roofGeo = new THREE.CylinderGeometry(4.0, 4.0, 9.6, 3, 1, false, Math.PI / 2);
+  // ...and it reaches forward over the portico, so the columns hold it up
+  // instead of standing out in the rain (r 4.6 spans 7.97 across: back wall
+  // at -3.25 to past the porch lip at +4.3; shifted +0.5 to center on that)
+  const roofGeo = new THREE.CylinderGeometry(4.6, 4.6, 9.8, 3, 1, false, Math.PI / 2);
   roofGeo.rotateZ(Math.PI / 2);
   const roof = new THREE.Mesh(roofGeo, mat(0x7c8894));
-  roof.scale.y = 0.42;
-  roof.position.y = 4.15;
+  roof.scale.y = 0.37;
+  roof.position.set(0, 3.6 + 4.6 * 0.37 / 2, 0.5); // eaves on the wall top
   roof.castShadow = true;
   g.add(roof);
   for (const sx of [-2.9, -1, 1, 2.9]) {
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 3.4, 7), mat(0xece9dd));
-    col.position.set(sx, 1.7, 3.5);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 3.7, 7), mat(0xece9dd));
+    col.position.set(sx, 1.85, 3.5); // all the way up to the pediment
     col.castShadow = true;
     g.add(col);
   }
@@ -332,10 +394,30 @@ function warmLamp(x, y, z, color = 0xffd9a0, intensity = 40, dist = 16) {
   return light;
 }
 
+// a café cup: saucer, cup, a handle you could actually hold, and coffee in it
+function makeCup(color = 0xfffaf0) {
+  const g = new THREE.Group();
+  const saucer = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.03, 10), mat(color, 0.5));
+  saucer.position.y = 0.015;
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.09, 0.17, 9, 1, true), new THREE.MeshStandardMaterial({ color, roughness: 0.5, flatShading: true, side: THREE.DoubleSide }));
+  cup.position.y = 0.115;
+  const base = new THREE.Mesh(new THREE.CircleGeometry(0.09, 9), mat(color, 0.5));
+  base.rotation.x = -Math.PI / 2;
+  base.position.y = 0.035;
+  const coffee = new THREE.Mesh(new THREE.CircleGeometry(0.108, 9), mat(0x4a2d1e, 0.3));
+  coffee.rotation.x = -Math.PI / 2;
+  coffee.position.y = 0.175;
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.016, 4, 8), mat(color, 0.5));
+  handle.position.set(0.13, 0.12, 0);
+  g.add(saucer, cup, base, coffee, handle);
+  return g;
+}
+
 function npcAt(kind, colors, x, z, rotY, baseY = 0) {
   const npc = buildAnimal(kind, colors);
   npc.position.set(x, baseY, z);
   npc.rotation.y = rotY;
+  npc.userData.fidget = true;
   return npc;
 }
 
@@ -384,10 +466,66 @@ export function createBuildings() {
   wellRoof.position.y = 2.4;
   wellRoof.rotation.y = Math.PI / 4;
   well.add(wellRoof);
+  // the winch: an axle between the posts, a crank, and a bucket that goes
+  // down for water and comes back up again, forever, for nobody in particular
+  const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.9, 6), mat(0x8a6f4d));
+  axle.rotation.z = Math.PI / 2;
+  axle.position.y = 1.85;
+  well.add(axle);
+  const crank = new THREE.Group();
+  const crankArm = box(0.06, 0.34, 0.06, 0x7a5230);
+  crankArm.position.y = 0.17;
+  const crankGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 5), mat(0x6b4a2e));
+  crankGrip.rotation.z = Math.PI / 2;
+  crankGrip.position.set(0.1, 0.34, 0);
+  crank.add(crankArm, crankGrip);
+  crank.position.set(1.08, 1.85, 0);
+  well.add(crank);
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 4), mat(0xd9c49a, 0.9));
+  well.add(rope);
+  const bucket = new THREE.Group();
+  const pail = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.26, 7), mat(0x9a6a3e));
+  const bands = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.04, 7), mat(0x6a7078, 0.4));
+  bands.position.y = 0.06;
+  bucket.add(pail, bands);
+  well.add(bucket);
+  // ripples when the bucket touches the water, and the odd glint of a
+  // button down below
+  const ripple = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.26, 12),
+    new THREE.MeshBasicMaterial({ color: 0xe8f7ff, transparent: true, opacity: 0, depthWrite: false }));
+  ripple.rotation.x = -Math.PI / 2;
+  ripple.position.y = 0.92;
+  well.add(ripple);
+  const glints = [];
+  for (const [gx, gz] of [[-0.3, 0.2], [0.25, -0.3], [0.1, 0.38]]) {
+    const gl = new THREE.Mesh(new THREE.IcosahedronGeometry(0.04, 0),
+      new THREE.MeshBasicMaterial({ color: 0xfff2b0, transparent: true, opacity: 0 }));
+    gl.position.set(gx, 0.92, gz);
+    well.add(gl);
+    glints.push(gl);
+  }
+  let rippleT = 9;
+  updates.push((dt, t) => {
+    // down slowly, a pause in the water, up slowly, a pause at the top
+    const cyc = (t % 16) / 16;
+    const depth = cyc < 0.35 ? cyc / 0.35 : cyc < 0.5 ? 1 : cyc < 0.85 ? 1 - (cyc - 0.5) / 0.35 : 0;
+    const by = 1.55 - depth * 0.62;
+    bucket.position.set(Math.sin(t * 1.3) * 0.03, by, Math.sin(t * 0.9) * 0.03);
+    bucket.rotation.z = Math.sin(t * 1.3) * 0.08;
+    rope.scale.y = 1.8 - by;
+    rope.position.set(bucket.position.x / 2, (1.8 + by + 0.13) / 2, bucket.position.z / 2);
+    crank.rotation.x = -depth * Math.PI * 4;
+    if (cyc > 0.35 && cyc < 0.37 && rippleT > 1) rippleT = 0;
+    rippleT += dt;
+    const rk = Math.min(1, rippleT / 1.4);
+    ripple.scale.setScalar(1 + rk * 2.2);
+    ripple.material.opacity = rippleT < 1.4 ? 0.6 * (1 - rk) : 0;
+    glints.forEach((gl, i) => { gl.material.opacity = Math.max(0, Math.sin(t * 1.1 + i * 2.1)) ** 8; });
+  });
   well.position.set(wellX, terrainHeight(wellX, wellZ), wellZ);
-  well.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  well.traverse((o) => { if (o.isMesh && !o.material.isMeshBasicMaterial) o.castShadow = true; });
   group.add(well);
-  zones.addBlocker(wellX, wellZ, 1.7);
+  zones.addBlocker(wellX, wellZ, 1.1);
   register({
     pos: well.position, r: 2.2, label: 'peer into the well',
     use: () => ui.say([
@@ -458,13 +596,45 @@ export function createBuildings() {
     post: makePostOfficeExterior(),
   };
 
+  // what's solid, in each exterior's own coordinates: [x, z, w, d] boxes and
+  // [x, z, r] posts. (The old round force-fields kept you two steps shy of
+  // every wall and let you cut the corners.)
+  const SOLID = {
+    shop: [[0, 0, 7.3, 6.3]],
+    cafe: [[0, 0, 6.4, 5.6], [2.4, 3.3, 0.25], [-2.5, 3.75, 0.85]], // (the A-frame gets elbow room: folks used to stand in it)
+    museum: [[0, 0, 9, 6.5], ...[-2.9, -1, 1, 2.9].map((x) => [x, 3.5, 0.3])],
+    post: [[0, 0, 6.4, 5.4], [1.9, 3.4, 0.5]],
+  };
   for (const [name, spot] of Object.entries(spots)) {
     const ext = exteriors[name];
-    ext.position.set(spot.x, terrainHeight(spot.x, spot.z), spot.z);
+    const baseY = terrainHeight(spot.x, spot.z);
+    ext.position.set(spot.x, baseY, spot.z);
     ext.traverse((o) => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
     group.add(ext);
-    zones.addBlocker(spot.x, spot.z, Math.max(spot.w, spot.d) / 2 + 0.9);
+    const ry = ext.rotation.y, c = Math.cos(ry), sn = Math.sin(ry);
+    for (const b of SOLID[name]) {
+      const wx = spot.x + b[0] * c + b[1] * sn, wz = spot.z - b[0] * sn + b[1] * c;
+      if (b.length === 4) zones.addBlockerBox(wx, wz, b[2], b[3], ry, 0.05);
+      else zones.addBlocker(wx, wz, b[2]);
+    }
+    // where a villager stands to go in (ambient errands walk here)
+    const DOOR_OUT = { shop: 4.0, cafe: 3.8, museum: 4.9, post: 3.6 };
+    const dz = DOOR_OUT[name];
+    zones.setDoor(name, { x: spot.x + dz * sn, z: spot.z + dz * c });
+    // the museum's porch is a step up, not a slab you wade through
+    if (name === 'museum') zones.addSurfaceBox(spot.x, spot.z + 3.5, 9.2, 2.3, baseY + 0.3);
   }
+
+  // Luna's chalkboard: what's on today (the answer is mostly the same)
+  register({
+    pos: new THREE.Vector3(spots.cafe.x - 2.5, 0, spots.cafe.z + 4.4), r: 1.6,
+    label: 'read the chalkboard',
+    use: () => ui.say([
+      '“TODAY: Lantern Roast. Also: Lantern Roast. Ask about the Lantern Roast.” The chalk has been redrawn so often it has a groove.',
+      '“THE LAMP IS WARM.” Underneath, smaller: “It is always warm. This is not a special. We just like saying it.”',
+      '“Open whenever the lamp is. Chip plays the slow ones. Tipping in buttons, or in compliments to the lamp.”',
+    ][Math.floor(Math.random() * 3)]),
+  });
 
   // the notice moved to the window when the door started opening
   // (offsets follow the westward facing: door at -x, pillar box toward the pier)
@@ -556,10 +726,12 @@ export function createBuildings() {
     });
 
     // a stool so Pip can actually see (and be seen) over his counter
-    const pipStool = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 0.6, 7), mat(0x6b4a2e));
-    pipStool.position.set(B.x, 0.3, B.z - 3.6);
+    // (tall enough that Pip is a shopkeeper over a counter, not a head on it —
+    // at the old height he read as something sinking through the floor)
+    const pipStool = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 1.0, 7), mat(0x6b4a2e));
+    pipStool.position.set(B.x, 0.5, B.z - 3.6);
     group.add(pipStool);
-    const pip = npcAt('magpie', { body: 0x39414f, head: 0x39414f }, B.x, B.z - 3.6, 0, 0.6);
+    const pip = npcAt('magpie', { body: 0x39414f, head: 0x39414f }, B.x, B.z - 3.6, 0, 1.0);
     group.add(pip);
     wireNpcBob(pip, updates);
 
@@ -646,9 +818,14 @@ export function createBuildings() {
       top.position.set(tx, 1.0, tz);
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.0, 6), mat(0x6b4a2e));
       leg.position.set(tx, 0.5, tz);
-      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.18, 7), mat(0xfffaf0, 0.5));
-      cup.position.set(tx + 0.3, 1.16, tz - 0.2);
-      group.add(top, leg, cup);
+      group.add(top, leg);
+      // two cups of the Lantern Roast, on saucers, handles out
+      for (const [cx, cz, ry] of [[0.35, -0.25, 0.4], [-0.4, 0.3, 2.6]]) {
+        const cup = makeCup();
+        cup.position.set(tx + cx, 1.07, tz + cz);
+        cup.rotation.y = ry;
+        group.add(cup);
+      }
       for (const a of [0.7, 2.6]) {
         const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.4, 0.62, 7), mat(0xa97c50));
         stool.position.set(tx + Math.cos(a) * 1.7, 0.31, tz + Math.sin(a) * 1.7);
@@ -1452,6 +1629,7 @@ async function pipBuyTools() {
     !S.state.tools.net && { label: `${ITEMS.net.emoji} Dandelion Net`, value: 'net', hint: `${ITEMS.net.price}🔘`, disabled: S.state.buttons < ITEMS.net.price },
     !S.state.tools.shovel && { label: `${ITEMS.shovel.emoji} Stubby Shovel`, value: 'shovel', hint: `${ITEMS.shovel.price}🔘`, disabled: S.state.buttons < ITEMS.shovel.price },
     !S.countItem('scuba_suit') && { label: `${ITEMS.scuba_suit.emoji} Salvage Diver’s Suit`, value: 'scuba', hint: `${ITEMS.scuba_suit.price}🔘`, disabled: S.state.buttons < ITEMS.scuba_suit.price },
+    !S.countItem('skateboard') && { label: `${ITEMS.skateboard.emoji} Skateboard`, value: 'skateboard', hint: `${ITEMS.skateboard.price}🔘`, disabled: S.state.buttons < ITEMS.skateboard.price },
     { label: 'Back', value: 'back' },
   ].filter(Boolean);
   if (wares.length === 1) {
@@ -1472,6 +1650,17 @@ async function pipBuyTools() {
       S.state.avatar?.kind === 'duck'
         ? '…You’re a duck. You FLOAT. You know what? Fashion is fashion. No refunds.'
         : 'Just wade in anywhere and keep going. The sea’s very accommodating once you’re properly dressed for it.',
+    ], { speaker: 'Pip', voice: VOICE.pip });
+  }
+  if (choice === 'skateboard') {
+    S.spend(ITEMS.skateboard.price);
+    S.addItem('skateboard');
+    kaching();
+    ui.toast(`You bought the <b>${ITEMS.skateboard.name}</b>! <i>Hold run (or double-tap a direction) to skate.</i>`, ITEMS.skateboard.emoji);
+    ui.updateHUD();
+    await ui.say([
+      'The skateboard! It came off a boat. Officially. I have ridden it exactly once and I would describe the experience as “aerodynamic.”',
+      'Hold run and you’re on it. Let go and you step off. The plaza is very smooth. The hills are very steep. Choose wisely, or better, don’t.',
     ], { speaker: 'Pip', voice: VOICE.pip });
   }
   if (choice === 'net' || choice === 'shovel') {

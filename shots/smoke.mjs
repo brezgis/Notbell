@@ -5,7 +5,7 @@
 
 import { boot, go, pos, walk } from './lib.mjs';
 
-const port = Number(process.argv[2]) || 8123;
+const port = Number(process.argv[2]) || Number(process.env.PORT) || 8123;
 
 let browser, page;
 try {

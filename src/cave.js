@@ -54,25 +54,59 @@ export function createCave() {
       rockMat(i % 2 ? 0x6e7479 : 0x7d8287)
     );
     rock.position.set(Math.cos(a) * r, rand(0.4, 1.6), Math.sin(a) * r);
+    // nothing sits in front of the doorway: rocks that wandered into the
+    // mouth's sightline shuffle round the back
+    if (rock.position.z > 0.4 && Math.abs(rock.position.x) < 2.2) rock.position.z -= 2.4;
     rock.scale.y = rand(0.8, 1.3);
     rock.rotation.set(rand(0, 1), rand(0, Math.PI), rand(0, 1));
     rock.castShadow = true;
     knoll.add(rock);
   }
-  // the mouth: a flat dark disc set into the rocks, facing the village
-  const mouth = new THREE.Mesh(
-    new THREE.CircleGeometry(1.15, 8),
-    new THREE.MeshBasicMaterial({ color: 0x05070d })
-  );
-  mouth.position.set(0, 1.0, 2.45);
-  knoll.add(mouth);
-  // two faint glints just inside the dark
+  // the mouth: a real doorway in the rock — two leaning jamb stones, a
+  // lintel, and a round-topped dark opening you'd believe you could walk into
+  const dark = new THREE.MeshBasicMaterial({ color: 0x05070d });
+  const mouthLow = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.2), dark);
+  mouthLow.position.set(0, 0.6, 2.62);
+  const mouthTop = new THREE.Mesh(new THREE.CircleGeometry(0.85, 10, 0, Math.PI), dark);
+  mouthTop.position.set(0, 1.2, 2.62);
+  knoll.add(mouthLow, mouthTop);
+  for (const sx of [-1, 1]) {
+    const jamb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 0), rockMat(0x6e7479));
+    jamb.scale.set(0.8, 1.7, 0.9);
+    jamb.position.set(sx * 1.35, 0.95, 2.55);
+    jamb.rotation.set(0.2, sx * 0.4, sx * -0.15);
+    jamb.castShadow = true;
+    knoll.add(jamb);
+  }
+  const lintel = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 0), rockMat(0x7d8287));
+  lintel.scale.set(1.9, 0.6, 1.0);
+  lintel.position.set(0, 2.35, 2.45);
+  lintel.castShadow = true;
+  knoll.add(lintel);
+  // the glow worms are curious: a few drift right up to the threshold, and
+  // a soft green-blue light spills out onto the ground — the Old Light's
+  // way of saying "in here"
   const glintMat = new THREE.MeshBasicMaterial({ color: 0x8fffe9 });
-  for (const [gx, gy] of [[-0.3, 1.2], [0.4, 0.8]]) {
-    const glint = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), glintMat);
-    glint.position.set(gx, gy, 2.4);
+  for (const [gx, gy, gz] of [[-0.45, 1.35, 2.64], [0.4, 0.9, 2.64], [0.1, 1.6, 2.64], [-0.2, 0.5, 2.64], [0.6, 1.4, 2.64]]) {
+    const glint = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), glintMat);
+    glint.position.set(gx, gy, gz);
     knoll.add(glint);
   }
+  const spill = new THREE.Mesh(new THREE.CircleGeometry(1.6, 14),
+    new THREE.MeshBasicMaterial({
+      map: glowTexture(), color: 0x6fe8d0, transparent: true, opacity: 0.55,
+      depthWrite: false, blending: THREE.AdditiveBlending,
+    }));
+  spill.rotation.x = -Math.PI / 2;
+  spill.position.set(0, 0.06, 3.3);
+  knoll.add(spill);
+  const haze = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture(), color: 0x6fe8d0, transparent: true, opacity: 0.5,
+    depthWrite: false, blending: THREE.AdditiveBlending,
+  }));
+  haze.scale.set(2.6, 2.6, 1);
+  haze.position.set(0, 1.0, 2.7);
+  knoll.add(haze);
   knoll.position.set(site.x, baseY, site.z);
   knoll.rotation.y = site.facing; // mouth toward the village
   group.add(knoll);
@@ -372,6 +406,10 @@ export function createCave() {
       hemiSky: 0x3a4a66, hemiGround: 0x101820, hemiIntensity: 0.35,
       sunIntensity: 0,
     },
+  });
+  zones.setDoor('cave', {
+    x: site.x + Math.sin(site.facing) * 5.6,
+    z: site.z + Math.cos(site.facing) * 5.6,
   });
   register({
     pos: new THREE.Vector3(IN.x, 0, IN.z + 13.2), r: 1.8, zone: 'cave',

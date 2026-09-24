@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { register } from './interact.js';
 import * as zones from './zones.js';
 import * as ui from './ui.js';
-import { SITES, terrainHeight } from './terrain.js';
+import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7 } from './terrain.js';
 import { rand, pick } from './utils.js';
 import { FRIENDS } from './villagers.js';
 
@@ -119,7 +119,7 @@ const VENUES = [
   },
   {
     id: 'church', zone: 'church',
-    guest: { x: 302.6, z: 979.7, rotY: Math.PI },
+    guest: { x: 302.6, y: 0.5, z: 979.45, rotY: Math.PI }, // on the pew, not in it
     keeper: { x: 300, z: 974.8 },
     guestLine: '(listening)',
     chats: [
@@ -147,8 +147,9 @@ export function createAmbient(animals, scene) {
   const meetings = [];
   let poll = 12; // let the island settle before anyone goes shopping
 
+  // (a villager still WALKING to their errand is out and about, not away)
   function setAway(a) {
-    a.away = !!a.home || !!a.errand || !!a.meeting;
+    a.away = !!a.home || (!!a.errand && a.errand.phase !== 'going') || !!a.meeting;
   }
 
   function byName(name) {
@@ -188,16 +189,19 @@ export function createAmbient(animals, scene) {
     const A = byName(pair.a), B = byName(pair.b);
     if (!A || !B) return null;
     if (A.home || B.home || A.errand || B.errand || A.meeting || B.meeting ||
-        A.goal || B.goal) return null;
+        A.goal || B.goal || A.pastime || B.pastime) return null;
     // friends WALK over now (the instant-travel era is closed — scandalous,
     // the things villagers did when nobody was watching). Too far apart
     // today? Then today isn't the day; the friendship survives.
     const hx = A.g.position.x, hz = A.g.position.z;
     if (Math.hypot(B.g.position.x - hx, B.g.position.z - hz) > 42) return null;
-    let gx = hx + 1.7, gz = hz;
+    // a proper conversational distance: close enough to gossip, far enough
+    // that nobody's beak ends up in anybody's ear
+    const GAP = 2.5;
+    let gx = hx + GAP, gz = hz;
     for (let k = 0; k < 8; k++) {
       const ang = (k / 8) * Math.PI * 2;
-      const tx = hx + Math.cos(ang) * 1.7, tz = hz + Math.sin(ang) * 1.7;
+      const tx = hx + Math.cos(ang) * GAP, tz = hz + Math.sin(ang) * GAP;
       if (zones.islandCanWalk(tx, tz) && terrainHeight(tx, tz) > 0.3) {
         gx = tx;
         gz = tz;
@@ -217,7 +221,7 @@ export function createAmbient(animals, scene) {
     A.meeting = m; // the host stands and waits — friends are worth it
     setAway(A);
     B.goal = {
-      x: gx, z: gz, r: 1.0,
+      x: gx, z: gz, r: 0.45,
       done: () => {
         if (!m.pending) return;
         m.pending = false;
@@ -242,7 +246,7 @@ export function createAmbient(animals, scene) {
     setAway(m.B);
     if (!m.A.home && !m.A.errand) m.A.g.visible = true;
     if (!m.B.home && !m.B.errand) m.B.g.visible = true;
-    if (!wasPending && !m.B.home && !m.B.errand) {
+    if (!wasPending && !m.B.home && !m.B.errand && !m.B.bedtime) {
       // strolls back to their old patch, unhurried, full of gossip
       m.B.goal = { x: m.returnTo.x, z: m.returnTo.z, r: 1.6 };
       m.B.state = 'idle';
@@ -262,23 +266,43 @@ export function createAmbient(animals, scene) {
     m.bubble = bubble;
   }
 
+  // Errands are journeys now: walk to the door, go in, stay a while, come
+  // out the same door, and stroll home. Nobody blinks in or out of the world.
   function startErrand(a, venue) {
-    // errands still teleport: venues are interiors, and walking there means
-    // modeling doors — that's the journey system (B7 slice 2), not today
     const spot = typeof venue.guest === 'function' ? venue.guest() : venue.guest;
-    a.errand = {
-      venue,
+    const door = venue.zone === 'island' ? spot : zones.doorOf(venue.zone);
+    if (!door) return false;
+    // walkers go where their legs can take them — no swimming the strait
+    if (Math.hypot(a.g.position.x - door.x, a.g.position.z - door.z) > 40) return false;
+    const e = {
+      venue, spot, door, phase: 'going',
       until: rand(120, 260),
       returnTo: { x: a.g.position.x, z: a.g.position.z },
       chatCooldown: rand(4, 10),
       exchange: null,
       bubble: null,
     };
+    a.errand = e;
     busyVenues.add(venue.id);
     setAway(a);
-    a.g.position.set(spot.x,
-      venue.zone === 'island' ? terrainHeight(spot.x, spot.z) : 0, spot.z);
-    a.g.rotation.y = spot.rotY ?? 0;
+    a.goal = {
+      x: door.x, z: door.z, r: 1.2,
+      done: () => {
+        if (a.errand !== e) return;
+        e.phase = 'inside';
+        setAway(a);
+        a.g.position.set(spot.x,
+          venue.zone === 'island' ? terrainHeight(spot.x, spot.z) : (spot.y ?? 0), spot.z);
+        a.g.rotation.y = spot.rotY ?? 0;
+      },
+      fail: () => {
+        if (a.errand !== e) return;
+        busyVenues.delete(venue.id);
+        a.errand = null;
+        setAway(a);
+      },
+    };
+    return true;
   }
 
   function endErrand(a) {
@@ -287,10 +311,18 @@ export function createAmbient(animals, scene) {
     clearBubble(e);
     busyVenues.delete(e.venue.id);
     a.errand = null;
+    if (e.phase === 'going') {
+      a.goal = null; // never got there; carry on rambling
+      setAway(a);
+      return;
+    }
     setAway(a);
     if (!a.home && !a.meeting) a.g.visible = true;
     if (!a.home) {
-      a.g.position.set(e.returnTo.x, a.g.position.y, e.returnTo.z);
+      // out the same door, and an unhurried walk back to their patch
+      // (or, at bedtime, houses.js points them home instead)
+      a.g.position.set(e.door.x, terrainHeight(e.door.x, e.door.z), e.door.z);
+      if (!a.bedtime) a.goal = { x: e.returnTo.x, z: e.returnTo.z, r: 1.6 };
       a.state = 'idle';
       a.timer = rand(1, 3);
     }
@@ -304,16 +336,197 @@ export function createAmbient(animals, scene) {
     }
   }
 
+  // ------------------------------------------------------- pastimes ----
+  // Villagers have hobbies. Now and then one strolls down to the shore with
+  // a rod and fishes a while, or takes a net out among the flowers. They
+  // walk there, do it for a bit (really do it), and wander on.
+  const pastimes = [];
+  let pastimeT = 20;
+
+  function makeRod() {
+    const g = new THREE.Group();
+    const mat = (c) => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 0.8 });
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 1.7, 5), mat(0x8a5a3a));
+    pole.rotation.x = 0.9;
+    pole.position.set(0.28, 1.25, 0.95);
+    g.add(pole);
+    const line = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 1.6, 3), mat(0xf5f2e9));
+    line.position.set(0.28, 1.0, 1.62);
+    g.add(line);
+    const bobber = new THREE.Mesh(new THREE.IcosahedronGeometry(0.07, 0), mat(0xd84f4f));
+    bobber.position.set(0.28, 0.22, 1.62);
+    g.add(bobber);
+    g.userData.bobber = bobber;
+    return g;
+  }
+
+  function makeNet() {
+    const g = new THREE.Group();
+    const mat = (c, o = 1) => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 0.8, transparent: o < 1, opacity: o });
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 1.4, 5), mat(0xa97c50));
+    pole.position.y = 0.7;
+    g.add(pole);
+    const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.02, 4, 10), mat(0xd9d2c0));
+    hoop.position.y = 1.5;
+    g.add(hoop);
+    const mesh = new THREE.Mesh(new THREE.ConeGeometry(0.21, 0.35, 8, 1, true), mat(0xffffff, 0.55));
+    mesh.rotation.x = Math.PI;
+    mesh.position.y = 1.32;
+    g.add(mesh);
+    const holder = new THREE.Group(); // pivot at the paw, so it can swish
+    holder.add(g);
+    g.position.set(0, -0.9, 0);
+    holder.position.set(0.3, 1.0, 0.4);
+    return holder;
+  }
+
+  // a dry spot at the water's edge near someone, facing the sea
+  function shoreSpotNear(a) {
+    const p = a.g.position;
+    for (let k = 0; k < 24; k++) {
+      const ang = rand(0, Math.PI * 2), r = rand(4, 16);
+      const x = p.x + Math.cos(ang) * r, z = p.z + Math.sin(ang) * r;
+      const h = terrainHeight(x, z);
+      if (h < 0.2 || h > 1.2 || !zones.islandCanStand(x, z, 0.3)) continue;
+      for (let q = 0; q < 8; q++) {
+        const wa = (q / 8) * Math.PI * 2;
+        const wx = x + Math.sin(wa) * 2.4, wz = z + Math.cos(wa) * 2.4;
+        if (terrainHeight(wx, wz) < -0.6 && !zones.seaBlocked(wx, wz)) return { x, z, face: wa };
+      }
+    }
+    return null;
+  }
+
+  function meadowSpotNear(a) {
+    const p = a.g.position;
+    for (let k = 0; k < 16; k++) {
+      const ang = rand(0, Math.PI * 2), r = rand(3, 10);
+      const x = p.x + Math.cos(ang) * r, z = p.z + Math.sin(ang) * r;
+      if (terrainHeight(x, z) > 0.8 && zones.islandCanStand(x, z, 0.4)) return { x, z, face: rand(0, Math.PI * 2) };
+    }
+    return null;
+  }
+
+  function startPastime(a, kind) {
+    const spot = kind === 'fish' ? shoreSpotNear(a) : meadowSpotNear(a);
+    if (!spot) return;
+    const p = { a, kind, spot, t: 0, left: rand(35, 80), prop: null };
+    a.pastime = p;
+    pastimes.push(p);
+    a.goal = {
+      x: spot.x, z: spot.z, r: 0.8,
+      done: () => {
+        if (a.pastime !== p) return;
+        a.busy = true; // stand still and get on with it
+        a.g.rotation.y = spot.face;
+        p.prop = kind === 'fish' ? makeRod() : makeNet();
+        // held at the paw, outside the body — wide folks hold it wider
+        const half = 0.5 * (a.g.userData.parts?.body?.scale.x ?? 1);
+        if (kind === 'fish') p.prop.position.x = half - 0.18;
+        else p.prop.position.x = half + 0.12 - 0.3;
+        a.g.add(p.prop);
+      },
+      fail: () => endPastime(p),
+    };
+  }
+
+  function endPastime(p) {
+    const a = p.a;
+    if (p.prop) a.g.remove(p.prop);
+    a.pastime = null;
+    a.busy = false;
+    pastimes.splice(pastimes.indexOf(p), 1);
+    a.state = 'idle';
+    a.timer = rand(1, 3);
+  }
+
+  function updatePastimes(dt) {
+    pastimeT -= dt;
+    if (pastimeT <= 0) {
+      pastimeT = rand(14, 28);
+      if (pastimes.length < 3) {
+        const free = animals.filter((a) => a.identity && !a.home && !a.bedtime && !a.errand &&
+          !a.meeting && !a.goal && !a.riding && !a.away && !a.pastime && !a.swims);
+        if (free.length) startPastime(pick(free), Math.random() < 0.6 ? 'fish' : 'bugs');
+      }
+    }
+    for (const p of [...pastimes]) {
+      const a = p.a;
+      if (a.home || a.bedtime || a.errand || a.meeting || a.riding) { endPastime(p); continue; }
+      if (!p.prop) continue; // still walking there
+      p.t += dt;
+      if (p.kind === 'fish') {
+        // the bobber bobs; now and then it dips, and they lean in
+        const dip = Math.sin(p.t * 0.9) > 0.97 ? -0.12 : 0;
+        p.prop.userData.bobber.position.y = 0.22 + Math.sin(p.t * 2.4) * 0.03 + dip;
+      } else {
+        // a patient sweep, then a quick swish
+        p.prop.rotation.x = Math.sin(p.t * (Math.sin(p.t * 0.3) > 0.6 ? 6 : 1.2)) * 0.6;
+        a.g.rotation.y = p.spot.face + Math.sin(p.t * 0.4) * 0.8;
+      }
+      if (p.t > p.left) endPastime(p);
+    }
+  }
+
+  // ------------------------------------------------------ wanderlust ----
+  // The little random dudes (anyone not anchored to a place) get restless:
+  // now and then one sets off for another island — over the footbridge,
+  // along the arch, or by train — and makes it home at bedtime the same way.
+  const ROAM = {
+    notbell: { x: 0, z: 0, R: 24 },
+    far: { x: ISLAND2.x, z: ISLAND2.z, R: ISLAND2.r - 4 },
+    north: { x: ISLAND3.x, z: ISLAND3.z, R: ISLAND3.r - 4 },
+    labs: { x: SITES.labsYard.x, z: SITES.labsYard.z, R: 12 },
+    grove: { x: ISLAND5.x, z: ISLAND5.z, R: ISLAND5.r - 5 },
+    farther: { x: ISLAND7.x, z: ISLAND7.z, R: ISLAND7.r - 5 },
+  };
+  let roamT = 30;
+  function updateRoaming(dt) {
+    roamT -= dt;
+    if (roamT > 0) return;
+    roamT = rand(35, 70);
+    const travelers = animals.filter((a) => a.roaming).length;
+    if (travelers >= 3) return;
+    const free = animals.filter((a) => a.identity && !a.anchored && !a.home && !a.bedtime &&
+      !a.errand && !a.meeting && !a.goal && !a.riding && !a.away && !a.pastime && !a.swims);
+    if (!free.length) return;
+    const a = pick(free);
+    const here = zones.islandOf(a.g.position.x, a.g.position.z);
+    const options = Object.keys(ROAM).filter((k) => k !== here && zones.findRoute(here, k));
+    if (!options.length) return;
+    const dest = ROAM[pick(options)];
+    for (let k = 0; k < 20; k++) {
+      const ang = rand(0, Math.PI * 2), r = Math.sqrt(rand(0, 1)) * dest.R;
+      const x = dest.x + Math.cos(ang) * r, z = dest.z + Math.sin(ang) * r;
+      if (!zones.islandCanStand(x, z, 0.4) || terrainHeight(x, z) < 0.4) continue;
+      a.roaming = true;
+      a.goal = {
+        x, z, r: 1.5,
+        done: () => { a.roaming = false; a.range = { ...dest }; },
+        fail: () => { a.roaming = false; },
+      };
+      return;
+    }
+  }
+
   function update(dt, playerPos) {
+    updatePastimes(dt);
+    updateRoaming(dt);
     poll -= dt;
     if (poll <= 0) {
       poll = 6;
       // someone might feel like an outing
       if (Math.random() < 0.5) {
-        const candidates = animals.filter((a) =>
-          a.identity && !a.home && !a.errand && !a.meeting && !a.swims);
         const venue = pick(VENUES.filter((v) => !busyVenues.has(v.id)));
-        if (candidates.length && venue) startErrand(pick(candidates), venue);
+        const door = venue && (venue.zone === 'island'
+          ? (typeof venue.guest === 'function' ? venue.guest() : venue.guest)
+          : zones.doorOf(venue.zone));
+        // someone already nearby — errands are walks, not expeditions
+        const candidates = door ? animals.filter((a) =>
+          a.identity && !a.home && !a.errand && !a.meeting && !a.swims &&
+          !a.goal && !a.riding && !a.away && !a.pastime &&
+          Math.hypot(a.g.position.x - door.x, a.g.position.z - door.z) < 40) : [];
+        if (candidates.length) startErrand(pick(candidates), venue);
       }
       // and friends find each other
       if (Math.random() < 0.35 && meetings.length < 2) {
@@ -322,7 +535,7 @@ export function createAmbient(animals, scene) {
     }
 
     for (const m of [...meetings]) {
-      if (m.A.home || m.B.home) { endMeeting(m); continue; } // bedtime wins
+      if (m.A.home || m.B.home || m.A.bedtime || m.B.bedtime) { endMeeting(m); continue; } // bedtime wins
       if (m.pending) {
         // the guest is still walking over; the host waits, politely
         m.walkPatience -= dt;
@@ -368,7 +581,8 @@ export function createAmbient(animals, scene) {
     for (const a of animals) {
       const e = a.errand;
       if (!e) continue;
-      if (a.home) { endErrand(a); continue; } // bedtime beats errands
+      if (a.home || a.bedtime) { endErrand(a); continue; } // bedtime beats errands
+      if (e.phase === 'going') continue; // still on the way
       e.until -= dt;
       if (e.until <= 0) { endErrand(a); continue; }
 

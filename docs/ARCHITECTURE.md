@@ -2,7 +2,8 @@
 
 Reference for how the code is put together. Read AGENTS.md first for the
 rules; this file explains the machine. Facts here were verified against the
-tree on 2026-07-01 (45 modules, ~20k LOC).
+tree on 2026-07-01 (45 modules, ~20k LOC); updated 2026-09-23 for the
+collision/railway cleanup (railway.js, the zones blocker/surface API).
 
 ## Boot
 
@@ -23,9 +24,12 @@ leaves      utils  audio  calendar  catalog  controls      (zero sibling imports
 foundation  terrain   state   ui   interact   zones
 world kit   animals  nature  art  hats  nightglow  almanac  sky  fieldguide
 features    buildings houses cave fishing digging tidepools player ocean
-            bridge island2 island3 island5 island6 fold farther bulko moon
-            boats northline farline volcano texas ghost beachball oceanlife
+            railway (the train kit) → bridge northline farline (its lines)
+            island2 island3 island5 island6 fold farther bulko moon
+            boats volcano texas ghost beachball oceanlife
             ambient villagers multiplayer settings
+            tools (rod/net/shovel in your paws) shells starfall
+            crown (the world under the reef)
 conductor   main.js
 ```
 
@@ -49,11 +53,42 @@ everything may consult it at module-eval time).
   (`island`, `sea`, each interior, `moon`). Interiors register via
   `registerInterior` (bounds + blockers + floorY + lighting + spawn/exit) and
   live far off-island (x≈±300, moon at x≈1000); `zones.go(name)` teleports
-  behind `fadeSwap` and applies the zone's lighting profile. Water crossings
-  (bridges, the arch, causeways, train trestles) are `addCrossing({contains,
-  height})` — **crossings beat blockers** in `canWalk`. Whole other worlds
-  (the moon) use `registerWorld` with their own ground/physics. `onChange`
-  fires after a zone swap settles (HUD listens).
+  behind `fadeSwap` and applies the zone's lighting profile. Whole other
+  worlds (the moon) use `registerWorld` with their own ground/physics.
+  `onChange` fires after a zone swap settles (HUD listens). The island's
+  collision vocabulary:
+  - **blockers** — solid footprints. `addBlocker(x, z, r, kind)` circles,
+    `addBlockerBox(x, z, w, d, rotY, pad, kind)` oriented rectangles.
+    Bucketed on an 8u grid (there are hundreds — every tree trunk). `kind`:
+    `'structure'` (default), `'tree'` (solid to walkers, invisible to the
+    tree/cottage planners so solid trees don't thin later forests),
+    `'keepout'` (reserved ground: walkable, but planners asking
+    `nearBlocker` stay off it — railways and bridge feet use these).
+    `nearBlocker` = structures+keepouts, `solidAt` = structures+trees,
+    `nearAnything` = all three.
+  - **surfaces** — raised floors you step UP onto: `addSurface({contains,
+    height})`, `addSurfaceBox`, `addSurfaceDisc`. Plinths, porches, station
+    platforms and ramps, the rocket pad. Unlike crossings they don't beat
+    blockers; like crossings they carry you over water.
+  - **crossings** — `addCrossing({contains, height})` for bridges, the arch,
+    causeways, catwalks: **crossings beat blockers** in `canWalk`.
+  - **sea walls / gates** — `addSeaWall({contains})` stops hulls and
+    swimmers (the arch's rock, the MouseBoat's hull); `addSeaGate` marks a
+    gap boats may pass (the arch tunnel) and boats.js routes voyages
+    through it.
+  - **bodies** — `canStand(x, z, r)` / `islandCanStand` test a body's rim,
+    not just its center; the player (r 0.3) and villagers (0.28) use it, so
+    shoulders stop at walls. The player also can't walk through villagers
+    (`player.bodies`). `islandGroundHeight` is the walking height for NPCs
+    (so villagers cross bridges ON the planks, not in the sea).
+  - **doors** — `setDoor(zone, {x, z})` / `doorOf(zone)`: the spot outside
+    a walk-in place. Errands and bedtimes walk to it.
+  - **routes** — `islandOf(x, z)` names the island; `addLink({a, b, kind:
+    'walk'|'rail', path, board?})` registers a way across (the footbridge,
+    the arch, the causeway walk; every railway registers a rail link);
+    `findRoute(from, to)` is a BFS over them. A villager whose `goal` is on
+    another island follows the route (animals.js `planRoute`), queues for
+    trains, and resumes afterwards — so nobody paces a shoreline forever.
 - **`interact.js`** — the "walk up and press E" registry. `register({pos|getPos,
   r, label, use, enabled, zone, priority})`; nearest-eligible-wins, priority
   breaks ties (fishing registers at priority 0 so everything beats it).
@@ -89,6 +124,16 @@ everything may consult it at module-eval time).
 - **`fieldguide.js`** — the chart + critterpedia. New islands call
   `addIslandInfo` to appear on the map; `markVisited` unfogs cells.
 
+- **`railway.js`** — the train kit. `defineLine({points, stops, sides?})`
+  runs at module load: route, a rail-height table (low beside stations,
+  `CRUISE` over open water so the tug fits under, slope-limited), stations
+  beside the track (deck + ramp as surfaces, keepouts reserving the
+  ground). `createRailway(line, opts)` builds the trestle, the two-engine
+  consist (every car follows the rail on its own — it bends and tilts), the
+  timetable, and the rider rules (one per carriage, ≤2 villagers queued,
+  the player queues like anybody). `bridge.js`, `northline.js`,
+  `farline.js` are just routes + colors + flavor text on top.
+
 ## Creation order in main.js (these are load-bearing)
 
 - `createBuildings()` first — registers interiors + blockers others rely on.
@@ -110,10 +155,13 @@ One `setAnimationLoop`; `dt` clamped to 0.05 (headless swiftshader runs
 Gating convention:
 
 - Outdoor-only systems (ocean, sky, nightglow, nature, oceanlife, boats,
-  volcano, bridge, digging, tidepools, beachball, texas, island5, northline)
+  volcano, bridge, digging, tidepools, beachball, texas, northline, farline)
   update inside main's `if (outdoors)` block (`zone === 'island' || 'sea'`).
-- Systems with indoor life (bulko, island6, buildings, houses, island2,
-  island3) update every frame and **gate themselves by zone internally**.
+  Indoors, the ocean and sky groups are hidden outright (interiors float
+  far out over the sea plane; hiding it is what makes rooms read as rooms).
+- Systems with indoor life (bulko, island5 — the manor staff —, island6,
+  fold, farther, buildings, houses, island2, island3) update every frame and
+  **gate themselves by zone internally**.
 - Single-zone systems (moon, cave) are gated by zone equality in main.
 
 Pick one of these three shapes for anything new; don't invent a fourth.
@@ -123,7 +171,36 @@ spherical around the player), the wall-fade occlusion system (auto-tags
 BoxGeometry meshes with `h ≥ 2.2 && max(w,d)·h ≥ 12` as occluders, plus
 anything with `userData.occlude === true` — set that on new walls that miss
 the heuristic), mood selection for the soundtrack, the 2.5s save/HUD tick,
-and the `window.__notbell` debug hook the harness drives.
+and the `window.__notbell` debug hook the harness drives (including
+`cam.view(point, {yaw, pitch, dist})`, which aims the camera anywhere
+without moving the player — `shots/views.mjs` is built on it).
+
+## Shared kits added 2026-09-23
+
+- **`animals.idleAll(t)`** (called once per frame from main) — every
+  `buildAnimal` character breathes, blinks and glances; anyone standing
+  still >3s also fidgets (sway, weight shift, a foot shuffle) — additive to
+  whatever else drives them, and off the moment they move. Set
+  `userData.noFidget` to opt out (the player, multiplayer avatars) or
+  `userData.fidget` to force it on plus an occasional hop (shopkeepers).
+  Moth/bee wings live in `parts.wings` and flutter here.
+- **`campfire.js`** — `makeFlames` / `makeCampfire`: layered flames, embers,
+  sparks, and a warm additive ground decal instead of a light. Doesn't touch
+  the PRNG.
+- **`ocean.waveAt(x, z, t)`** — the RENDERED sea height (the coarse grid,
+  interpolated). Anything riding the water (fish shadows, bobbers, kayaks)
+  should sit on it, not on `WATER_Y`.
+- **Railway queue** — `railway.js` platforms keep a real line: villagers walk
+  up, stand at the carriage doors (`a.busy`, `a.queued`), board in order;
+  whoever is still walking over doesn't hold the line; the train grants a
+  few seconds' grace to someone nearly there. `shots/probe_queue.mjs`.
+- **`audio.js`** — two buses (music, sfx) through a warm low-pass and a small
+  generated reverb; soft attacks on every note; square/saw requests are
+  softened. The soundtrack is generative (per mood: key, scale, chords,
+  density; the lead improvises each bar). Moods: morning / day / evening /
+  night by the hour, rain / snow / fog by weather, plus places.
+  `setAmbience({outdoors, night, weather, coast, high})` drives surf, wind,
+  rain beds and bird/cricket/gull calls.
 
 ## Hard invariants (break one of these and distant things fail)
 
@@ -132,9 +209,10 @@ and the `window.__notbell` debug hook the harness drives.
    identical across machines/refreshes; multiplayer guests depend on it.
 3. `terrainHeight` stays deterministic and analytic — same answer for the
    same (x,z), no scene queries.
-4. `camera.far` is 600 and the moon sits at x=1000: neither world can ever
-   render the other, with no toggling. New far-off worlds must stay >1000
-   from the archipelago (ocean plane ends ±400).
+4. `camera.far` is 600 and the moon sits at x=1000 (the Dropped Crown at
+   x=−1150): no world can ever render another, with no toggling. New
+   far-off worlds must stay >1000 from the archipelago (the terrain mesh
+   now spans x −230..230; the ocean plane ends ±400 and hides indoors).
 5. Interiors live far off-island and only one interior root is visible at a
    time (`zones.syncInteriorRoots`).
 6. Save-shape changes go through the defaults+merge pattern in `state.load()`
@@ -152,12 +230,11 @@ and the `window.__notbell` debug hook the harness drives.
 - `mat(color, rough)` (18 copies) and `box(w,h,d,color)` (12 copies) are
   **intentionally** per-file: modules stay self-contained and independently
   editable, which is what makes parallel agent lanes safe. Match the local
-  copy; don't extract a shared meshkit without lead approval (AGENTS.md
-  rule 2). Note the default roughness drifts by file (0.85–0.95) — that's
+  copy; extracting a shared meshkit is a big cross-file change — flag it
+  before doing it (AGENTS.md rule 2). Note the default roughness drifts by file (0.85–0.95) — that's
   fine, it's per-place texture.
 - `collectInteriorRoot` exists in 6 files with two divergent signatures —
-  known extraction candidate, needs lead approval since it touches six hot
-  files at once.
+  known extraction candidate; it touches six hot files at once.
 - `MOUSEBOAT` (island3.js) is the codebase's one **mutable** cross-module
   export (`export let`), read by houses.js — hence the creation-order rule.
 - `multiplayer.js` is live but minimal on purpose (raw WebRTC, `O` key,
