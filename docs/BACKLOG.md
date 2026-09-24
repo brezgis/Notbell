@@ -52,7 +52,9 @@ fixes, the "new" rounds, routines, and the ambitious ideas)._
 ## Shipped 2026-09-23, rounds three–five — for reference
 
 - Volcano: a diffuse lava haze (three soft additive layers), embers,
-  runnels; a black-sand shelf where **Ember** now lives (hut + fire).
+  runnels; a bigger black-sand shelf with a fire (Cinder's). Ember stays on
+  the Far Isle — she was briefly moved to the volcano by mistake and has
+  been brought home (2026-09-24).
 - Everyone idles (idleAll); shopkeepers fidget; Pecos patrols Texas; campers,
   Huck, Gus and the milk-cooler cows walk about; lobsters potter in the tank.
 - Wishing well winch + bucket + ripples; dock legs to the sand + front posts

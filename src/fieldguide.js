@@ -162,11 +162,13 @@ function fogColor(hex) {
 
 const mapModal = document.createElement('div');
 mapModal.id = 'fieldguide-map';
+mapModal.className = 'panel';
 mapModal.style.display = 'none';
 document.body.appendChild(mapModal);
 
 const pedia = document.createElement('div');
 pedia.id = 'critterpedia';
+pedia.className = 'panel';
 pedia.style.display = 'none';
 document.body.appendChild(pedia);
 
@@ -174,30 +176,21 @@ const style = document.createElement('style');
 style.textContent = `
   #fieldguide-map, #critterpedia {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: #fffaf0; border: 3px solid #e8d5ae; border-radius: 20px;
-    box-shadow: 0 14px 40px rgba(0,0,0,0.35); color: #5b4a32;
-    font-size: 14px; z-index: 8; padding: 16px;
+    z-index: 8; padding: 18px;
   }
-  #fieldguide-map { display: flex; gap: 14px; }
-  #fieldguide-map canvas { border-radius: 12px; cursor: pointer; }
-  #fieldguide-map .info { width: 230px; }
-  #fieldguide-map .info h3 { margin: 4px 0 8px; }
-  #fieldguide-map .info .folk { margin-top: 10px; font-size: 12.5px; opacity: 0.75; }
-  #critterpedia { width: min(640px, 90vw); max-height: 78vh; overflow-y: auto; }
+  #fieldguide-map { display: flex; gap: 16px; }
+  #fieldguide-map canvas { border-radius: 14px; cursor: pointer; box-shadow: inset 0 0 0 3px var(--edge-2); }
+  #fieldguide-map .info { width: 240px; padding-top: 6px; }
+  #fieldguide-map .info h3 { margin: 4px 36px 8px 0; }
+  #fieldguide-map .info .folk { margin-top: 12px; font-size: 12.5px; opacity: 0.75; }
+  #fieldguide-map .legend { margin-top: 12px; font-size: 12px; opacity: 0.7; display: flex; gap: 12px; flex-wrap: wrap; }
+  #critterpedia { width: min(660px, calc(100vw - 28px)); max-height: 84vh; overflow-y: auto; }
+  #critterpedia .tiles { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
   @media (max-width: 700px) {
-    #fieldguide-map { flex-direction: column; max-width: 94vw; max-height: 84vh; overflow-y: auto; }
+    #fieldguide-map { flex-direction: column; width: calc(100vw - 28px); max-height: 86vh; overflow-y: auto; }
     #fieldguide-map .info { width: auto; }
   }
-  #critterpedia h3 { margin: 10px 0 6px; border-bottom: 2px solid #efe2c4; padding-bottom: 3px; }
-  #critterpedia .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 18px; }
-  #critterpedia .row { display: flex; justify-content: space-between; padding: 2px 0; }
-  #critterpedia .unseen { opacity: 0.42; }
-  .fg-hint { text-align: center; opacity: 0.55; font-size: 12px; margin-top: 8px; }
-  .fg-close {
-    position: absolute; top: 8px; right: 12px; font-size: 20px; line-height: 1;
-    padding: 6px 10px; cursor: pointer; opacity: 0.55; user-select: none;
-  }
-  .fg-close:active { opacity: 1; }
+  .fg-hint { text-align: center; opacity: 0.55; font-size: 12px; margin-top: 10px; }
 `;
 document.head.appendChild(style);
 
@@ -277,10 +270,10 @@ function renderMap(player) {
     });
   }
   mapModal.innerHTML = '';
-  const closeMap = document.createElement('div');
-  closeMap.className = 'fg-close';
+  const closeMap = document.createElement('button');
+  closeMap.className = 'closex';
   closeMap.textContent = '✕';
-  closeMap.addEventListener('click', () => { mapModal.style.display = 'none'; });
+  closeMap.addEventListener('click', closeAll);
   mapModal.appendChild(closeMap);
   mapModal.appendChild(mapCanvas);
   const info = document.createElement('div');
@@ -288,6 +281,7 @@ function renderMap(player) {
   info.innerHTML = `<h3>🗺️ The Notbell Archipelago</h3>
     <div>The Notbell Archipelago — every island the volcano raised, back when she worked. The big one goes by Notbell Isle, the way the main one always does.</div>
     <div class="folk">Click an island for the gossip.</div>
+    <div class="legend"><span>🔴 you</span><span>❓ not yet visited</span></div>
     <div class="fg-hint">P or Esc to close</div>`;
   mapModal.appendChild(info);
 
@@ -336,29 +330,33 @@ const SECTIONS = [
 ];
 
 function renderPedia() {
-  let html = '<h3 style="border:none;margin-top:0">📖 Old Tansy’s Almanac</h3>' +
-    '<div style="opacity:0.6;font-size:12.5px;margin-bottom:6px">The keeper catalogued everything she pulled from the sea and sky. The almanac continues, in a second handwriting. Yours.</div>';
+  let html = '<button class="closex" aria-label="close">✕</button>' +
+    '<h3>📖 Old Tansy’s Almanac</h3>' +
+    '<div class="sub">The keeper catalogued everything she pulled from the sea and sky. The almanac continues, in a second handwriting. Yours.</div>';
   for (const [kind, title] of SECTIONS) {
     const entries = Object.entries(ITEMS).filter(([, it]) => it.kind === kind);
     const seenCount = entries.filter(([id]) => state.seen[id]).length;
-    html += `<h3>${title} <span style="opacity:0.5;font-size:12px">${seenCount}/${entries.length}</span></h3><div class="grid">`;
+    html += `<h4>${title}<span class="count">${seenCount} / ${entries.length}</span></h4>` +
+      `<div class="bar"><i style="width:${Math.round(100 * seenCount / Math.max(1, entries.length))}%"></i></div><div class="tiles">`;
     for (const [id, it] of entries) {
       const n = state.seen[id] || 0;
       const donated = state.donations.includes(id);
-      if (n > 0) {
-        html += `<div class="row"><span>${it.emoji} ${it.name}</span>` +
-          `<span>×${n}${donated ? ' 🏛️' : ''}</span></div>`;
-      } else {
-        html += `<div class="row unseen"><span>❓ ?????</span><span></span></div>`;
-      }
+      html += n > 0
+        ? `<div class="tile${donated ? ' donated' : ''}" title="${it.name}${it.blurb ? ' — ' + it.blurb.replace(/"/g, '&quot;') : ''}">` +
+          `<span class="e">${it.emoji}</span><span class="n">${it.name}</span>${n > 1 ? `<span class="c">${n}</span>` : ''}</div>`
+        : `<div class="tile unseen"><span class="e">${it.emoji}</span><span class="n">?????</span></div>`;
     }
     html += '</div>';
   }
   html += '<div class="fg-hint">🏛️ = donated to the museum · C or Esc to close</div>';
-  pedia.innerHTML = '<div class="fg-close">✕</div>' + html;
-  pedia.querySelector('.fg-close').addEventListener('click', () => {
-    pedia.style.display = 'none';
-  });
+  pedia.innerHTML = html;
+  pedia.querySelector('.closex').addEventListener('click', closeAll);
+}
+
+function closeAll() {
+  mapModal.style.display = 'none';
+  pedia.style.display = 'none';
+  ui.setVeil(false);
 }
 
 // ---------------------------------------------------------------- keys ----
@@ -371,20 +369,17 @@ export function initFieldGuide(player) {
         pedia.style.display = 'none';
         renderMap(player);
         mapModal.style.display = 'flex';
-      } else {
-        mapModal.style.display = 'none';
-      }
+        ui.setVeil(true, closeAll);
+      } else closeAll();
     } else if (e.code === 'KeyC') {
       if (pedia.style.display === 'none') {
         mapModal.style.display = 'none';
         renderPedia();
         pedia.style.display = 'block';
-      } else {
-        pedia.style.display = 'none';
-      }
-    } else if (e.code === 'Escape') {
-      mapModal.style.display = 'none';
-      pedia.style.display = 'none';
+        ui.setVeil(true, closeAll);
+      } else closeAll();
+    } else if (e.code === 'Escape' && (mapModal.style.display !== 'none' || pedia.style.display !== 'none')) {
+      closeAll();
     }
   });
 }

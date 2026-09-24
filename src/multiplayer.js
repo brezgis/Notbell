@@ -123,7 +123,7 @@ export function createMultiplayer(player, scene) {
   let pendingHost = null;
 
   async function finishHost() {
-    const reply = window.prompt('Paste your visitor’s reply code:');
+    const reply = await ui.input('Paste your visitor’s reply code here — the whole blob.', { long: true, placeholder: 'reply code' });
     if (!reply || !pendingHost) return;
     try {
       await pendingHost.setRemoteDescription(decode(reply));
@@ -134,7 +134,7 @@ export function createMultiplayer(player, scene) {
   }
 
   async function join() {
-    const invite = window.prompt('Paste the invite code from your host:');
+    const invite = await ui.input('Paste the invite code from your host — the whole blob.', { long: true, placeholder: 'invite code' });
     if (!invite) return;
     try {
       const pc = new RTCPeerConnection(STUN);

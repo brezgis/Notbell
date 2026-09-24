@@ -10,7 +10,7 @@ import { jingle } from './audio.js';
 import * as S from './state.js';
 import { ITEMS } from './catalog.js';
 
-// characters who belong to one place (the MouseBoat, the springs, the volcano,
+// characters who belong to one place (the MouseBoat, the springs, the cave,
 // the duck nest) — they never wander off to other islands or take trains
 const ANCHORED = new Set(['Crumb', 'Mochi', 'Pondo', 'Sol', 'Brook', 'Ember', 'Admiral Greenbean', 'Puddle']);
 
@@ -148,12 +148,12 @@ const IDENTITIES = [
     ],
   },
   {
-    name: 'Ember', voice: 590, hat: null, // salamander, the volcano's own
+    name: 'Ember', voice: 590, hat: null, // salamander, cave enthusiast
     lines: [
-      'The mountain hums in B-flat. I checked. Sometimes I hum back. We harmonize.',
-      'Warm rock, a fire, a mountain with a warm heart right behind my house. I have everything, basically.',
-      'Cinder says the fire’s too big. Cinder is an iguana. Iguanas think EVERYTHING is too big except the sun.',
-      'When it rains the fire hisses at me, so I hiss back, and then I go inside. We both need our space.',
+      'The cave hums in B-flat. I checked. Sometimes I hum back. We harmonize.',
+      'Warm rock, cool dark, little stars on the ceiling. I have everything, basically.',
+      'The Old Light doesn’t mind visitors. It told me so. Not in words. In warm.',
+      'Rain! I LOVE rain. Everyone else hides indoors and I get both whole islands to myself.',
     ],
   },
   {
@@ -285,16 +285,16 @@ export const FRIENDS = [
   {
     a: 'Bramble', b: 'Ember',
     chats: [
-      [['a', 'The mountain hum. Louder lately?'],
+      [['a', 'The cave hum. Louder lately?'],
        ['b', 'HAPPIER lately. Still B-flat, but warm about it.'],
        ['a', 'Good. Good. I worry, you know.'],
        ['b', 'It knows. It hums back politer when you sit outside.']],
-      [['b', 'You’d love the acoustics up by the crater.'],
-       ['a', 'I’d block the acoustics up by the crater.'],
+      [['b', 'You’d love the acoustics in there.'],
+       ['a', 'I’d block the acoustics in there.'],
        ['b', 'You’d give them something to work with.']],
     ],
     meetLines: {
-      Bramble: 'We’re talking about the mountain. Quietly. It might be listening, and it’s earned the courtesy.',
+      Bramble: 'We’re talking about the cave. Quietly. It might be listening, and it’s earned the courtesy.',
       Ember: 'Bear and salamander, solving geology. Nearly there.',
     },
   },
@@ -346,7 +346,7 @@ const ERRAND_ASKS = {
   Puddle: 'Would you take this to the Admiral?? It’s a medal I made him. It’s a shell on a string! Don’t tell him! Tell him!!',
   'Admiral Greenbean': 'Deliver this to Puddle, sailor. Official commendation for most improved laps. There’s a snack in it. The snack is the commendation.',
   Bramble: 'For Ember, when you’re passing. A very smooth stone, sun-warmed. I sat on it all morning to get it ready.',
-  Ember: 'Bring this to Bramble? A bit of lava glass. The good kind. He pretends he doesn’t keep a collection. The collection is labeled.',
+  Ember: 'Bring this to Bramble? Cave moss. The good kind. He pretends he doesn’t keep a collection. The collection is labeled.',
   Butterpat: 'For Crumb, if you’re headed shoreward. Pressed flowers. Ship’s library needs SOME color that isn’t cheese.',
   Crumb: 'Run this to Butterpat? Crackers from three harbors over. She’s never had a cracker. This is an EVENT.',
   Mochi: 'Mm. For Pondo. (It is an orange. You may not ask further.)',

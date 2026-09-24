@@ -16,7 +16,7 @@ import * as S from './state.js';
 import { kaching } from './audio.js';
 import { buildAnimal, animateGait } from './animals.js';
 import { rand, pick, turnToward } from './utils.js';
-import { addIslandInfo } from './fieldguide.js';
+import { addIslandInfo, addZonePlace } from './fieldguide.js';
 import { glowWindow } from './nightglow.js';
 
 function mat(color, rough = 0.9) {
@@ -256,7 +256,7 @@ export function createFold() {
     roof.castShadow = roof.receiveShadow = true;
     ext.add(roof);
     // door on the gable end, facing the green
-    const door = box(1.4, 2.2, 0.16, 0x4a3a2c);
+    const door = box(0.16, 2.2, 1.4, 0x4a3a2c); // flat ON the east gable (it stood out edgewise)
     door.position.set(4.46, 1.1, 0);
     ext.add(door);
     // the sign hangs out under the gable, saying the one thing it needs to
@@ -461,6 +461,190 @@ export function createFold() {
     }
   }
 
+  // ================================================ walk-in rooms ----
+  // every Fold building opens now: plain rooms, whitewashed, lamplit, each
+  // furnished like the one who lives there. (Off in the elsewhere, like all
+  // interiors.)
+  let foldSlot = 0;
+  function foldRoom(id, name, W, D, doorOut, dress) {
+    const B = { x: 300 + foldSlot * 30, z: 2100 };
+    foldSlot++;
+    const start = group.children.length;
+    const floor = box(W, 0.3, D, 0xa9855a);
+    floor.position.set(B.x, -0.15, B.z);
+    group.add(floor);
+    for (const [w, h, d, x, z] of [
+      [W, 3.2, 0.3, B.x, B.z - D / 2], [0.3, 3.2, D, B.x - W / 2, B.z], [0.3, 3.2, D, B.x + W / 2, B.z],
+    ]) {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(dress.wall ?? 0xe9e5da));
+      wall.position.set(x, 1.6, z);
+      wall.receiveShadow = true;
+      group.add(wall);
+    }
+    // a peg rail along the back wall — plain folk hang things up
+    const rail = box(W - 1, 0.1, 0.1, 0x6e5136);
+    rail.position.set(B.x, 2.1, B.z - D / 2 + 0.2);
+    group.add(rail);
+    for (let i = 0; i < Math.floor(W - 1); i++) {
+      const peg = box(0.06, 0.06, 0.18, 0x4a3a2c);
+      peg.position.set(B.x - (W - 1) / 2 + 0.5 + i, 2.1, B.z - D / 2 + 0.3);
+      group.add(peg);
+    }
+    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshBasicMaterial({ color: 0xcfeaf6 }));
+    win.position.set(B.x - W / 2 + 0.16, 1.7, B.z - 0.4);
+    win.rotation.y = Math.PI / 2;
+    group.add(win);
+    const lamp = new THREE.PointLight(0xffd9a0, 22, 12, 2);
+    lamp.position.set(B.x, 2.6, B.z);
+    group.add(lamp);
+    const blockers = [];
+    const things = [];
+    dress(B, W, D, blockers, things);
+    const room = collectInteriorRoot(group, start);
+    zones.registerInterior(id, {
+      root: room, floorY: 0,
+      bounds: { x0: B.x - W / 2 + 0.45, x1: B.x + W / 2 - 0.45, z0: B.z - D / 2 + 0.45, z1: B.z + D / 2 + 0.2 },
+      blockers,
+      spawn: { x: B.x, z: B.z + D / 2 - 0.3, rotY: Math.PI },
+      lighting: { bg: 0x2a2018, fog: 0x2a2018, fogNear: 20, fogFar: 50, hemiSky: 0xfff0d8, hemiGround: 0x7a6448, hemiIntensity: 1.45, sunIntensity: 0 },
+    });
+    addZonePlace(id, name);
+    zones.setDoor(id, doorOut);
+    register({ pos: new THREE.Vector3(B.x, 0, B.z + D / 2), r: 1.6, zone: id, label: 'step outside', use: () => zones.leaveTo(doorOut) });
+    for (const t of things) register({ ...t, zone: id, pos: new THREE.Vector3(B.x + t.at[0], 0, B.z + t.at[1]) });
+  }
+  // furniture, plain and sturdy
+  function bed(x, z, quilt) {
+    const frame = box(1.2, 0.45, 2.1, 0x6e5136);
+    frame.position.set(x, 0.22, z);
+    const mattress = box(1.1, 0.2, 1.9, 0xf1ead9);
+    mattress.position.set(x, 0.55, z + 0.05);
+    const q = box(1.14, 0.12, 1.3, quilt);
+    q.position.set(x, 0.66, z + 0.35);
+    const pillow = box(0.8, 0.14, 0.4, 0xfbf7ef);
+    pillow.position.set(x, 0.7, z - 0.7);
+    const head = box(1.2, 0.9, 0.12, 0x6e5136);
+    head.position.set(x, 0.65, z - 1.05);
+    group.add(frame, mattress, q, pillow, head);
+  }
+  function table(x, z, w = 1.4, d = 0.9) {
+    const top = box(w, 0.08, d, 0x9a6a44);
+    top.position.set(x, 0.78, z);
+    group.add(top);
+    for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const leg = box(0.08, 0.76, 0.08, 0x7a5230);
+      leg.position.set(x + lx * (w / 2 - 0.08), 0.38, z + lz * (d / 2 - 0.08));
+      group.add(leg);
+    }
+  }
+  function chair(x, z, ry) {
+    const c = new THREE.Group();
+    const seat = box(0.5, 0.06, 0.5, 0x9a6a44);
+    seat.position.y = 0.46;
+    const back = box(0.5, 0.6, 0.06, 0x9a6a44);
+    back.position.set(0, 0.78, -0.22);
+    c.add(seat, back);
+    for (const [lx, lz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) {
+      const leg = box(0.05, 0.46, 0.05, 0x7a5230);
+      leg.position.set(lx, 0.23, lz);
+      c.add(leg);
+    }
+    c.position.set(x, 0, z);
+    c.rotation.y = ry;
+    group.add(c);
+  }
+  function hearth(x, z) {
+    const stone = box(1.4, 1.1, 0.7, 0x8a8378);
+    stone.position.set(x, 0.55, z);
+    const mouth = box(0.8, 0.55, 0.1, 0x2e2620);
+    mouth.position.set(x, 0.42, z + 0.34);
+    const glow = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), new THREE.MeshBasicMaterial({ color: 0xffa050 }));
+    glow.position.set(x, 0.3, z + 0.3);
+    const flue = box(0.5, 2.0, 0.5, 0x8a8378);
+    flue.position.set(x, 2.1, z - 0.05);
+    const kettle = new THREE.Mesh(new THREE.IcosahedronGeometry(0.17, 0), mat(0x3a3630, 0.5));
+    kettle.position.set(x + 0.4, 1.22, z);
+    group.add(stone, mouth, glow, flue, kettle);
+  }
+  function jars(x, y, z, n, colors) {
+    for (let i = 0; i < n; i++) {
+      const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.2, 7), mat(colors[i % colors.length], 0.3));
+      jar.position.set(x + i * 0.24, y + 0.1, z);
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.04, 7), mat(0xf1ead9));
+      lid.position.set(x + i * 0.24, y + 0.22, z);
+      group.add(jar, lid);
+    }
+  }
+  function shelf(x, y, z, w) {
+    const sh = box(w, 0.06, 0.3, 0x9a6a44);
+    sh.position.set(x, y, z);
+    group.add(sh);
+  }
+  function rug(x, z, w, d, col) {
+    const r = box(w, 0.03, d, col);
+    r.position.set(x, 0.02, z);
+    group.add(r);
+  }
+  const ROOMS = {
+    mercy: { name: '🫙 Mercy’s House', W: 7, D: 6, dress: (B, W, D, bl, th) => {
+      bed(B.x - 2.4, B.z - 1.6, 0xc97b8a); bl.push({ x: B.x - 2.4, z: B.z - 1.6, w: 1.3, d: 2.2 });
+      hearth(B.x + 1.2, B.z - D / 2 + 0.55); bl.push({ x: B.x + 1.2, z: B.z - D / 2 + 0.55, w: 1.5, d: 0.8 });
+      table(B.x + 1.6, B.z + 0.6, 1.6, 1.0); bl.push({ x: B.x + 1.6, z: B.z + 0.6, w: 1.7, d: 1.1 });
+      chair(B.x + 1.6, B.z + 1.5, Math.PI); chair(B.x + 0.4, B.z + 0.6, Math.PI / 2);
+      // the canning table: jars in every stage of becoming preserves
+      jars(B.x + 1.0, 0.82, B.z + 0.6, 5, [0x9ac46a, 0xe8743a, 0xc4413a]);
+      shelf(B.x - 0.6, 1.5, B.z - D / 2 + 0.3, 2.4); jars(B.x - 1.6, 1.53, B.z - D / 2 + 0.3, 9, [0x9ac46a, 0xe8743a, 0xc4413a, 0xd9b45a]);
+      rug(B.x, B.z + 1.8, 2.2, 1.2, 0x8a6a8a);
+      th.push({ at: [1.6, 1.0], r: 1.6, label: 'look at the canning table', use: () => ui.say('Gooseberry, carrot, something green that’s labeled only “yes.” Every jar has a paper hat, and every hat is tied with the same careful bow.') });
+    } },
+    patience: { name: '🧵 Patience’s House', W: 7, D: 6, wall: 0xe6e0d0, dress: (B, W, D, bl, th) => {
+      bed(B.x + 2.4, B.z - 1.6, 0x6a8a9a); bl.push({ x: B.x + 2.4, z: B.z - 1.6, w: 1.3, d: 2.2 });
+      hearth(B.x - 1.4, B.z - D / 2 + 0.55); bl.push({ x: B.x - 1.4, z: B.z - D / 2 + 0.55, w: 1.5, d: 0.8 });
+      // the quilting frame, a quilt half done, squares of every color she owns
+      const frameT = box(2.2, 0.08, 1.6, 0x9a6a44); frameT.position.set(B.x - 1.2, 0.8, B.z + 0.8); group.add(frameT);
+      const cols = [0xc97b8a, 0xe8c547, 0x6a8a9a, 0x9ac46a, 0xf1ead9, 0x8a6a8a];
+      for (let i = 0; i < 12; i++) {
+        const sq = box(0.34, 0.03, 0.34, cols[(i * 5) % cols.length]);
+        sq.position.set(B.x - 1.95 + (i % 4) * 0.38, 0.86, B.z + 0.35 + Math.floor(i / 4) * 0.38);
+        group.add(sq);
+      }
+      for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const leg = box(0.08, 0.8, 0.08, 0x7a5230); leg.position.set(B.x - 1.2 + lx * 1.0, 0.4, B.z + 0.8 + lz * 0.7); group.add(leg);
+      }
+      bl.push({ x: B.x - 1.2, z: B.z + 0.8, w: 2.3, d: 1.7 });
+      chair(B.x - 1.2, B.z + 1.9, Math.PI);
+      rug(B.x + 1.2, B.z + 1.2, 1.6, 1.6, 0x9a7a4a);
+      th.push({ at: [-1.2, 1.7], r: 1.6, label: 'look at the quilt', use: () => ui.say('Half a quilt, squares pinned in rows. One square is a little crooked. It’s been left crooked on purpose: “only the Lord’s work is perfect, and He’s not doing this one.”') });
+    } },
+    obed: { name: '🌾 Obed’s House', W: 7, D: 6, dress: (B, W, D, bl, th) => {
+      bed(B.x - 2.4, B.z - 1.6, 0x7a8a5a); bl.push({ x: B.x - 2.4, z: B.z - 1.6, w: 1.3, d: 2.2 });
+      hearth(B.x + 1.8, B.z - D / 2 + 0.55); bl.push({ x: B.x + 1.8, z: B.z - D / 2 + 0.55, w: 1.5, d: 0.8 });
+      table(B.x + 0.6, B.z + 0.8); bl.push({ x: B.x + 0.6, z: B.z + 0.8, w: 1.5, d: 1.0 });
+      chair(B.x + 0.6, B.z + 1.6, Math.PI);
+      // seed sacks and a pitchfork by the door; boots, muddy
+      for (let i = 0; i < 3; i++) {
+        const sack = new THREE.Mesh(new THREE.IcosahedronGeometry(0.35, 0), mat(0xc9b48a, 0.95));
+        sack.scale.set(1, 1.2, 0.9); sack.position.set(B.x + 2.6, 0.38, B.z + 0.4 + i * 0.7); group.add(sack);
+      }
+      bl.push({ x: B.x + 2.6, z: B.z + 1.1, w: 0.8, d: 2.2 });
+      const fork = box(0.06, 1.8, 0.06, 0x8a5a3a); fork.position.set(B.x - W / 2 + 0.3, 0.9, B.z + 1.8); fork.rotation.z = 0.15; group.add(fork);
+      for (const sx of [-0.15, 0.15]) { const boot = box(0.18, 0.35, 0.35, 0x3a2e24); boot.position.set(B.x - 1.4 + sx, 0.17, B.z + D / 2 - 0.5); group.add(boot); }
+      th.push({ at: [2.6, 1.1], r: 1.4, label: 'read the seed sacks', use: () => ui.say('BEANS. OATS. MORE BEANS. The last sack is labeled in a different hand: “DON’T PLANT THESE, OBED, THEY’RE FOR SUPPER.”') });
+    } },
+    amos: { name: '🐟 Elder Amos’s Hut', W: 5, D: 5, dress: (B, W, D, bl, th) => {
+      bed(B.x - 1.3, B.z - 1.2, 0x8a8378); bl.push({ x: B.x - 1.3, z: B.z - 1.2, w: 1.3, d: 2.2 });
+      // a writing desk, sermon pages in a drift, and a small carved cod
+      table(B.x + 1.2, B.z - 0.6, 1.2, 0.8); bl.push({ x: B.x + 1.2, z: B.z - 0.6, w: 1.3, d: 0.9 });
+      chair(B.x + 1.2, B.z + 0.2, Math.PI);
+      for (let i = 0; i < 6; i++) {
+        const pg = box(0.3, 0.01, 0.4, 0xf6f0de); pg.position.set(B.x + 0.9 + (i % 3) * 0.2, 0.83 + i * 0.004, B.z - 0.7 + Math.floor(i / 3) * 0.15); pg.rotation.y = i * 0.4; group.add(pg);
+      }
+      const cod = makeCod(0.35, 0xc9b99a); cod.position.set(B.x + 1.6, 1.0, B.z - 0.7); group.add(cod);
+      rug(B.x, B.z + 0.9, 1.6, 1.2, 0x6a5a48);
+      th.push({ at: [1.2, 0.0], r: 1.4, label: 'read the sermon pages', use: () => ui.say('“Brethren: the cod does not worry about tomorrow, and tomorrow, in fairness, has never once worried about the cod.” Below, crossed out several times: “More on the cod.”') });
+    } },
+  };
+
   // ======================================================== the cottages ----
   const knockSpots = [];
   function plainCottage(x, z, faceX, faceZ, wallColor, who, scale = 1) {
@@ -512,10 +696,18 @@ export function createFold() {
       z: z + Math.cos(rotY) * (D / 2 + 0.9),
     };
     knockSpots.push({ ...doorWorld, who });
+    const R = ROOMS[who];
+    const zoneId = `fold_${who}`;
+    foldRoom(zoneId, R.name, R.W, R.D, { ...doorWorld, rotY }, R.dress);
+    let knocked = false;
     register({
       pos: new THREE.Vector3(doorWorld.x, 0, doorWorld.z), r: 1.8,
-      label: `knock on ${who[0].toUpperCase() + who.slice(1)}’s door`,
-      use: () => ui.say(KNOCKS[who]),
+      label: `step into ${who === 'amos' ? 'Elder Amos' : who[0].toUpperCase() + who.slice(1)}’s house`,
+      use: async () => {
+        // the first time, the note on the door; after that, straight in
+        if (!knocked) { knocked = true; await ui.say(KNOCKS[who]); }
+        zones.go(zoneId);
+      },
     });
     return g;
   }
@@ -739,6 +931,56 @@ export function createFold() {
     g.position.set(BARN.x, by, BARN.z);
     group.add(g);
     zones.addBlockerBox(BARN.x, BARN.z, 7.3, 5.3, rotY, 0.05);
+    // the barn opens too: hay, a loft, a stall with a calf in it, tools on pegs
+    const barnDoor = { x: BARN.x + Math.sin(rotY) * 3.6, z: BARN.z + Math.cos(rotY) * 3.6, rotY };
+    foldRoom('fold_barn', '🐄 The Barn', 10, 8, barnDoor, (B, W, D, bl, th) => {
+      for (const [x, z, st] of [[-3.8, -2.8, 3], [-2.6, -2.9, 2], [-3.7, -1.8, 1], [3.8, -2.9, 2]]) {
+        for (let k = 0; k < st; k++) {
+          const bale = box(1.1, 0.6, 0.8, 0xd9b45a);
+          bale.position.set(B.x + x, 0.3 + k * 0.6, B.z + z);
+          bale.rotation.y = k * 0.2;
+          group.add(bale);
+        }
+        bl.push({ x: B.x + x, z: B.z + z, w: 1.2, d: 0.9 });
+      }
+      // the loft, on posts, with a ladder
+      const loftF = box(W - 0.4, 0.15, 2.2, 0x9a6a44);
+      loftF.position.set(B.x, 2.4, B.z - D / 2 + 1.25);
+      group.add(loftF);
+      for (const x of [-3, 0, 3]) { const p = box(0.14, 2.4, 0.14, 0x7a5230); p.position.set(B.x + x, 1.2, B.z - D / 2 + 2.3); group.add(p); bl.push({ x: B.x + x, z: B.z - D / 2 + 2.3, r: 0.15 }); }
+      const ladder = new THREE.Group();
+      for (const sx of [-0.25, 0.25]) { const rl = box(0.06, 2.6, 0.06, 0x8a5a3a); rl.position.set(sx, 1.3, 0); ladder.add(rl); }
+      for (let r = 0; r < 7; r++) { const rung = box(0.5, 0.05, 0.05, 0x8a5a3a); rung.position.set(0, 0.3 + r * 0.35, 0); ladder.add(rung); }
+      ladder.position.set(B.x + 1.5, 0, B.z - D / 2 + 2.45);
+      ladder.rotation.x = -0.2;
+      group.add(ladder);
+      for (let k = 0; k < 4; k++) { const b = box(1.0, 0.5, 0.7, 0xd9b45a); b.position.set(B.x - 3 + k * 1.4, 2.73, B.z - D / 2 + 1.0); group.add(b); }
+      // a stall, a calf, a pail
+      const rail1 = box(0.1, 1.1, 2.4, 0x7a5230); rail1.position.set(B.x + 2.2, 0.55, B.z + 1.2); group.add(rail1);
+      const rail2 = box(2.4, 1.1, 0.1, 0x7a5230); rail2.position.set(B.x + 3.4, 0.55, B.z + 0.0); group.add(rail2);
+      bl.push({ x: B.x + 2.2, z: B.z + 1.2, w: 0.3, d: 2.5 }, { x: B.x + 3.4, z: B.z + 0.0, w: 2.5, d: 0.3 });
+      const calf = buildAnimal('cow', { body: 0xf1ead9, head: 0xf1ead9 });
+      calf.scale.setScalar(0.7);
+      calf.position.set(B.x + 3.5, 0, B.z + 1.5);
+      calf.rotation.y = -Math.PI / 2;
+      calf.userData.fidget = true;
+      group.add(calf);
+      bl.push({ x: B.x + 3.5, z: B.z + 1.5, r: 0.9 });
+      const pail = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.3, 8), mat(0x9aa3ad, 0.4));
+      pail.position.set(B.x + 1.7, 0.15, B.z + 2.2); group.add(pail);
+      for (let i = 0; i < 4; i++) {
+        const tool = box(0.06, 1.3, 0.06, 0x8a5a3a);
+        tool.position.set(B.x - W / 2 + 0.25, 1.4, B.z - 0.5 + i * 0.5); tool.rotation.x = 0.1;
+        group.add(tool);
+      }
+      th.push({ at: [3.4, 0.6], r: 2.2, label: 'say hello to the calf', use: () => ui.say('(The calf regards you with enormous, unhurried eyes, then goes back to regarding the hay. You have been assessed. You passed, probably.)') });
+      th.push({ at: [1.5, -1.3], r: 1.4, label: 'look up at the loft', use: () => ui.say('Hay, stacked to the rafters. Something small up there sneezes, politely. Probably a mouse. Probably not Crumb. Probably.') });
+    });
+    register({
+      pos: new THREE.Vector3(barnDoor.x, 0, barnDoor.z), r: 2.0,
+      label: 'step into the barn',
+      use: () => zones.go('fold_barn'),
+    });
     // hay bales, stacked with the particular pride of stacked hay
     for (const [hx, hz, hr] of [[BARN.x + 4.4, BARN.z + 1.2, 0], [BARN.x + 4.6, BARN.z + 2.4, 0.4], [BARN.x + 4.5, BARN.z + 1.8, 0]]) {
       const bale = box(1.1, 0.7, 0.8, 0xd9b45a);

@@ -100,35 +100,6 @@ export function initControls() {
     key('KeyE', 'keyup');
   });
 
-  // ------------------------------------------------------ the buttons ----
-  function tapButton(node, code) {
-    node.addEventListener('pointerdown', (e) => {
-      key(code, 'keydown');
-      key(code, 'keyup');
-      e.preventDefault();
-    });
-  }
-
-  const row = el('div', 'btn-row');
-  for (const [label, code, title] of [
-    ['🗺️', 'KeyP', 'map'], ['🎒', 'KeyI', 'pockets'],
-    ['📖', 'KeyC', 'almanac'], ['🎩', 'KeyH', 'hat'],
-  ]) {
-    const b = document.createElement('button');
-    b.className = 'btn-mini';
-    b.textContent = label;
-    b.title = title;
-    row.appendChild(b);
-    tapButton(b, code);
-  }
-  // settings isn't a key; it gets a real event
-  const gear = document.createElement('button');
-  gear.className = 'btn-mini';
-  gear.textContent = '⚙️';
-  gear.title = 'settings';
-  row.appendChild(gear);
-  gear.addEventListener('pointerdown', (e) => {
-    dispatchEvent(new CustomEvent('notbell-settings'));
-    e.preventDefault();
-  });
+  // (the buttons — map, pockets, almanac, hats, settings — are the shared
+  // toolbar in ui.js now, for touch and keyboard alike)
 }

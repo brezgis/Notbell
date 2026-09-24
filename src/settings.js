@@ -11,6 +11,7 @@ export function initSettings() {
 
   const panel = document.createElement('div');
   panel.id = 'settings';
+  panel.className = 'panel';
   panel.style.display = 'none';
   document.body.appendChild(panel);
 
@@ -18,25 +19,25 @@ export function initSettings() {
   style.textContent = `
     #settings {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      width: min(420px, 92vw); max-height: 84vh; overflow-y: auto;
-      background: #fffaf0; border: 3px solid #e8d5ae; border-radius: 20px;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.35); color: #5b4a32;
-      font-size: 14px; z-index: 9; padding: 18px 20px;
+      width: min(440px, calc(100vw - 28px)); max-height: 86vh; overflow-y: auto;
+      z-index: 9; padding: 20px 22px;
     }
-    #settings h3 { margin: 0 0 4px; }
-    #settings h4 { margin: 14px 0 6px; border-bottom: 2px solid #efe2c4; padding-bottom: 3px; }
     #settings .row { display: flex; gap: 8px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
     #settings input, #settings select {
       font: inherit; color: inherit; background: #fff;
-      border: 2px solid #e8d5ae; border-radius: 10px; padding: 6px 10px; flex: 1; min-width: 120px;
+      border: 3px solid var(--edge); border-radius: 12px; padding: 7px 11px; flex: 1; min-width: 120px; outline: none;
     }
-    #settings button {
-      font: inherit; background: #ffd23e; color: #5a4516; border: none;
-      border-radius: 10px; padding: 7px 14px; cursor: pointer; font-weight: 700;
+    #settings input:focus, #settings select:focus { border-color: var(--accent); }
+    #settings button:not(.closex) {
+      font: inherit; background: var(--gold); color: var(--gold-ink); border: none;
+      border-radius: 12px; padding: 8px 15px; cursor: pointer; font-weight: 800;
     }
-    #settings button.soft { background: #efe2c4; }
-    #settings .dim { opacity: 0.6; font-size: 12.5px; }
-    #title { cursor: pointer; }
+    #settings button.soft { background: var(--edge-2); color: var(--ink); }
+    #settings .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+    #settings kbd {
+      font-family: inherit; font-size: 11px; font-weight: 800; background: var(--gold); color: var(--gold-ink);
+      border-radius: 5px; padding: 1px 6px;
+    }
   `;
   document.head.appendChild(style);
 
@@ -44,8 +45,9 @@ export function initSettings() {
 
   function render() {
     panel.innerHTML = `
+      <button class="closex" aria-label="close">✕</button>
       <h3>⚙️ Settings</h3>
-      <div class="dim">Everything here is optional. The island doesn’t mind either way.</div>
+      <div class="sub">Everything here is optional. The island doesn’t mind either way.</div>
 
       <h4>You</h4>
       <div class="row">
@@ -68,10 +70,25 @@ export function initSettings() {
           }).join('')}
       </select>
       </div>
-      <div class="dim">Day, night, and the weather schedule follow this clock.</div>
-      <div class="dim" style="text-align:center;margin-top:12px">Esc or click the title to close</div>
+      <div class="sub">Day, night, and the weather schedule follow this clock.</div>
+
+      <h4>Controls</h4>
+      <div class="keys">
+        <span><kbd>WASD</kbd></span><span>walk — double-tap (or hold Shift) to run</span>
+        <span><kbd>drag</kbd></span><span>turn the camera · scroll or pinch to zoom</span>
+        <span><kbd>E</kbd></span><span>talk · use · pick up (or tap the prompt)</span>
+        <span><kbd>P</kbd></span><span>the map</span>
+        <span><kbd>I</kbd></span><span>your pockets</span>
+        <span><kbd>C</kbd></span><span>Old Tansy’s almanac</span>
+        <span><kbd>H</kbd></span><span>cycle your hats</span>
+        <span><kbd>O</kbd></span><span>visit a friend (or invite one)</span>
+        <span><kbd>M</kbd></span><span>sound on / off</span>
+      </div>
+      <div class="foot">Esc to close</div>
     `;
 
+    panel.querySelector('.closex').onclick = hide;
+    panel.querySelectorAll('input').forEach((i) => i.addEventListener('keydown', (e) => e.stopPropagation()));
     panel.querySelector('#set-name-go').onclick = () => {
       const v = panel.querySelector('#set-name').value.trim().slice(0, 16);
       if (!v) return;
@@ -98,11 +115,13 @@ export function initSettings() {
     render();
     panel.style.display = 'block';
     open = true;
+    ui.setVeil(true, hide);
   }
 
   function hide() {
     panel.style.display = 'none';
     open = false;
+    ui.setVeil(false);
   }
 
   document.getElementById('title')?.addEventListener('click', () => (open ? hide() : show()));

@@ -2,7 +2,7 @@
 // the villagers each have their own door to (politely) knock on.
 
 import * as THREE from 'three';
-import { SITES, VOLCANO_SHELF, terrainHeight, clearOfSites } from './terrain.js';
+import { SITES, terrainHeight, clearOfSites } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
 import * as ui from './ui.js';
@@ -51,7 +51,7 @@ const KNOCKS = {
   Howell: 'Scratch marks on the door. Like a wolf’s. EXACTLY like a wolf’s. A note: “OUT. PRACTICING. AWOO.”',
   Bramble: 'The whole house leans comfortably to one side, like it sat down years ago and saw no reason to get up. Bramble is elsewhere, probably also sitting.',
   Marigold: 'A long house with a tall door. A horseshoe hangs above it, ends up, holding the luck in like a bowl. Nobody home — listen for hooves on the bridge.',
-  Ember: 'A low round hut at the foot of the volcano, warm to the touch even from outside. A sign: “IF NOT HERE, BY THE FIRE. IF NOT BY THE FIRE, KNOCK LOUDER, I AM NAPPING ON A ROCK.”',
+  Ember: 'A low round hut, warm to the touch even from outside. A sign: “IF NOT HERE, AT THE CAVE. IF NOT AT THE CAVE, IT IS RAINING AND I AM EVERYWHERE.”',
   Butterpat: 'A wide, calm house smelling of butter and cut grass. A note: “GRAZING. IT’S ALL GRAZING, REALLY, IF YOU THINK ABOUT IT.”',
   Crumb: 'The MouseBoat rocks gently at its mooring. A tiny sign: “CAPTAIN OUT. CRUMBS ACCEPTED IN THE TIN.” There is, indeed, a tin.',
 };
@@ -67,15 +67,15 @@ const SCHEDULE = {
   Marigold: [20, 5],
   Butterpat: [19, 6],
   Crumb: [22, 6],   // sleeps on deck, under whatever the sky is doing
-  Ember: [21, 7],   // nights in her hut at the volcano's foot
+  Ember: [21, 7],   // nights in her hut on the Far Isle…
 };
+const EMBER_CAVE_HOURS = [11, 16]; // …middays in the cave, rain permitting (she prefers it not to permit)
 
 function isHomeNow(name) {
   if (!SCHEDULE[name]) return false;
   if (currentWeather() !== 'clear') {
-    // rain sends everyone in — except the wolf (drama). (The salamander
-    // goes in too: the rain hisses on her fire, and she hisses back, and
-    // they agree to give each other some space.)
+    // rain sends everyone in — except the wolf (drama) and the salamander (joy)
+    if (name === 'Ember') return false;
     if (name !== 'Howell') return true;
   }
   const [s, e] = SCHEDULE[name];
@@ -927,12 +927,7 @@ export function createHouses(animals, obstacles = []) {
     }
 
     if (!name || !KNOCKS[name]) continue; // ducks handled below
-    // Ember's hut has one proper address: the back of her black-sand shelf,
-    // under the volcano, door toward her fire and the sea (the general
-    // search wants grass and hills; a salamander wants a lava field)
-    const spot = name === 'Ember'
-      ? { x: VOLCANO_SHELF.x - 3.5, z: VOLCANO_SHELF.z - 1.5, h: terrainHeight(VOLCANO_SHELF.x - 3.5, VOLCANO_SHELF.z - 1.5) }
-      : houseSpotNear(a.g.position.x, a.g.position.z);
+    const spot = houseSpotNear(a.g.position.x, a.g.position.z);
     if (!spot) continue;
     const style = HOUSE_STYLES[name];
     const house = makeCottage(style, 0.8);
@@ -1051,6 +1046,28 @@ export function createHouses(animals, obstacles = []) {
     });
   }
 
+  // Ember keeps a second address: the cave, at her appointed hours
+  const ember = households.find((vh) => vh.name === 'Ember');
+  if (ember) {
+    ember.caveSeat = { x: -295.5, z: -4 };
+    let caveIdx = 0;
+    register({
+      getPos: () => ember.a.g.position, r: 2.6, zone: 'cave',
+      enabled: () => !!ember.inCave,
+      label: 'talk to Ember',
+      use: () => {
+        const lines = HOME_LINES.Ember;
+        ui.say(lines[caveIdx++ % lines.length], { speaker: 'Ember', voice: ember.a.identity.voice });
+      },
+    });
+  }
+
+  function emberCaveTime() {
+    if (currentWeather() !== 'clear') return false; // rain days are outside days
+    const h = hourNow();
+    return h >= EMBER_CAVE_HOURS[0] && h < EMBER_CAVE_HOURS[1];
+  }
+
   // the clock (and the weather) decides who's in
   let schedulePoll = 0;
   // Going home is a WALK: at bedtime a villager heads for their own front
@@ -1098,6 +1115,7 @@ export function createHouses(animals, obstacles = []) {
     for (const vh of households) {
       let mode;
       if (vh.forced !== undefined) mode = vh.forced ? 'house' : 'out';
+      else if (vh.name === 'Ember' && emberCaveTime()) mode = 'cave';
       else mode = isHomeNow(vh.name) ? 'house' : 'out';
       if (!force && mode === vh.mode) continue;
       const was = vh.mode;
