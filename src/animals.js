@@ -391,8 +391,8 @@ export function buildAnimal(kind, colors = {}) {
     parts.body.scale.set(1.05, 1.05, 1.15);
     const snoutM = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 6), mat(0xf2a8b8, 0.6));
     snoutM.rotation.x = Math.PI / 2;
-    snoutM.position.set(0, 1.16, 0.82);
-    g.add(snoutM);
+    snoutM.position.set(0, -0.02, 0.48); // on the head, so the nose goes where the head goes
+    head.add(snoutM);
     parts.eyes.forEach((e) => e.scale.setScalar(0.6)); // moles squint generationally
     for (const [i, sx] of [[0, -1], [1, 1]]) {
       const paw = new THREE.Mesh(ico(0.14, 0), mat(0xf2c6c6, 0.7));
@@ -1128,7 +1128,10 @@ export function animateGait(g, t, walk, rate = 10) {
     p.legs[i].rotation.x = Math.sin(t * rate + phase) * 0.7 * walk;
   }
   p.body.position.y = p.bodyY + Math.abs(Math.sin(t * rate)) * 0.06 * walk;
-  p.head.position.y = p.headY + Math.abs(Math.sin(t * rate + 0.4)) * 0.04 * walk;
+  const bob = Math.abs(Math.sin(t * rate + 0.4)) * 0.04 * walk;
+  p.head.position.y = p.headY + bob;
+  // the eyes ride along with the head's bob (they used to stay put)
+  for (const e of p.eyes) e.position.y = (e.userData.baseY ??= e.position.y) + bob;
   if (p.plover) {
     // the attendant keeps its footing and paces the jaw
     p.plover.position.y = 0.78 + Math.max(0, Math.sin(t * 2.2)) * 0.08;
