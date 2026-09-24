@@ -4,6 +4,7 @@
 // bell used to hang.
 
 import * as THREE from 'three';
+import { waveAt } from './ocean.js';
 import { SITES, terrainHeight, WATER_Y, ISLAND2, ISLAND3, ISLAND5, ISLAND6, ISLAND7, VOLCANO } from './terrain.js';
 import * as zones from './zones.js';
 import { register } from './interact.js';
@@ -29,29 +30,51 @@ function box(w, h, d, color) {
   return m;
 }
 
+// A rowboat: a pointed bow, a squared-off stern, two thwarts, oarlocks and
+// oars. (The hull used to be a stretched heptagon rotated AFTER stretching,
+// which twisted its long axis a good 25° off the seats and oars.)
+function hullGeo(rTop, rBot, h, len) {
+  const g = new THREE.CylinderGeometry(rTop, rBot, h, 8);
+  g.rotateY(Math.PI / 8); // a flat side forward, then...
+  g.scale(1, 1, len);     // ...stretched along the boat's own length
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const z = p.getZ(i);
+    if (z > 0) p.setX(i, p.getX(i) * (1 - (z / (rTop * len)) * 0.75)); // draw the bow to a point
+  }
+  g.computeVertexNormals();
+  return g;
+}
 function makeRowboat(color) {
   const g = new THREE.Group();
-  const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.55, 0.7, 7), mat(color));
-  hull.scale.z = 2.1;
-  hull.rotation.y = Math.PI / 7; // flat-ish side forward
+  const hull = new THREE.Mesh(hullGeo(0.9, 0.55, 0.7, 2.1), mat(color));
   hull.position.y = 0.1;
   g.add(hull);
-  const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.45, 0.5, 7), mat(0xc9b178));
-  inner.scale.z = 2.0;
-  inner.rotation.y = Math.PI / 7;
+  const inner = new THREE.Mesh(hullGeo(0.74, 0.45, 0.52, 2.0), mat(0xc9b178));
   inner.position.y = 0.25;
   g.add(inner);
-  const bench = box(1.1, 0.1, 0.3, 0x8a5a3a);
-  bench.position.set(0, 0.4, -0.2);
-  g.add(bench);
+  for (const [z, w] of [[-0.3, 1.3], [0.7, 1.05]]) {
+    const thwart = box(w, 0.1, 0.3, 0x8a5a3a);
+    thwart.position.set(0, 0.44, z);
+    g.add(thwart);
+  }
   const oars = [];
   for (const sx of [-1, 1]) {
-    const oar = box(0.08, 0.08, 1.7, 0xa97c50);
-    oar.position.set(sx * 0.95, 0.45, 0.1);
+    const lock = box(0.08, 0.14, 0.08, 0x55504c);
+    lock.position.set(sx * 0.82, 0.55, 0.1);
+    g.add(lock);
+    const oar = new THREE.Group();
+    const shaft = box(0.07, 0.07, 1.6, 0xa97c50);
+    oar.add(shaft);
+    const blade = box(0.05, 0.22, 0.45, 0xa97c50);
+    blade.position.z = -0.75;
+    oar.add(blade);
+    oar.position.set(sx * 1.0, 0.52, 0.1);
     oar.rotation.y = sx * 0.35;
     g.add(oar);
     oars.push(oar);
   }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   g.userData.oars = oars;
   return g;
 }
@@ -118,10 +141,13 @@ export function createBoats(player) {
     const boat = makeRowboat(color);
     // moored where the shallows end, both on the same side of the pier —
     // the Persistent keeps the other side, and the prompts stay honest
-    const bx = D.x + ox * 7.6 + px * (i === 0 ? -2.0 : -4.0);
-    const bz = D.z + oz * 7.6 + pz * (i === 0 ? -2.0 : -4.0);
+    // (a boat's width apart and parallel to the pier — random angles used
+    // to swing one bow under the planks and the two into each other)
+    const bx = D.x + ox * 7.6 + px * (i === 0 ? -2.4 : -4.9);
+    const bz = D.z + oz * 7.6 + pz * (i === 0 ? -2.4 : -4.9);
     boat.position.set(bx, WATER_Y + 0.12, bz);
-    boat.rotation.y = outA + rand(-0.3, 0.3);
+    rand(-0.3, 0.3); // (still drawn, so the seeded stream stays in step for everything after)
+    boat.rotation.y = outA + (i ? 0.08 : -0.05);
     // ...unless you left it somewhere else last time — boats remember
     const saved = S.state.rowboats[i];
     if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.z)) {
@@ -131,6 +157,14 @@ export function createBoats(player) {
     group.add(boat);
     const data = { boat, i, inUse: false, oarPhase: 0, oarPower: 0 };
     boats.push(data);
+    // a moored boat is solid: ducks paddle round it, not through it
+    zones.addFloat({
+      active: () => !data.inUse,
+      circles: () => {
+        const p = boat.position, ry = boat.rotation.y;
+        return [-0.9, 0, 0.9].map((k) => [p.x + Math.sin(ry) * k, p.z + Math.cos(ry) * k, 1.3]); // hull + a duck’s width
+      },
+    });
 
     register({
       getPos: () => boat.position,
@@ -736,7 +770,12 @@ export function createBoats(player) {
     // idle boats bob at their moorings
     for (const data of boats) {
       if (!data.inUse) {
-        data.boat.position.y = WATER_Y + 0.12 + Math.sin(t * 1.3 + data.boat.position.x) * 0.05;
+        // riding the swell it's moored in (it used to sit at one height and
+        // let the waves wash over its gunwales)
+        const b = data.boat;
+        b.position.y = WATER_Y + waveAt(b.position.x, b.position.z, t) + 0.18;
+        b.rotation.z = Math.sin(t * 1.1 + b.position.x) * 0.04;
+        b.rotation.x = Math.sin(t * 0.8 + b.position.z) * 0.03;
       }
     }
 
