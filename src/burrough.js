@@ -297,6 +297,8 @@ export function createBurrough(player, { molehill = null } = {}) {
   const updates = [];     // (dt, t, playerPos) — the street, burrough zone only
   const roomUpdates = {}; // zone → updates, for the rooms you can walk into
   const movers = [];      // walkers: solid to you, like the villagers up top
+  const roomRoots = {};   // zone → the room's group (it shows and hides itself)
+  let cellarDoor = null;
   const at = (lx, lz) => burroughHeight(O.x + lx, O.z + lz);
   function shade(obj) {
     obj.traverse((o) => { if (o.isMesh && !o.material.emissive?.getHex?.()) { o.castShadow = true; o.receiveShadow = true; } });
@@ -312,8 +314,16 @@ export function createBurrough(player, { molehill = null } = {}) {
     groundHeight: burroughHeight,
     canWalk(x, z) {
       const lx = x - O.x, lz = z - O.z;
-      if (Math.abs(lx - line.x) < 2.75 && Math.abs(lz - TRACK_Z) < 1.2) return false; // the streetcar is solid
-      for (const m of movers) if (Math.hypot(x - m.position.x, z - m.position.z) < 0.55) return false; // so is everybody walking about
+      // the streetcar is solid, and so is everybody walking about — unless
+      // you're already overlapping them (a reload, a walker who arrived at
+      // their own start point): then they don't hold you, so you can always
+      // step away (the island's rule; without it a save could trap you)
+      const pp = player.group.position, plx = pp.x - O.x, plz = pp.z - O.z;
+      const inCar = (ax, az, pad) => Math.abs(ax - line.x) < 2.75 + pad && Math.abs(az - TRACK_Z) < 1.2 + pad;
+      if (inCar(lx, lz, 0) && !inCar(plx, plz, 0.35)) return false;
+      for (const m of movers) {
+        if (Math.hypot(x - m.position.x, z - m.position.z) < 0.55 && Math.hypot(pp.x - m.position.x, pp.z - m.position.z) > 0.9) return false;
+      }
       return sd(lx, lz) < -0.5 && !solid(lx, lz);
     },
     spawn: { ...W(ARRIVE_W.x, ARRIVE_W.z), rotY: 0 },
@@ -576,6 +586,7 @@ export function createBurrough(player, { molehill = null } = {}) {
     for (const dx of [-1.1, 1.1]) {
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 8), mat(0xc9a24a, 0.3));
       put(post, LADDER_E.x + dx, LADDER_E.z + 1.6, 0.45);
+      block(LADDER_E.x + dx, LADDER_E.z + 1.6, 0.12);
       const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.09, 0), mat(0xc9a24a, 0.3));
       put(knob, LADDER_E.x + dx, LADDER_E.z + 1.6, 0.95);
     }
@@ -651,7 +662,7 @@ export function createBurrough(player, { molehill = null } = {}) {
       use: () => enter(ARRIVE_W),
     });
     group.userData.molehill = spot; // (the screenshot harness goes looking for it)
-    return { out: { x: spot.x, z: spot.z + 1.6, rotY: 0 } };
+    return { g, out: { x: spot.x, z: spot.z + 1.6, rotY: 0 } };
   })();
 
   // ---- up top: the little door in the back wall of the wine cellar ----
@@ -670,6 +681,7 @@ export function createBurrough(player, { molehill = null } = {}) {
     g.add(dark, trim, plaque);
     g.position.set(C.x - 1.2, 0, C.z - 4.28);
     group.add(g);
+    cellarDoor = g;
     register({
       pos: new THREE.Vector3(C.x - 1.2, 0, C.z - 3.3), r: 1.4, zone: 'cellar',
       label: 'squeeze through the little door',
@@ -885,7 +897,7 @@ export function createBurrough(player, { molehill = null } = {}) {
       // somebody on the track ahead? the car waits, and says so
       const pp = player.group.position;
       const ahead = (pp.x - car.position.x) * Math.sign(d);
-      if (!line.rider && Math.abs(pp.z - (O.z + TRACK_Z)) < 1.5 && ahead > 0 && ahead < 4.2) {
+      if (!line.rider && Math.abs(pp.z - (O.z + TRACK_Z)) < 1.25 && ahead > 0 && ahead < 4.2) {
         line.v = 0;
         line.waitDing = (line.waitDing ?? 0) - dt;
         if (line.waitDing <= 0) { ding(); line.waitDing = 2.5; }
@@ -937,11 +949,14 @@ export function createBurrough(player, { molehill = null } = {}) {
       'Commute’s forty minutes. Twenty there, twenty staring at the dark going “hm.”',
     ];
     const FOLK = [
-      { kind: 'mole', body: 0x5e5048, hat: () => fedora(0x6a5a48), path: [[-62, 2.1], [-8, 1.9], [30, 2.2], [96, 2.4], [30, 2.2], [-8, 1.9]], speed: 1.5 },
-      { kind: 'hamster', body: 0xd8a068, hat: () => beret(0xb8433a), path: [[40, 2.6], [-20, 2.6], [-110, 2.6], [-20, 2.6]], speed: 1.8 },
-      { kind: 'mole', body: 0x6a5a50, hat: () => hardHat(), path: [[-58, 2.4], [-130, 2.4]], speed: 1.2 },
+      // (out past the neighborhoods they keep to the middle of the tunnel,
+      // clear of Old Faithful, the lamps and the signposts — walkers don't
+      // steer, so their paths have to)
+      { kind: 'mole', body: 0x5e5048, hat: () => fedora(0x6a5a48), path: [[-62, 2.1], [-8, 1.9], [30, 2.2], [66, 1.0], [96, 1.0], [66, 1.0], [30, 2.2], [-8, 1.9]], speed: 1.5 },
+      { kind: 'hamster', body: 0xd8a068, hat: () => beret(0xb8433a), path: [[40, 2.6], [-20, 2.6], [-62, 2.2], [-68, 0.6], [-110, 0.6], [-68, 0.6], [-62, 2.2], [-20, 2.6]], speed: 1.8 },
+      { kind: 'mole', body: 0x6a5a50, hat: () => hardHat(), path: [[-58, 2.4], [-64, 0.6], [-130, 0.6], [-64, 0.6]], speed: 1.2 },
       { kind: 'groundhog', body: 0x9a7048, hat: () => flatCap(0x4a5a6a), path: [[64, 2.0], [14, 1.9], [-40, 2.1], [14, 1.9]], speed: 1.3 },
-      { kind: 'mole', body: 0x4e4540, hat: () => topHat(0x2a2420), path: [[58, 2.3], [150, 2.3]], speed: 1.0 },
+      { kind: 'mole', body: 0x4e4540, hat: () => topHat(0x2a2420), path: [[58, 2.3], [66, 0.8], [150, 0.8], [66, 0.8]], speed: 1.0 },
     ];
     let q = 0;
     FOLK.forEach((f) => {
@@ -1835,6 +1850,7 @@ export function createBurrough(player, { molehill = null } = {}) {
     P(box(R.w, 0.25, 0.08, trim), 0, -R.d / 2 + 0.04, 0.12);
     P(box(R.w, 0.25, 0.2, trim), 0, R.d / 2 + 0.1, 0.12);
     const rm = { R, zone, g, P, blockers: [], updates: [] };
+    roomRoots[zone] = g;
     roomUpdates[zone] = rm.updates;
     addZonePlace(zone, name);
     return rm;
@@ -2563,8 +2579,8 @@ export function createBurrough(player, { molehill = null } = {}) {
       const plaque = sign('EDITOR', 0.8, 0.22, '#f3efe2', '#2e2a26');
       P(plaque, 1.6, -2.45, 2.2);
       rm.blockers.push({ x: R.x + 1.6, z: R.z - 3.8, w: 3.5, d: 2.8 });
-      F.desk(1.6, -4.2, 2.0, 0.9, 0x5a3a2a);
-      const mudge = F.critter('groundhog', { body: 0x7a5a3a, head: 0x7a5a3a }, 1.6, -4.95, 0, 0, false);
+      F.desk(1.6, -3.55, 2.0, 0.9, 0x5a3a2a);
+      const mudge = F.critter('groundhog', { body: 0x7a5a3a, head: 0x7a5a3a }, 1.6, -4.75, 0, 0, false);
       onHead(mudge, visor(0x3a8a5a), 0.3);
       rm.updates.push((dt, t) => {
         // pacing behind the desk, as editors do
@@ -2977,10 +2993,28 @@ export function createBurrough(player, { molehill = null } = {}) {
     refs.sun.target.position.set(pp.x, 0, pp.z);
   });
 
+  // The street (two thousand-odd meshes) only needs to be in the scene while
+  // you're on it — the molehill up top and the door in the cellar always
+  // are, and the rooms show and hide themselves (registerInterior). It
+  // switches on from update (which runs the frame you arrive, under the
+  // fade) and off when you leave.
+  const alwaysOn = new Set([labsHill.g, cellarDoor, ...Object.values(roomRoots)]);
+  const street = group.children.filter((c) => !alwaysOn.has(c));
+  let streetOn = true;
+  const showStreet = (on) => {
+    if (on === streetOn) return;
+    streetOn = on;
+    for (const c of street) c.visible = on;
+  };
+  showStreet(false);
+  zones.onChange((z) => { if (z !== 'burrough') showStreet(false); });
+
   function update(dt, t, playerPos) {
     const z = zones.current();
-    if (z === 'burrough') for (const u of updates) u(dt, t, playerPos);
-    else if (roomUpdates[z]) for (const u of roomUpdates[z]) u(dt, t, playerPos);
+    if (z === 'burrough') {
+      showStreet(true);
+      for (const u of updates) u(dt, t, playerPos);
+    } else if (roomUpdates[z]) for (const u of roomUpdates[z]) u(dt, t, playerPos);
   }
   return { group, update };
 }

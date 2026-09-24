@@ -405,16 +405,16 @@ export function createIsland6(player) {
     finial.position.set(flagBaseX, py + 8.3, flagBaseZ);
     group.add(finial);
     // the little floodlight that makes regulation 4(c) legal
-    const flood = box(0.3, 0.2, 0.3, 0x4a5568);
+    const flood = box(0.42, 0.22, 0.42, 0x4a5568);
     flood.position.set(flagBaseX + 0.7, py + 0.15, flagBaseZ + 0.7);
-    flood.rotation.z = 0.6;
+    flood.rotation.z = 0.6; // its top face tipped toward the pole: that's the lens
     group.add(flood);
     // its lens (on the face toward the pole), and a faint beam up the pole —
     // lit after dark while the flag is flying. glow, not a light.
-    const lensMat = new THREE.MeshStandardMaterial({ color: 0xfff3d0, emissive: 0xfff3d0, emissiveIntensity: 0, roughness: 0.3 });
-    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.11, 10), lensMat);
-    lens.position.set(-0.151, 0, 0);
-    lens.rotation.y = -Math.PI / 2;
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0xfff3d0, emissive: 0xfff3d0, emissiveIntensity: 0, roughness: 0.3, side: THREE.DoubleSide });
+    const lens = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.36), lensMat);
+    lens.position.set(0, 0.111, 0); // the top face, which the tilt aims at the flag (and the camera sees)
+    lens.rotation.x = -Math.PI / 2;
     flood.add(lens);
     const beamMat = new THREE.MeshBasicMaterial({ color: 0xfff3d0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
     const beamLen = 7.6;
@@ -463,7 +463,7 @@ export function createIsland6(player) {
     updates.push((dt, t) => {
       // the floodlight: on at night while the flag is up, faded in and out
       floodK += (((isNight() && flagGroup.visible) ? 1 : 0) - floodK) * Math.min(1, dt * 1.2);
-      lensMat.emissiveIntensity = floodK * 1.6;
+      lensMat.emissiveIntensity = floodK * 2.4;
       beamMat.opacity = floodK * 0.07;
       beam.visible = floodK > 0.01;
       // a cloth in the wind: each strip of the plane waves a little later
