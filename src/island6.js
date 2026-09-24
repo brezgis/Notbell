@@ -409,6 +409,22 @@ export function createIsland6(player) {
     flood.position.set(flagBaseX + 0.7, py + 0.15, flagBaseZ + 0.7);
     flood.rotation.z = 0.6;
     group.add(flood);
+    // its lens (on the face toward the pole), and a faint beam up the pole —
+    // lit after dark while the flag is flying. glow, not a light.
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0xfff3d0, emissive: 0xfff3d0, emissiveIntensity: 0, roughness: 0.3 });
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.11, 10), lensMat);
+    lens.position.set(-0.151, 0, 0);
+    lens.rotation.y = -Math.PI / 2;
+    flood.add(lens);
+    const beamMat = new THREE.MeshBasicMaterial({ color: 0xfff3d0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    const beamLen = 7.6;
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.12, beamLen, 10, 1, true), beamMat);
+    // from the lamp at the foot, up and in toward the cloth
+    const bx0 = flagBaseX + 0.7, bz0 = flagBaseZ + 0.7, bx1 = flagBaseX + 0.9, bz1 = flagBaseZ;
+    beam.position.set((bx0 + bx1) / 2, py + 0.2 + beamLen / 2, (bz0 + bz1) / 2);
+    beam.lookAt(bx1, py + 7.6, bz1);
+    beam.rotateX(Math.PI / 2); // its wide end up at the cloth
+    group.add(beam);
     zones.addBlocker(flagBaseX, flagBaseZ, 0.5);
 
     flagGroup = new THREE.Group();
@@ -443,8 +459,13 @@ export function createIsland6(player) {
     });
 
     // etiquette, checked the slow way — flags don't hurry
-    let flagT = 0;
+    let flagT = 0, floodK = 0;
     updates.push((dt, t) => {
+      // the floodlight: on at night while the flag is up, faded in and out
+      floodK += (((isNight() && flagGroup.visible) ? 1 : 0) - floodK) * Math.min(1, dt * 1.2);
+      lensMat.emissiveIntensity = floodK * 1.6;
+      beamMat.opacity = floodK * 0.07;
+      beam.visible = floodK > 0.01;
       // a cloth in the wind: each strip of the plane waves a little later
       const posA = flagCloth.geometry.attributes.position;
       for (let i = 0; i < posA.count; i++) {

@@ -48,7 +48,7 @@ function glow() {
 
 export function createStarfall(player) {
   const group = new THREE.Group();
-  let nextT = 30 + Math.random() * 40;
+  let nextT = 120 + Math.random() * 180; // (rarer than it was: a falling star should be an occasion)
   let star = null; // { g, streak, phase: 'streak'|'fall'|'landed', t, from, to, handle }
 
   const starMat = new THREE.MeshStandardMaterial({
@@ -128,7 +128,7 @@ export function createStarfall(player) {
       if (zones.current() !== 'island' || !isNight() || !clearSky) return;
       nextT -= dt;
       if (nextT <= 0) {
-        nextT = 70 + Math.random() * 90;
+        nextT = 300 + Math.random() * 420;
         spawn();
       }
       return;
