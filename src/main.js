@@ -471,7 +471,12 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
 });
 
-document.getElementById('loading')?.remove();
+{
+  // the splash takes a breath and fades, rather than blinking out
+  const splash = document.getElementById('loading');
+  splash?.classList.add('done');
+  setTimeout(() => splash?.remove(), 650);
+}
 
 // debug/testing hook (used by the shots/ harness). cam.view() aims the
 // camera at any point without moving the player; cam.view(null) lets go.
@@ -486,7 +491,7 @@ const cam = {
   },
   get: () => ({ yaw: camYaw, pitch: camPitch, dist: camDist }),
 };
-window.__notbell = { cam, boats, interact, playTool, zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline, farline };
+window.__notbell = { ui, cam, boats, interact, playTool, zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline, farline };
 
 // a small welcome the first time — and everyone gets to choose who they are
 (async () => {
@@ -510,7 +515,7 @@ window.__notbell = { cam, boats, interact, playTool, zones, player, S, SITES, IS
     player.swapBody(S.state.avatar.kind, S.state.avatar.body);
   }
   if (!S.state.name) {
-    const raw = window.prompt('And what do the islanders call you?', '');
+    const raw = await ui.input('And what do the islanders call you?', { placeholder: 'your name (you can change it later)', max: 16 });
     S.state.name = (raw || 'Sandy').trim().slice(0, 16) || 'Sandy';
     S.save();
     ui.updateHUD();

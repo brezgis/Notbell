@@ -24,7 +24,58 @@ const dialogText = el('div', 'dialog-text', dialog);
 const dialogMore = el('div', 'dialog-more', dialog);
 const choicesBox = el('div', 'choices');
 const pockets = el('div', 'pockets');
+pockets.className = 'panel';
 const fadeEl = el('div', 'fade');
+const veilEl = el('div', 'veil');
+
+// the veil behind modal panels (map, almanac, settings): one click closes
+// whatever's open
+let veilClose = null;
+export function setVeil(on, onClose = null) {
+  veilEl.classList.toggle('on', on);
+  veilClose = on ? onClose : null;
+}
+veilEl.addEventListener('click', () => { const f = veilClose; setVeil(false); f?.(); });
+
+// ------------------------------------------------------------- toolbar ----
+// one row of buttons for everyone (a column under your right thumb on
+// touch). Each speaks fluent keyboard, so nothing downstream had to learn
+// about buttons; the key badge teaches the shortcut on desktop.
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+const toolbar = el('div', 'toolbar');
+function keyTap(code) {
+  dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true }));
+  dispatchEvent(new KeyboardEvent('keyup', { code, key: code, bubbles: true }));
+}
+for (const [icon, code, name, badge] of [
+  ['🗺️', 'KeyP', 'map', 'P'], ['🎒', 'KeyI', 'pockets', 'I'], ['📖', 'KeyC', 'almanac', 'C'],
+  ['🎩', 'KeyH', 'hats', 'H'], ['⚙️', null, 'settings', null],
+]) {
+  const b = el('button', null, toolbar);
+  b.className = 'tool';
+  b.title = name + (badge ? ` (${badge})` : '');
+  b.innerHTML = icon + (badge ? `<span class="key">${badge}</span>` : '');
+  b.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (busy) return;
+    if (code) keyTap(code);
+    else dispatchEvent(new CustomEvent('notbell-settings'));
+  });
+}
+
+// the controls legend: open for a newcomer's first minute, then a pill
+const help = document.getElementById('help');
+if (help) {
+  const seenHelp = (() => { try { return localStorage.getItem('notbell-seen-help'); } catch { return '1'; } })();
+  if (!seenHelp) {
+    help.classList.add('open');
+    setTimeout(() => {
+      help.classList.remove('open');
+      try { localStorage.setItem('notbell-seen-help', '1'); } catch { /* private window */ }
+    }, 75000);
+  }
+  help.addEventListener('click', () => help.classList.toggle('open'));
+}
 
 dialog.style.display = 'none';
 choicesBox.style.display = 'none';
@@ -51,6 +102,10 @@ export function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[ch]));
+}
+
+function talking(on) {
+  document.body.classList.toggle('talking', on);
 }
 
 export function isBusy() {
@@ -95,6 +150,7 @@ export function say(pages, { speaker = '', voice = 520 } = {}) {
     .map((p) => (typeof p === 'string' ? { text: p, speaker, voice } : { speaker, voice, ...p }));
   return new Promise((resolve) => {
     busy = true;
+    talking(true);
     dialog.style.display = 'block';
     promptChip.style.display = 'none';
     let idx = 0;
@@ -108,6 +164,7 @@ export function say(pages, { speaker = '', voice = 520 } = {}) {
         else {
           dialog.style.display = 'none';
           busy = false;
+          talking(false);
           advanceFn = null;
           closedAt = performance.now();
           resolve();
@@ -123,6 +180,7 @@ export function say(pages, { speaker = '', voice = 520 } = {}) {
 export function ask(text, choices, { speaker = '', voice = 520 } = {}) {
   return new Promise((resolve) => {
     busy = true;
+    talking(true);
     dialog.style.display = 'block';
     promptChip.style.display = 'none';
     nameTag.textContent = speaker;
@@ -131,9 +189,51 @@ export function ask(text, choices, { speaker = '', voice = 520 } = {}) {
       showChoices(choices, (value) => {
         dialog.style.display = 'none';
         busy = false;
+        talking(false);
         closedAt = performance.now();
         resolve(value);
       });
+    } });
+  });
+}
+
+// input('What do the islanders call you?', {placeholder, max, long}) →
+// the typed string (or '' if left blank). An in-game box, not the browser's.
+export function input(text, { speaker = '', voice = 520, placeholder = '', max = 16, long = false, value = '' } = {}) {
+  return new Promise((resolve) => {
+    busy = true;
+    talking(true);
+    dialog.style.display = 'block';
+    promptChip.style.display = 'none';
+    nameTag.textContent = speaker;
+    nameTag.style.display = speaker ? 'block' : 'none';
+    typeText(text, voice, { onComplete: () => {
+      const field = el(long ? 'textarea' : 'input', null, dialog);
+      field.placeholder = placeholder;
+      if (!long) field.maxLength = max;
+      field.value = value;
+      const ok = el('button', null, dialog);
+      ok.className = 'ok';
+      ok.textContent = 'OK';
+      const clear = el('div', null, dialog);
+      clear.style.clear = 'both';
+      const done = () => {
+        const v = field.value.trim();
+        field.remove(); ok.remove(); clear.remove();
+        dialog.style.display = 'none';
+        busy = false;
+        talking(false);
+        closedAt = performance.now();
+        resolve(long ? v : v.slice(0, max));
+      };
+      ok.addEventListener('click', (e) => { e.stopPropagation(); done(); });
+      field.addEventListener('click', (e) => e.stopPropagation());
+      field.addEventListener('keydown', (e) => {
+        e.stopPropagation(); // typing is typing — not walking, not hats
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done(); }
+      });
+      advanceFn = null;
+      setTimeout(() => field.focus(), 30);
     } });
   });
 }
@@ -145,10 +245,11 @@ function showChoices(choices, done) {
   choices.forEach((c, i) => {
     const b = el('button', null, choicesBox);
     b.className = 'choice' + (c.disabled ? ' disabled' : '');
-    b.innerHTML = `<span>${escapeHtml(c.label)}</span>` +
+    b.innerHTML = `<span class="num">${i < 9 ? i + 1 : ''}</span><span class="label">${escapeHtml(c.label)}</span>` +
       (c.hint ? `<span class="hint">${escapeHtml(c.hint)}</span>` : '');
     if (!c.disabled) {
       b.addEventListener('click', () => pickChoice(i));
+      b.addEventListener('pointerenter', () => { choiceIdx = i; updateChoiceFocus(); });
     }
     choiceEls.push(b);
   });
@@ -157,6 +258,9 @@ function showChoices(choices, done) {
   if (choiceIdx < 0) choiceIdx = 0;
   updateChoiceFocus();
   choicesBox.style.display = 'flex';
+  // stack just above the dialogue box, however tall it grew
+  const r = dialog.getBoundingClientRect();
+  choicesBox.style.bottom = `${Math.round(innerHeight - r.top + 14)}px`;
   chooseFn = (i) => {
     if (choices[i]?.disabled) return;
     choicesBox.style.display = 'none';
@@ -207,11 +311,13 @@ dialog.addEventListener('click', () => advanceFn?.());
 
 // --------------------------------------------------------------- prompt ----
 
+promptChip.addEventListener('pointerdown', (e) => { e.preventDefault(); keyTap('KeyE'); });
+
 export function prompt(text) {
   if (!text || busy) {
     promptChip.style.display = 'none';
   } else {
-    promptChip.innerHTML = `<b>E</b> ${escapeHtml(text)}`;
+    promptChip.innerHTML = `<b>${isTouch ? 'tap' : 'E'}</b>${escapeHtml(text)}`;
     promptChip.style.display = 'block';
   }
 }
@@ -244,8 +350,7 @@ export function updateHUD() {
     .join(' ');
   hud.innerHTML =
     `<span class="chip">🔘 ${state.buttons}</span>` +
-    (tools ? `<span class="chip">${tools}</span>` : '') +
-    `<span class="chip dim kbhint">I — pockets</span>`; // hidden on touch
+    (tools ? `<span class="chip">${tools}</span>` : '');
 }
 
 // -------------------------------------------------------------- pockets ----
@@ -259,24 +364,41 @@ export function togglePockets() {
   }
 }
 
+const POCKET_GROUPS = [
+  ['🐟 Fish', ['fish']], ['🦋 Bugs', ['bug']], ['🦴 Fossils', ['fossil']], ['🦀 Tide pool', ['tidepool', 'pool']],
+  ['🐚 Shells, stars & meteors', ['shell', 'star', 'meteor']], ['🍊 Fruit & produce', ['fruit', 'produce']], ['🖼️ Art', ['art']],
+  ['🎩 Hats', ['hat']], ['🧰 Gear', ['gear', 'tool', 'seed']],
+];
 function renderPockets() {
-  const rows = Object.entries(state.inv)
-    .map(([id, n]) => ({ it: ITEMS[id], n }))
-    .filter(({ it }) => it)
-    .map(({ it, n }) =>
-      `<div class="row"><span>${it.emoji} ${escapeHtml(it.name)}</span>` +
-      `<span class="dim">×${n}${it.price > 0 ? ` · ${it.price}🔘` : ''}</span></div>`)
-    .join('');
+  const owned = Object.entries(state.inv)
+    .map(([id, n]) => ({ id, it: ITEMS[id], n }))
+    .filter(({ it, n }) => it && n > 0);
+  const tile = ({ it, n }) =>
+    `<div class="tile" title="${escapeHtml(it.name)}${it.blurb ? ' — ' + escapeHtml(it.blurb) : ''}">` +
+    `<span class="e">${it.emoji}</span><span class="n">${escapeHtml(it.name)}</span>` +
+    (n > 1 ? `<span class="c">${n}</span>` : '') + '</div>';
+  const used = new Set();
+  let body = '';
+  for (const [title, kinds] of POCKET_GROUPS) {
+    const list = owned.filter((o) => kinds.includes(o.it.kind));
+    if (!list.length) continue;
+    list.forEach((o) => used.add(o.id));
+    body += `<h4>${title}<span class="count">${list.reduce((a, o) => a + o.n, 0)}</span></h4><div class="tiles">${list.map(tile).join('')}</div>`;
+  }
+  const rest = owned.filter((o) => !used.has(o.id));
+  if (rest.length) body += `<h4>✨ Keepsakes<span class="count">${rest.reduce((a, o) => a + o.n, 0)}</span></h4><div class="tiles">${rest.map(tile).join('')}</div>`;
+  const worth = owned.reduce((a, o) => a + (o.it.price > 0 && o.it.kind !== 'gear' ? o.it.price * o.n : 0), 0);
   const donated = state.donations.length;
   const owner = state.name ? `${escapeHtml(state.name)}’s ` : '';
   pockets.innerHTML =
-    `<div class="fg-close pockets-close">✕</div>` +
+    `<button class="closex" aria-label="close">✕</button>` +
     `<h3>🎒 ${owner}Pockets</h3>` +
-    (rows || `<div class="row dim">Empty. The island is full of things…</div>`) +
-    `<div class="row total"><span>Buttons</span><span>🔘 ${state.buttons}</span></div>` +
-    (donated ? `<div class="row dim"><span>Museum pieces donated</span><span>${donated}</span></div>` : '') +
-    `<div class="closehint dim">I or Esc to close</div>`;
-  pockets.querySelector('.pockets-close').addEventListener('click', () => {
+    (body || `<div class="sub">Empty. The island is full of things…</div>`) +
+    `<div class="total"><span>🔘 ${state.buttons} buttons</span>` +
+    (worth ? `<span class="dim">pockets worth ~${worth}🔘</span>` : '') + `</div>` +
+    (donated ? `<div class="sub" style="margin-top:6px">🏛️ ${donated} donated to the museum</div>` : '') +
+    `<div class="foot">${isTouch ? 'tap 🎒 to close' : 'I or Esc to close'}</div>`;
+  pockets.querySelector('.closex').addEventListener('click', () => {
     pockets.style.display = 'none';
   });
 }
