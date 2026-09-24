@@ -34,6 +34,7 @@ import { createLabsGrounds } from './labsgrounds.js';
 import { createFarther } from './farther.js';
 import { createMoon } from './moon.js';
 import { createCrown } from './crown.js';
+import { createBurrough } from './burrough.js';
 import { wireHatKey } from './hats.js';
 import { initTools, updateTools, play as playTool } from './tools.js';
 import { initFieldGuide, markVisited, placeName } from './fieldguide.js';
@@ -217,6 +218,7 @@ const digging = createDigging();
 const tidePools = createTidePools();
 const fold = createFold(); // the Fold arrived late and touches nothing
 const labsGrounds = createLabsGrounds(); // after everything: it looks for open ground
+const burrough = createBurrough(player); // and underneath it all, the moles (its molehill looks for open ground too)
 wireHatKey(player.group);
 initTools(player); // rod, net, shovel — in your paws when you use them
 initFieldGuide(player);
@@ -230,7 +232,7 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, shells.group, starfall.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group, crown.group, labsGrounds.group
+  island5.group, shells.group, starfall.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group, crown.group, labsGrounds.group, burrough.group
 );
 
 // name each module's root so debug probes (shots/clip_audit.mjs) can say
@@ -404,6 +406,7 @@ renderer.setAnimationLoop(() => {
   farther.update(dt, t, playerPos); // ditto — the General keeps store hours (all of them)
   if (zone === 'moon') moon.update(dt, t, playerPos);
   if (zone === 'crown') crown.update(dt, t, playerPos);
+  if (zone === 'burrough') burrough.update(dt, t, playerPos);
   if (zone === 'cave') cave.update(dt, t);
   ghost.update(dt, t, playerPos); // walls are a rumor
   buildings.update(dt, t, playerPos);
@@ -424,7 +427,7 @@ renderer.setAnimationLoop(() => {
       cafe: 'cafe', cave: 'cave', church: 'church', museum: 'museum',
       shop: 'shop', grocery: 'shop', bulko: 'bulko', manor: 'manor',
       manor_up: 'manor', cellar: 'cave', moon: 'night', labs: 'shop',
-      post: 'shop', kirk: 'church', general: 'shop', crown: 'reef',
+      post: 'shop', kirk: 'church', general: 'shop', crown: 'reef', burrough: 'burrough',
     };
     const outdoors = zone === 'island' || zone === 'sea';
     const wx = currentWeather();

@@ -225,6 +225,14 @@ export const ITEMS = {
     kind: 'keepsake', name: 'Plush Rocket', emoji: '🚀', price: 0,
     blurb: 'Soft, stuffed, fully non-functional. Has been to the moon exactly as many times as you have. Well — it depends.',
   },
+  dirt_globe: {
+    kind: 'keepsake', name: 'Burrough Dirt Globe', emoji: '🔮', price: 0,
+    blurb: 'Shake it and a little storm of dirt swirls around a tiny Loam Street. Then it settles. It always settles. That’s the souvenir.',
+  },
+  daily_dirt: {
+    kind: 'keepsake', name: 'The Daily Dirt', emoji: '🗞️', price: 0,
+    blurb: '“All the News That’s Fit to Dig.” Page one is the hot worm story. Pages two through nine are also the hot worm story.',
+  },
   sunfruit: {
     kind: 'fruit', name: 'Sunfruit', emoji: '🍊', price: 15,
     blurb: 'Warm even in the shade. The trees here are generous.',

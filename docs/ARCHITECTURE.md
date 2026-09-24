@@ -29,7 +29,7 @@ features    buildings houses cave fishing digging tidepools player ocean
             boats volcano texas ghost beachball oceanlife
             ambient villagers multiplayer settings
             tools (rod/net/shovel in your paws) shells starfall
-            crown (the world under the reef)
+            crown (the world under the reef)  burrough (the city under the islands)
 conductor   main.js
 ```
 

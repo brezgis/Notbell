@@ -220,6 +220,13 @@ const SONGBOOK = {
       [65, 0.5], [64, 0.5], [62, 0.5], [60, 0.5], [62, 2],
       [55, 0.5], [55, 0.5], [67, 1], [65, 0.5], [64, 0.5], [62, 2]],
   },
+  // Thelonious, on the corner of Loam Street: a blues lick, swung
+  mind_the_gap: {
+    bpm: 118, type: 'triangle',
+    notes: [[60, 0.67], [63, 0.33], [65, 0.67], [66, 0.33], [67, 1], [70, 0.5], [67, 0.5], [65, 1],
+      [63, 0.67], [60, 0.33], [0, 0.5], [67, 0.5], [70, 0.67], [72, 0.33], [70, 0.67], [67, 0.33],
+      [65, 0.67], [63, 0.33], [60, 1], [58, 0.5], [60, 2.5]],
+  },
 };
 
 let songEndsAt = 0;
@@ -305,6 +312,9 @@ const MTRACKS = {
   // coming down through the water
   reef: { bpm: 72, key: 65, scale: 'lydian', density: 0.35, lead: 'sine', vol: 0.02, sparkle: true,
     chords: [[0, 'maj7'], [2, 'maj'], [0, 'maj7'], [7, 'sus']] },
+  // the Burrough: dorian, a little swing, a streetcar bell somewhere
+  burrough: { bpm: 96, key: 55, scale: 'dorian', density: 0.38, lead: 'triangle', vol: 0.018,
+    chords: [[2, 'min7'], [7, 'maj'], [0, 'maj7'], [9, 'min7']] },
   indoors: { bpm: 68, key: 60, scale: 'major', density: 0.2, lead: 'sine', vol: 0.016,
     chords: [[0, 'maj'], [9, 'min']] },
 };

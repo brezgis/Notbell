@@ -178,6 +178,65 @@ bubble helmet down there, like on the moon):
   anglerfish: "Up there you had a lighthouse. Down here, you have me." On
   the heavy tides she hears something ring, far off, once. (Same hook.)
 
+## The Burrough (under the islands) — `burrough.js`
+
+The moles were here first. Everyone up top knows a mole or two; nobody up
+top asks where they go home to. Down. Two ways in: a **molehill by the Labs
+beach** (Boring Dept. staff entrance, visitors welcome — Wendell's commute)
+and a **little arched door in the back wall of the Moledecai wine cellar**
+("SERVICE ENTRANCE"). The distance between them is not to scale; nothing
+down here is. There is no reason to go except mole tourism, and that is the
+reason.
+
+- **The Boring Line** — one open-sided green streetcar on a wire. The
+  Boring Department dug it in one night; the paperwork took eleven years.
+  Ring the bell pull and it comes; it waits for anyone standing on the
+  track. "Mind the gap. There is always a gap."
+- **The Works** (under the Labs) — **Boring Dept. Local 1** ("15 MINUTES
+  FOR EVERY MOLE"). **Bertha**, shop steward: the Labs hired the Department
+  for the listening wells ("nobody hears through rock like a mole"); Wendell
+  has been on his fifteen since spring and nobody checks — solidarity. The
+  punch clock stamps VISITOR — ON THE CLOCK. **Tuppence** (hamster) runs the
+  Visitors' Bureau: dirt globes (they always settle) and the Daily Dirt.
+  **Auger** at the tunnel face: the extension goes West, "coming soon."
+- **The Institute for Deep Study** — up a quiet lane: **Mould Hall** (red
+  brick, a cupola clock nobody winds), mushroom woods, a blackboard ("this
+  tunnel cannot be proved to have an end. PROOF: (keep digging)"). No
+  students, no classes, no hurry; the Labs send down their hardest questions
+  and get back better ones. **Professor Mödel** (mole; fedora, spectacles,
+  scarf — it is cold, he checked): true tunnels that cannot be dug, a flaw
+  in Article Four of the Burrough charter (do not mention it at his
+  hearing), and a lane he walks every day for two, since the colleague he
+  admired stopped walking it with him. **Professor Emerita Rosalind** (naked
+  mole rat): emerita so long they ran out of cake; tea at four, always four;
+  Mödel checks her tea before she drinks it, and both of those things are
+  love.
+- **Loam Street** (midtown) — **the Loamsworth Arms** (four floors of round
+  windows, laundry that takes nine years to dry, rent-controlled since the
+  Squall) and **Mrs. Loamsworth** at her second-floor window. **Thelonious
+  Mole** busks on the corner (beret, dark glasses, sax; tip the hat and he
+  plays "Mind the Gap"; "the other bell's none of my business").
+  **Nibs** (hamster) sells **hot worms**, which contain no worms and never
+  have: they are churros, named by her grandmother, a hamster of vision.
+  **The Daily Dirt** ("All the News That's Fit to Dig") and its ethics desk,
+  **Lowell** — a worm, with legs (six, in sneakers). He is investigating the
+  hot worm cart, daily, by eating one. Where the legs came from: **no
+  comment. Running gag — never explain the legs.** **Marjorie** (groundhog)
+  forecasts the *surface* weather from a soapbox and is always wrong (she
+  reads the real weather and says the opposite); thirty-one years, "you can
+  plan around me." **Spoke** (hamster) is Burrough Electric: one wheel,
+  every lamp in Midtown; if they flicker, he's waving.
+- **Uptown** (under the manor) — **The Moledecai**, the family's old
+  building; the family "went upstairs" three Barons ago. **Fitzgerald**
+  keeps the door and a list nobody is on; the Baron sends a card every
+  winter: "Keep the door." The pups visit through the cellar and run the
+  stoop eleven times. **Central Mulch**: three mushrooms, a moss lawn, and
+  **Mr. Hollis** (groundhog, retired forecaster, right every time, nobody
+  came) feeding the beetles.
+- The bell: **down here they hear it through the rock on the heavy tides**
+  (Auger, Fitzgerald, the Daily Dirt: residents "not surprised," "a nice
+  sound"). Nobody up top has ever asked them. A bell hook — do not resolve.
+
 ## The night sky
 
 Constellations (sky.js): **The Bell** (one star missing — the clapper; the

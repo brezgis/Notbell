@@ -42,6 +42,7 @@ function collectInteriorRoot(parent, startIndex) {
 }
 
 const IN_MANOR = { x: 300, z: 1380 };
+export const CELLAR = { x: 300, z: 1540 }; // the wine cellar (the Burrough keeps a door in its back wall)
 
 const MOLEDECAI_CHAT = [
   'Moledecai. Of the Grove Isle Moledecais. There are no other Moledecais. We are very exclusive.',
@@ -969,7 +970,7 @@ export function createIsland5(player) {
 
     // ======================= below: the wine cellar =======================
     const cellarStart = group.children.length;
-    const C2 = { x: 300, z: 1540 };
+    const C2 = CELLAR;
     const cfloor = box(14, 0.4, 9, 0x5a5048);
     cfloor.position.set(C2.x, -0.2, C2.z);
     cfloor.receiveShadow = true;
