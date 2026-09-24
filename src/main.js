@@ -218,7 +218,7 @@ const digging = createDigging();
 const tidePools = createTidePools();
 const fold = createFold(); // the Fold arrived late and touches nothing
 const labsGrounds = createLabsGrounds(); // after everything: it looks for open ground
-const burrough = createBurrough(player); // and underneath it all, the moles (its molehill looks for open ground too)
+const burrough = createBurrough(player, { molehill: labsGrounds.molehill }); // and underneath it all, the moles (up top, a molehill on the meadow's little hill)
 wireHatKey(player.group);
 initTools(player); // rod, net, shovel — in your paws when you use them
 initFieldGuide(player);
@@ -406,7 +406,7 @@ renderer.setAnimationLoop(() => {
   farther.update(dt, t, playerPos); // ditto — the General keeps store hours (all of them)
   if (zone === 'moon') moon.update(dt, t, playerPos);
   if (zone === 'crown') crown.update(dt, t, playerPos);
-  if (zone === 'burrough') burrough.update(dt, t, playerPos);
+  if (zone === 'burrough' || zone.startsWith('burrough_')) burrough.update(dt, t, playerPos); // the street, and its rooms
   if (zone === 'cave') cave.update(dt, t);
   ghost.update(dt, t, playerPos); // walls are a rumor
   buildings.update(dt, t, playerPos);
@@ -428,6 +428,7 @@ renderer.setAnimationLoop(() => {
       shop: 'shop', grocery: 'shop', bulko: 'bulko', manor: 'manor',
       manor_up: 'manor', cellar: 'cave', moon: 'night', labs: 'shop',
       post: 'shop', kirk: 'church', general: 'shop', crown: 'reef', burrough: 'burrough',
+      burrough_local1: 'shop', burrough_mould: 'museum', burrough_arms: 'burrough', burrough_dirt: 'burrough', burrough_ritz: 'manor',
     };
     const outdoors = zone === 'island' || zone === 'sea';
     const wx = currentWeather();
