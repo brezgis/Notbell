@@ -1495,7 +1495,7 @@ export function createBuildings() {
       floorY: 0,
       bounds: { x0: B.x - 5.5, x1: B.x + 5.5, z0: B.z - 3.2, z1: B.z + 4.1 },
       blockers: [
-        { x: B.x - 0.5, z: B.z - 1.2, r: 2.3 }, // the counter (Moss included)
+        { x: B.x - 0.5, z: B.z - 1.9, w: 4.6, d: 2.6 }, // the counter and Moss's side of it (a box: the old circle kept you out of reach of him)
         { x: B.x + 3.6, z: B.z - 3.3, r: 0.9 }, // the crate
       ],
       spawn: { x: B.x, z: B.z + 3.5, rotY: Math.PI },

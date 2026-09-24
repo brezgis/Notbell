@@ -398,6 +398,11 @@ export function nameVillagers(animals) {
           return;
         }
         // a parcel with their name on it beats small talk
+        if (S.state.errand?.to === id.name && S.countItem('parcel') === 0) {
+          // (left it in the wardrobe? no parcel, no delivery)
+          ui.say(`Is that… no. I thought for a second you had something for me. From ${S.state.errand.from}, maybe.`, { speaker: id.name, voice: id.voice });
+          return;
+        }
         if (S.state.errand?.to === id.name) {
           const from = S.state.errand.from;
           S.removeItem('parcel');
