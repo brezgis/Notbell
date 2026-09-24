@@ -3,9 +3,8 @@
 // The moles were here first. Everybody up top knows a mole or two (the
 // Boring Department at the Labs, the Baron at the manor, his pups) and
 // nobody up top ever asks where they go home to at night. Down. They go
-// down. Two ways in: a molehill by the Labs beach where Wendell takes his
-// fifteen, and a little arched door in the back wall of the Moledecai wine
-// cellar. The distance between them is not to scale. Nothing down here is.
+// down. Two ways in: a molehill on the little hill in the Labs meadow, and
+// a little arched door in the back wall of the Moledecai wine cellar. The distance between them is not to scale. Nothing down here is.
 //
 // Neighborhoods, west to east, on the Boring Line (a streetcar: the Boring
 // Department dug it in one night, the paperwork took eleven years; the
@@ -28,8 +27,10 @@
 //     the coffee, the Tunnel Vision podcast, the Little Desk Sessions) with
 //     its ethics correspondent Lowell (a worm, with legs, no comment).
 //   · UPTOWN — under the manor. The Moledecai, the old family building the
-//     family left three Barons ago, and Fitzgerald, who still keeps the door;
-//     Central Mulch, a park of three mushrooms and a bench.
+//     family left three Barons ago, and Fitzgerald, who still keeps the door
+//     (walk in: the fourth floor, Mrs. Vanderburrow's: a chandelier, a
+//     painting of the sky, Pomme the pill bug); Central Mulch, a park of
+//     three mushrooms and a bench.
 // Down here they hear the bell through the rock on the heavy tides. Nobody
 // up top has ever asked them. (Don't resolve that here — see docs/LORE.md.)
 //

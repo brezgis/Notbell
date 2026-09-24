@@ -181,14 +181,17 @@ bubble helmet down there, like on the moon):
 ## The Burrough (under the islands) — `burrough.js`
 
 The moles were here first. Everyone up top knows a mole or two; nobody up
-top asks where they go home to. Down. Two ways in: a **molehill by the Labs
-beach** (Boring Dept. staff entrance, visitors welcome — Wendell's commute)
+top asks where they go home to. Down. Two ways in: a **molehill on the
+little hill in the Labs meadow**, ringed with flowers (Boring Dept. staff
+entrance, visitors welcome)
 and a **little arched door in the back wall of the Moledecai wine cellar**
 ("SERVICE ENTRANCE"). The distance between them is not to scale; nothing
 down here is. There is no reason to go except mole tourism, and that is the
 reason.
 
-- **The Boring Line** — one open-sided green streetcar on a wire. The
+- **The Boring Line** — one open-sided green streetcar on a wire. The tunnel
+  runs on past both ends into the dark; nobody has been to either end
+  (Mödel: it cannot be proved to have one). The
   Boring Department dug it in one night; the paperwork took eleven years.
   Ring the bell pull and it comes; it waits for anyone standing on the
   track. "Mind the gap. There is always a gap."
@@ -198,7 +201,12 @@ reason.
   has been on his fifteen since spring and nobody checks — solidarity. The
   punch clock stamps VISITOR — ON THE CLOCK. **Tuppence** (hamster) runs the
   Visitors' Bureau: dirt globes (they always settle) and the Daily Dirt.
-  **Auger** at the tunnel face: the extension goes West, "coming soon."
+  **Auger** walks the track west and back ("we dug it in one night; nobody
+  ever said which night"). Inside **Local 1**: **Doris** at the front desk
+  (very exasperated; a hard candy dish; "take a number — we are out of
+  numbers"), **Ping** in IT ("have you tried filling it in and digging it
+  again?"; a core memory Ada wove sits humming in a drawer), and engineers
+  **Gauge & Plumb** at the chalkboard (Plan C is Bertha's: "down").
 - **The Institute for Deep Study** — up a quiet lane: **Mould Hall** (red
   brick, a cupola clock nobody winds), mushroom woods, a blackboard ("this
   tunnel cannot be proved to have an end. PROOF: (keep digging)"). No
@@ -210,10 +218,17 @@ reason.
   admired stopped walking it with him. **Professor Emerita Rosalind** (naked
   mole rat): emerita so long they ran out of cake; tea at four, always four;
   Mödel checks her tea before she drinks it, and both of those things are
-  love.
+  love. Inside Mould Hall: the fire, the founder's portrait (A. Mole, "dug
+  here, thought here"), **Dr. Fennimore** (hamster, thinking since Tuesday)
+  and **Dr. Pell** (groundhog, asleep under a book; it's a method).
 - **Loam Street** (midtown) — **the Loamsworth Arms** (four floors of round
   windows, laundry that takes nine years to dry, rent-controlled since the
-  Squall) and **Mrs. Loamsworth** at her second-floor window. **Thelonious
+  Squall), **Beaumont** the doorman (burgundy, gold braid, top hat, white
+  gloves), a lobby with an elevator out of order since the Squall, and
+  **2B**: **Sorrel** (hamster, beanie, big glasses; into the Burrough before
+  it was underground), exposed original dirt, vinyl, and **Gerald**, a
+  sourdough starter who is doing really well. **Mrs. Loamsworth** at her
+  second-floor window. **Thelonious
   Mole** busks on the corner (beret, dark glasses, sax; tip the hat and he
   plays "Mind the Gap"; "the other bell's none of my business").
   **Nibs** (hamster) sells **hot worms**, which contain no worms and never
@@ -224,13 +239,22 @@ reason.
   comment. Running gag — never explain the legs.** **Marjorie** (groundhog)
   forecasts the *surface* weather from a soapbox and is always wrong (she
   reads the real weather and says the opposite); thirty-one years, "you can
-  plan around me." **Spoke** (hamster) is Burrough Electric: one wheel,
+  plan around me," to a small loyal crowd who shake their heads and come
+  back tomorrow. Inside **the Daily Dirt**: **Mudge** (groundhog editor,
+  green visor: "nine thousand words is a book"), the obituaries, sports,
+  crossword and culture desks (the crossword answer is always BURROW),
+  **Dex** hosting **Tunnel Vision** ("a podcast about the spaces between
+  spaces"), and the **Little Desk Sessions** (the Loam Rangers). **Spoke** (hamster) is Burrough Electric: one wheel,
   every lamp in Midtown; if they flicker, he's waving.
 - **Uptown** (under the manor) — **The Moledecai**, the family's old
   building; the family "went upstairs" three Barons ago. **Fitzgerald**
   keeps the door and a list nobody is on; the Baron sends a card every
   winter: "Keep the door." The pups visit through the cellar and run the
-  stoop eleven times. **Central Mulch**: three mushrooms, a moss lawn, and
+  stoop eleven times. Up on the fourth floor: **Mrs. Vanderburrow**
+  (pearls, a stole, "you must be somebody"), a painting of the sky (artist's
+  impression — she's told it's blue), vintage dew from the Squall year, and
+  **Pomme**, a pill bug, who rolls up when pleased (or frightened, or it's
+  Tuesday). **Central Mulch**: three mushrooms, a moss lawn, and
   **Mr. Hollis** (groundhog, retired forecaster, right every time, nobody
   came) feeding the beetles.
 - The bell: **down here they hear it through the rock on the heavy tides**
