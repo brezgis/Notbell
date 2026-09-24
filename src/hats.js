@@ -85,9 +85,10 @@ const builders = {
     const g = new THREE.Group();
     const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 0), mat(0x55b055, 0.8));
     leaf.scale.set(1.5, 0.22, 1.0);
+    leaf.position.y = 0.1; // up on the crown (the top of the head used to poke through the middle)
     g.add(leaf);
     const stem = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.16, 5), mat(0x4e9a45));
-    stem.position.set(-0.5, 0.08, 0);
+    stem.position.set(-0.5, 0.18, 0);
     stem.rotation.z = 0.8;
     g.add(stem);
     return g;
@@ -108,6 +109,8 @@ function capWithBrim(color) {
   return g;
 }
 
+const COVERS_EARS = new Set(['knit_cap', 'straw_hat', 'keepers_cap', 'captains_cap']);
+
 // Put a hat on any buildAnimal() group (or null to go bare-headed).
 export function applyHat(animal, hatId) {
   const head = animal.userData.parts?.head;
@@ -116,18 +119,26 @@ export function applyHat(animal, hatId) {
     head.remove(animal.userData.hatMesh);
     animal.userData.hatMesh = null;
   }
+  const ears = animal.userData.parts.ears || [];
+  ears.forEach((e) => { e.visible = true; });
   if (!hatId || !builders[hatId]) return;
   const hat = builders[hatId]();
+  // a crowned hat tucks pointed ears under it (the tips used to poke through)
+  if (COVERS_EARS.has(hatId)) ears.forEach((e) => { e.visible = false; });
   // fit the head it's on: heads come in many sizes and squashes (a horse's
   // is long, a mole's is flat), and a hat parented to a squashed head gets
   // squashed too — so undo the head's scale, size the hat to the head, and
   // seat it on the crown rather than at a fixed height
   const r = head.geometry?.parameters?.radius ?? 0.42;
   const hs = head.scale;
-  const worldR = r * Math.max(hs.x, hs.z);
+  // (the mean of width and depth: a long face — the horse — used to get a
+  // hat sized to its length, a third too wide, brim over the eyes)
+  const worldR = r * Math.sqrt(hs.x * hs.z);
   const k = worldR / 0.42;
   hat.scale.set(k / hs.x, k / hs.y, k / hs.z);
-  hat.position.y = r * 0.78;
+  const parts = animal.userData.parts;
+  hat.position.y = parts.hatY ?? r * 0.78;
+  if (parts.hatZ !== undefined) hat.position.z = parts.hatZ;
   hat.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   head.add(hat);
   animal.userData.hatMesh = hat;

@@ -67,6 +67,7 @@ export function buildAnimal(kind, colors = {}) {
       const ear = new THREE.Mesh(earGeo, headMat);
       ear.position.set(sx * 0.2, 1.66, 0.28);
       g.add(ear);
+      (parts.ears ??= []).push(ear); // a hat that covers ears tucks these under it
     }
     const snout = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.3, 6), headMat);
     snout.rotation.x = Math.PI / 2;
@@ -312,6 +313,7 @@ export function buildAnimal(kind, colors = {}) {
       const ear = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 4), headMat);
       ear.position.set(sx * 0.15, 2.22, 0.62);
       g.add(ear);
+      (parts.ears ??= []).push(ear); // a hat that covers ears tucks these under it
     }
     // mane: a row of dark tufts down the neck
     for (let i = 0; i < 4; i++) {
@@ -457,11 +459,11 @@ export function buildAnimal(kind, colors = {}) {
     parts.head.scale.set(1.05, 0.95, 1.0);
     parts.headY = 1.02;
     parts.head.position.set(0, parts.headY, 0.4);
-    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.16, 1.1, 0.72));
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.16, 1.1, 0.8));
     for (const sx of [-1, 1]) { // the signature eye-streaks, worn like reading glasses
       const streak = new THREE.Mesh(ico(0.09, 0), mat(0x4a3f33));
       streak.scale.set(1.6, 0.5, 0.5);
-      streak.position.set(sx * 0.2, 1.06, 0.7);
+      streak.position.set(sx * 0.2, 1.06, 0.78);
       streak.rotation.z = sx * -0.5;
       g.add(streak);
     }
@@ -504,11 +506,12 @@ export function buildAnimal(kind, colors = {}) {
     tailCr.position.set(0, 0.42, -2.0);
     g.add(tailCr);
     const stubby = new THREE.CylinderGeometry(0.09, 0.08, 0.3, 5);
+    stubby.translate(0, -0.15, 0); // pivot at the hip, like everyone else's
     for (const leg of parts.legs) g.remove(leg);
     parts.legs.length = 0;
     for (const [sx, sz] of [[-1, 1.1], [1, 1.1], [-1, -1.1], [1, -1.1]]) {
       const leg = new THREE.Mesh(stubby, bodyMat);
-      leg.position.set(sx * 0.5, 0.2, sz * 0.7);
+      leg.position.set(sx * 0.5, 0.35, sz * 0.7);
       g.add(leg);
       parts.legs.push(leg);
     }
@@ -682,7 +685,7 @@ export function buildAnimal(kind, colors = {}) {
     for (const sx of [-1, 1]) {
       for (let k = 0; k < 3; k++) {
         const frond = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.3, 4), mat(0xe06a8a, 0.7));
-        frond.position.set(sx * (0.3 + k * 0.06), 0.85 + k * 0.1, 0.4 - k * 0.12);
+        frond.position.set(sx * (0.3 + k * 0.03), 0.82 + k * 0.08, 0.42 - k * 0.05);
         frond.rotation.z = -sx * (0.9 + k * 0.3);
         g.add(frond);
       }
@@ -742,8 +745,9 @@ export function buildAnimal(kind, colors = {}) {
       parts.eyes[i].position.set(sx * 0.27, 1.1, 0.51);
       parts.eyes[i].scale.setScalar(1.25);
     }
-    const smile = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.035, 0.05), mat(0x2e3a2a));
-    smile.position.set(0, 0.76, 0.63);
+    const smile = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.035, 0.05), mat(0x2e3a2a));
+    smile.position.set(0, 0.76, 0.6);
+    parts.hatY = 0.5; parts.hatZ = -0.1; // (a hat sits behind and above the bulbs, not on them)
     g.add(smile);
     const belly = new THREE.Mesh(ico(0.34), mat(colors.belly ?? 0xf1ecc4));
     belly.scale.set(1.05, 0.7, 0.55);
@@ -831,8 +835,8 @@ export function buildAnimal(kind, colors = {}) {
     chin.position.set(0, 0.62, 0.55);
     g.add(chin);
     for (let i = 0; i < 4; i++) { // throat grooves, chunky
-      const groove = new THREE.Mesh(new THREE.BoxGeometry(0.6 - i * 0.06, 0.03, 0.03), mat(0x6f8fa8));
-      groove.position.set(0, 0.5 + i * 0.07, 0.95 - i * 0.03);
+      const groove = new THREE.Mesh(new THREE.BoxGeometry(0.45 - i * 0.05, 0.03, 0.03), mat(0x6f8fa8));
+      groove.position.set(0, 0.55 + i * 0.05, 0.84 - i * 0.02); // on the chin, not out in front of it
       g.add(groove);
     }
     const blow = new THREE.Mesh(ico(0.07, 0), mat(0x2e3e50));
@@ -870,10 +874,9 @@ export function buildAnimal(kind, colors = {}) {
       g.add(side);
     }
     for (let i = 0; i < 3; i++) { // stripes, like a candy
-      const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.46 - i * 0.02, 0.035, 4, 12), mat(colors.stripe ?? 0xfff6e8));
-      stripe.rotation.y = Math.PI / 2;
-      stripe.position.set(0, 0.64, -0.2 + i * 0.22);
-      stripe.scale.set(1, 1.05, 1);
+      const sz = -0.2 + i * 0.22; // round the body (the rings used to be hoops through the face)
+      const stripe = new THREE.Mesh(new THREE.TorusGeometry(Math.sqrt(0.525 ** 2 - sz * sz) + 0.01, 0.035, 4, 12), mat(colors.stripe ?? 0xfff6e8));
+      stripe.position.set(0, 0.63, sz);
       g.add(stripe);
     }
   } else if (kind === 'octopus') {
@@ -938,6 +941,7 @@ export function buildAnimal(kind, colors = {}) {
       const ear = new THREE.Mesh(earGeo, headMat);
       ear.position.set(sx * 0.18, 1.68, 0.28);
       g.add(ear);
+      (parts.ears ??= []).push(ear); // a hat that covers ears tucks these under it
     }
     const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.55, 4, 6), bodyMat);
     tail.position.set(0.12, 0.78, -0.62);
@@ -981,7 +985,7 @@ export function buildAnimal(kind, colors = {}) {
     noseG.position.set(0, 1.14, 0.83);
     g.add(noseG);
     const teeth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.09, 0.03), mat(0xfff8ec, 0.4));
-    teeth.position.set(0, 0.97, 0.8);
+    teeth.position.set(0, 1.0, 0.76);
     g.add(teeth);
     const tailG = new THREE.Mesh(ico(0.16), bodyMat);
     tailG.scale.set(1, 0.6, 1.6);
@@ -992,15 +996,15 @@ export function buildAnimal(kind, colors = {}) {
     parts.body.scale.set(0.95, 0.85, 1.45);
     const crease = mat(colors.crease ?? 0xd99a8c);
     for (const z of [-0.35, -0.05, 0.25]) {
-      const band = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.035, 4, 12), crease);
-      band.position.set(0, parts.bodyY + 0.02, z);
-      band.scale.set(1.02, 0.95, 1);
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.475 * Math.sqrt(1 - (z / 0.725) ** 2) + 0.01, 0.035, 4, 12), crease);
+      band.position.set(0, parts.bodyY, z);
+      band.scale.set(1, 0.9, 1); // hugging the body's cross-section there
       g.add(band);
     }
     parts.eyes.forEach((e) => e.scale.setScalar(0.45));
     for (const sx of [-1, 1]) {
       const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.05), mat(0xfff3d6, 0.4));
-      tooth.position.set(sx * 0.035, 1.0, 0.8);
+      tooth.position.set(sx * 0.035, 1.02, 0.74);
       tooth.rotation.x = -0.35;
       g.add(tooth);
     }
@@ -1016,8 +1020,8 @@ export function buildAnimal(kind, colors = {}) {
     parts.body.position.y = parts.bodyY;
     const ringMat = mat(colors.ring ?? 0xd9868a);
     for (const z of [-0.95, -0.7, -0.45, -0.2, 0.35, 0.6, 0.85]) {
-      const r = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.025, 4, 12), ringMat);
-      r.scale.y = 0.95;
+      const r = new THREE.Mesh(new THREE.TorusGeometry(0.3 * Math.sqrt(1 - (z / 1.15) ** 2) + 0.012, 0.025, 4, 12), ringMat);
+      r.scale.y = 0.93; // hugging the body where it tapers
       r.position.set(0, parts.bodyY, z);
       g.add(r);
     }
@@ -1042,6 +1046,21 @@ export function buildAnimal(kind, colors = {}) {
       sneaker.scale.set(1.2, 0.6, 1.7);
       sneaker.position.set(0, -0.4, 0.04);
       leg.add(sneaker);
+    }
+  }
+
+  // the face goes where the head goes: eyes, ears, snouts, beaks, rims and
+  // tufts — anything built on the front half of the head — is re-parented
+  // to it, so a head that turns or nods takes its face along (they used to
+  // stay put on the body while the head, and any hat, swung without them).
+  // Heads that are hidden (crab, fishfolk: the face IS the body) keep theirs.
+  if (head.visible) {
+    g.updateMatrixWorld(true);
+    const hp = head.position, keep = new Set([body, head, ...parts.legs, ...(parts.wings || [])]);
+    for (const c of [...g.children]) {
+      if (keep.has(c) || c.userData.notFace) continue;
+      const dx = c.position.x - hp.x, dy = c.position.y - hp.y, dz = c.position.z - hp.z;
+      if (dz > -0.12 && dy > -0.3 && Math.hypot(dx, dy, dz) < 0.9) head.attach(c);
     }
   }
 
@@ -1086,7 +1105,7 @@ export function idleAll(t) {
     p.head.position.x = d.headX + gl;
     p.eyes.forEach((e, i) => {
       e.scale.y = d.eyeSY[i] * (shut ? 0.12 : 1);
-      e.position.x = d.eyeX[i] + gl;
+      if (e.parent !== p.head) e.position.x = d.eyeX[i] + gl; // (on the head, they glance with it)
     });
     // anyone who's been standing in one spot a while — a shopkeeper at the
     // counter, a camper by the fire, a heron at the door — shifts about:
@@ -1131,7 +1150,7 @@ export function animateGait(g, t, walk, rate = 10) {
   const bob = Math.abs(Math.sin(t * rate + 0.4)) * 0.04 * walk;
   p.head.position.y = p.headY + bob;
   // the eyes ride along with the head's bob (they used to stay put)
-  for (const e of p.eyes) e.position.y = (e.userData.baseY ??= e.position.y) + bob;
+  for (const e of p.eyes) if (e.parent !== p.head) e.position.y = (e.userData.baseY ??= e.position.y) + bob;
   if (p.plover) {
     // the attendant keeps its footing and paces the jaw
     p.plover.position.y = 0.78 + Math.max(0, Math.sin(t * 2.2)) * 0.08;

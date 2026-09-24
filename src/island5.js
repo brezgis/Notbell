@@ -527,6 +527,8 @@ export function createIsland5(player) {
       new THREE.MeshStandardMaterial({ color: 0xd9a440, roughness: 0.3 }));
     monocle.position.set(0.17, 1.27, 0.72);
     moledecai.add(monocle);
+    moledecai.updateMatrixWorld(true);
+    moledecai.userData.parts.head.attach(monocle); // it goes where his eye goes
     const ascot = box(0.3, 0.25, 0.12, 0x7a3a3a);
     ascot.position.set(0, 0.95, 0.45);
     moledecai.add(ascot);
