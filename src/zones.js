@@ -405,7 +405,7 @@ const ISLES = [
   ['texas', [{ ...TEXAS, r: TEXAS.r + 2 }]],
   ['bulko', [ISLAND4]],
   ['grove', [ISLAND5, ISLAND5_SOUTH, ...ISLAND5_HAND]],
-  ['labs', [ISLAND6, ISLAND6_WEST, ISLAND6_BEACH]],
+  ['labs', [ISLAND6, ISLAND6_WEST, { ...ISLAND6_BEACH, r: 17 }]],
   ['farther', [{ ...ISLAND7, r: ISLAND7.r + 3 }, ISLAND7_FLATS, ISLAND7_NECK, { ...ISLAND7_BACK, r: ISLAND7_BACK.r + 3 }]],
 ];
 export function islandOf(x, z) {

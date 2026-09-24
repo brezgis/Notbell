@@ -43,7 +43,10 @@ export const ISLAND6 = { x: -150, z: -58, r: 38 };
 // they declined, very politely. everyone waves.
 export const ISLAND6_WEST = { x: -194, z: -48, r: 19 };
 // ...and a beach, off the Labs' south shore, for the rovers' days off
-export const ISLAND6_BEACH = { x: -146, z: -19, r: 9 };
+export const ISLAND6_BEACH = { x: -146, z: -21, r: 9 };
+// (the beach is a broad, soft cove, not a knob: three overlapping lobes
+// under the mask, and a gentle slope down to the sand — see baseHeight)
+const BEACH_LOBES = [ISLAND6_BEACH, { x: -157, z: -26, r: 7 }, { x: -135, z: -25, r: 7 }];
 
 // Farther Isle: way out past the Far Isle, off to the northeast in open
 // water — a real trip on the Farther Line. the name is a whole philosophy.
@@ -87,7 +90,7 @@ function islandMask(x, z) {
     maskAt(x, z, ISLAND5_SOUTH.x, ISLAND5_SOUTH.z, ISLAND5_SOUTH.r, 7),
     maskAt(x, z, ISLAND6.x, ISLAND6.z, ISLAND6.r, 9),
     maskAt(x, z, ISLAND6_WEST.x, ISLAND6_WEST.z, ISLAND6_WEST.r, 7),
-    maskAt(x, z, ISLAND6_BEACH.x, ISLAND6_BEACH.z, ISLAND6_BEACH.r, 4),
+    ...BEACH_LOBES.map((b) => maskAt(x, z, b.x, b.z, b.r, 7)),
     maskAt(x, z, ISLAND7.x, ISLAND7.z, ISLAND7.r, 8),
     maskAt(x, z, ISLAND7_FLATS.x, ISLAND7_FLATS.z, ISLAND7_FLATS.r, 5),
     maskAt(x, z, ISLAND7_NECK.x, ISLAND7_NECK.z, ISLAND7_NECK.r, 3),
@@ -113,8 +116,15 @@ function baseHeight(x, z) {
     const crater = smoothstep(4.2, 0, vd) * 7.5;
     h = Math.max(h, cone - crater);
   }
-  // her shelf: a low black-sand apron on the volcano's south-west foot, room
-  // enough for a salamander's hut and a fire (the old shelf was a towel)
+  // the Labs beach: land within a soft, wobbly ellipse eases down toward
+  // sand height — a shore that shelves gently instead of a flat disc
+  {
+    const ex = (x - ISLAND6_BEACH.x) / 17, ez = (z - (ISLAND6_BEACH.z - 1)) / 9.5;
+    const e = Math.hypot(ex, ez) + (vnoise(x * 0.11 + 3.3, z * 0.11 - 1.1) - 0.5) * 0.35;
+    if (e < 1.5 && h > 0.3) h += (0.3 - h) * smoothstep(1.5, 0.75, e);
+  }
+  // the volcano's shelf: a low black-sand apron on its south-west foot, room
+  // enough for a fire and a good long bask (the old shelf was a towel)
   const sd = Math.hypot(x - VOLCANO_SHELF.x, z - VOLCANO_SHELF.z);
   if (sd < VOLCANO_SHELF.r + 4) {
     h = Math.max(h, smoothstep(VOLCANO_SHELF.r + 4, VOLCANO_SHELF.r, sd) * 1.1 - 0.6);
@@ -283,7 +293,6 @@ const bigbox = { x: ISLAND4.x, z: ISLAND4.z, r: 17, h: 0.8 };
 // science prefers level ground; the paperwork alone demands it.
 const labsYard = { x: -124, z: -58, r: 14, h: 1.6 };
 const labsPad = { x: -134, z: -78, r: 10, h: 1.6 };
-const labsBeach = { x: ISLAND6_BEACH.x, z: ISLAND6_BEACH.z + 1, r: 8, h: 0.25 };
 
 // the Fold: a green, a field, and a small hill of well-kept stones.
 // plain folk like their ground the way the Cod made it — mostly.
@@ -331,13 +340,13 @@ const town3 = scanAround(ISLAND3.x, ISLAND3.z, (x, z) => {
 // the cave mound's dark opening faces the village so you approach it head-on
 cave.facing = Math.atan2(village.x - cave.x, village.z - cave.z);
 
-export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, labsBeach, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats };
+export const SITES = { village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats };
 
 // Player begins at the south edge of the plaza, looking at the village.
 export const PLAYER_SPAWN = { x: village.x, z: village.z + 9 };
 
 export function clearOfSites(x, z, margin = 2) {
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, labsBeach, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats, forecourt]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats, forecourt]) {
     if (Math.hypot(x - s.x, z - s.z) < s.r + margin) return false;
   }
   return true;
@@ -347,7 +356,7 @@ export function clearOfSites(x, z, margin = 2) {
 // so nothing needs raycasts to stand on the ground.
 export function terrainHeight(x, z) {
   let h = baseHeight(x, z);
-  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, labsBeach, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats, forecourt]) {
+  for (const s of [village, cave, pools, home, dock, town2, garden2, bones, vbeach, town3, texasYard, bigbox, manor, springs, orchard, southOrchard, labsYard, labsPad, steading, foldFields, kirkyard, camp, storeYard, mangroveFlats, forecourt]) {
     const d = Math.hypot(x - s.x, z - s.z);
     if (d < s.r) {
       const w = smoothstep(s.r, s.r * 0.45, d);
