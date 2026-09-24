@@ -155,10 +155,10 @@ export function createVolcano() {
     }
   });
 
-  // ------------------------------------------------------- Ember's fire ----
-  // on the black-sand shelf, in front of her hut: the fire Ember keeps (she
-  // insists it keeps her). Two flat warm stones to sit on; nobody walks
-  // through it — not even her, and she'd be fine.
+  // ------------------------------------------------------- the shelf fire ----
+  // on the black-sand shelf west of the bar: a driftwood fire Cinder keeps
+  // for the evenings (the sun can't do everything, she concedes, grudgingly).
+  // Two flat warm stones to sit on; nobody walks through it.
   {
     const fx = VOLCANO_SHELF.x + 2.2, fz = VOLCANO_SHELF.z + 1.6;
     const fire = makeCampfire(fx, fz, { scale: 1 });
@@ -175,8 +175,8 @@ export function createVolcano() {
     }
     register({
       pos: new THREE.Vector3(fx, 0, fz + 1.8), r: 2,
-      label: 'warm your paws at Ember’s fire',
-      use: () => ui.say('The fire pops and settles. It smells of driftwood and, faintly, of the mountain. Ember says it hums along if you listen. You listen. …Maybe.'),
+      label: 'warm your paws at the fire',
+      use: () => ui.say('The fire pops and settles. It smells of driftwood and, faintly, of the mountain. Somewhere behind you, Cinder opens one eye to make sure you are appreciating it correctly.'),
     });
   }
 

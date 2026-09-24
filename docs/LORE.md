@@ -130,10 +130,9 @@ island files):
 
 Wanderers (roster + voices + friendships in `src/villagers.js` — 16 as of
 2026-07): Clover, Biscuit, Saffron, **Howell** (hatless; a wolf), Bramble,
-Puddle, Admiral Greenbean, Marigold (horse, Far Isle), **Ember** (salamander,
-**the volcano's own**: her hut and her fire are on the black-sand shelf at
-its foot; the mountain hums in B-flat and she hums back; in the rain she
-goes in), Tusk
+Puddle, Admiral Greenbean, Marigold (horse, Far Isle), Ember (salamander,
+Far Isle, commutes to the cave at midday, has opinions about its acoustics,
+loves the rain — **not** the volcano's; that's Cinder the iguana), Tusk
 (boar, wild-adjacent), Butterpat (cow), Crumb (mouse, master of the
 MouseBoat), and the Grove lounge: Mochi (capybara, wears the orange — "the
 orange situation simply arose"), Pondo (the other capybara), Sol and Brook
@@ -143,8 +142,8 @@ Signature hats are identity: each wanderer keeps theirs; Howell pointedly has
 none. New villagers need a hat decision (including "no").
 
 **Anchored vs. roaming.** Characters who ARE their place stay in it —
-Crumb (the MouseBoat), Mochi/Pondo/Sol/Brook (the springs), Ember (the
-volcano), the ducks (the nest) — `ANCHORED` in villagers.js. Everyone
+Crumb (the MouseBoat), Mochi/Pondo/Sol/Brook (the springs), Ember (her hut
+and her cave), the ducks (the nest) — `ANCHORED` in villagers.js. Everyone
 else is a little random dude and roams: they walk the footbridge, the arch
 and the causeway, or take the trains, and walk home the same way at night.
 

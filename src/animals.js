@@ -1064,7 +1064,7 @@ const ROSTER = [
   { kind: 'duck', body: 0xf5f2e9 },
   { kind: 'duck', body: 0x9b7d54, head: 0x2f7d4f }, // mallard
   { kind: 'horse', body: 0xc98f5a, range: 'far' },   // Marigold, of the Far Isle
-  { kind: 'salamander', body: 0xe8743a, range: 'volcano' }, // Ember — the volcano's own, by her fire
+  { kind: 'salamander', body: 0xe8743a, range: 'far' }, // Ember — Far Isle resident, cave regular
   { kind: 'boar', body: 0x6e5a44, head: 0x6e5a44, range: 'north' }, // Tusk, of the moss
   { kind: 'cow', body: 0xf2ead8, head: 0xf2ead8, range: 'north' }, // Butterpat
   { kind: 'mouse', body: 0xb8a890, range: 'everywhere' },          // Crumb, of the MouseBoat
