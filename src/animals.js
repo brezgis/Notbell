@@ -943,6 +943,106 @@ export function buildAnimal(kind, colors = {}) {
     tail.position.set(0.12, 0.78, -0.62);
     tail.rotation.x = -0.9;
     g.add(tail);
+  } else if (kind === 'hamster') {
+    // round, then rounder: cheeks with something in them, always
+    parts.body.scale.set(1.18, 1.0, 1.08);
+    const cream = mat(colors.belly ?? 0xf5ead8);
+    for (const sx of [-1, 1]) {
+      const cheek = new THREE.Mesh(ico(0.2), cream);
+      cheek.position.set(sx * 0.3, 1.06, 0.52);
+      g.add(cheek);
+      const earH = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 8), mat(0xf2c6c6, 0.7));
+      earH.rotation.x = Math.PI / 2 - 0.3;
+      earH.position.set(sx * 0.24, 1.56, 0.2);
+      g.add(earH);
+    }
+    const bellyH = new THREE.Mesh(ico(0.38), cream);
+    bellyH.scale.set(0.9, 0.85, 0.6);
+    bellyH.position.set(0, 0.58, 0.34);
+    g.add(bellyH);
+    const noseHm = new THREE.Mesh(ico(0.045, 0), mat(0xf2a8b8, 0.5));
+    noseHm.position.set(0, 1.18, 0.8);
+    g.add(noseHm);
+    g.scale.setScalar(0.8);
+  } else if (kind === 'groundhog') {
+    // stout, brown, a forecaster's build
+    parts.body.scale.set(1.15, 1.05, 1.28);
+    for (const sx of [-1, 1]) {
+      const earG = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 8), headMat);
+      earG.rotation.x = Math.PI / 2 - 0.3;
+      earG.position.set(sx * 0.27, 1.5, 0.2);
+      g.add(earG);
+    }
+    const muzzle = new THREE.Mesh(ico(0.2), mat(colors.belly ?? 0xc9a882));
+    muzzle.scale.set(1.1, 0.75, 0.8);
+    muzzle.position.set(0, 1.08, 0.66);
+    g.add(muzzle);
+    const noseG = new THREE.Mesh(ico(0.05, 0), NOSE_MAT);
+    noseG.position.set(0, 1.14, 0.83);
+    g.add(noseG);
+    const teeth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.09, 0.03), mat(0xfff8ec, 0.4));
+    teeth.position.set(0, 0.97, 0.8);
+    g.add(teeth);
+    const tailG = new THREE.Mesh(ico(0.16), bodyMat);
+    tailG.scale.set(1, 0.6, 1.6);
+    tailG.position.set(0, 0.5, -0.72);
+    g.add(tailG);
+  } else if (kind === 'molerat') {
+    // the naked mole rat: pink, creased, all teeth, entirely unbothered
+    parts.body.scale.set(0.95, 0.85, 1.45);
+    const crease = mat(colors.crease ?? 0xd99a8c);
+    for (const z of [-0.35, -0.05, 0.25]) {
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.035, 4, 12), crease);
+      band.position.set(0, parts.bodyY + 0.02, z);
+      band.scale.set(1.02, 0.95, 1);
+      g.add(band);
+    }
+    parts.eyes.forEach((e) => e.scale.setScalar(0.45));
+    for (const sx of [-1, 1]) {
+      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.05), mat(0xfff3d6, 0.4));
+      tooth.position.set(sx * 0.035, 1.0, 0.8);
+      tooth.rotation.x = -0.35;
+      g.add(tooth);
+    }
+    const tailR = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.4, 5), bodyMat);
+    tailR.rotation.x = -Math.PI / 2 - 0.4;
+    tailR.position.set(0, 0.55, -0.82);
+    g.add(tailR);
+  } else if (kind === 'worm') {
+    // an earthworm. with legs. six, in little white sneakers. nobody asks.
+    // long and low: the head is just the front of the worm
+    parts.bodyY = 0.5;
+    parts.body.scale.set(0.6, 0.56, 2.3);
+    parts.body.position.y = parts.bodyY;
+    const ringMat = mat(colors.ring ?? 0xd9868a);
+    for (const z of [-0.95, -0.7, -0.45, -0.2, 0.35, 0.6, 0.85]) {
+      const r = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.025, 4, 12), ringMat);
+      r.scale.y = 0.95;
+      r.position.set(0, parts.bodyY, z);
+      g.add(r);
+    }
+    const saddle = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.08, 5, 12), mat(colors.saddle ?? 0xf0a890));
+    saddle.position.set(0, parts.bodyY, 0.08);
+    g.add(saddle);
+    parts.headY = 0.62;
+    head.position.set(0, parts.headY, 1.1);
+    head.scale.set(0.72, 0.7, 0.72);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.11, 0.72, 1.36));
+    const shoe = mat(0xf7f5f0);
+    parts.legs.forEach((leg, i) => leg.position.set((i % 2 ? 1 : -1) * 0.2, 0.4, i < 2 ? 0.62 : -0.62));
+    for (const sx of [-1, 1]) {
+      const mid = new THREE.Mesh(legGeo, bodyMat);
+      mid.position.set(sx * 0.2, 0.4, 0);
+      g.add(mid);
+      parts.legs.push(mid);
+    }
+    for (const leg of parts.legs) {
+      leg.scale.set(0.75, 1, 0.75);
+      const sneaker = new THREE.Mesh(ico(0.1, 0), shoe);
+      sneaker.scale.set(1.2, 0.6, 1.7);
+      sneaker.position.set(0, -0.4, 0.04);
+      leg.add(sneaker);
+    }
   }
 
   g.traverse((o) => {
