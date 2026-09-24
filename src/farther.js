@@ -321,7 +321,7 @@ export function createFarther() {
     });
   }
   tent(C.x - 8.5, C.z + 0.5, 1.4, 0xd9c08f, 'wren');     // Wren's, sun-faded canvas
-  tent(C.x - 6.5, C.z - 6, -2.2, 0x5b8b7a, 'spare');      // the spare, sea-green
+  tent(C.x + 4.5, C.z - 8.5, -2.0, 0x5b8b7a, 'spare');    // the spare, sea-green (up on the grass past the grill — it used to crowd the General's porch)
   tent(C.x + 6, C.z + 7.5, 2.6, 0xc9705a, 'campers');     // this week's campers
 
   function rvFurniture(B, W, D, bl, { bench = 0xb0453a, curtains = null } = {}) {
@@ -479,18 +479,34 @@ export function createFarther() {
     caravan(GB.x + 2.2, GB.z - 1.6, GB.x - 6, GB.z + 1, 0xb8bcc0, 0x6e7e4a, 'gordy');
     // the lawn chair, the tv on its crate, the cooler
     const chairAt = { x: GB.x - 1.6, z: GB.z + 2 };
+    // a low beach chair, wide enough for a skunk: striped canvas, armrests,
+    // a cupholder, and a back that stops below the tail
     const chair = new THREE.Group();
-    const seat = box(0.8, 0.08, 0.75, 0x6aa0c9);
-    seat.position.y = 0.4;
-    const back = box(0.8, 0.8, 0.08, 0x6aa0c9);
-    back.position.set(0, 0.8, -0.36);
-    back.rotation.x = -0.3;
-    chair.add(seat, back);
-    for (const [lx, lz] of [[-0.35, 0.3], [0.35, 0.3], [-0.35, -0.3], [0.35, -0.3]]) {
-      const leg = box(0.05, 0.4, 0.05, 0xc0c4c8);
-      leg.position.set(lx, 0.2, lz);
-      chair.add(leg);
+    const STRIPES = [0x6aa0c9, 0xf3efe6];
+    for (let i = 0; i < 5; i++) {
+      const slat = box(0.22, 0.06, 1.0, STRIPES[i % 2]);
+      slat.position.set(-0.44 + i * 0.22, 0.28, 0);
+      chair.add(slat);
+      const bslat = box(0.22, 0.5, 0.06, STRIPES[i % 2]);
+      bslat.position.set(-0.44 + i * 0.22, 0.52, -0.56);
+      bslat.rotation.x = -0.45;
+      chair.add(bslat);
     }
+    for (const sx of [-0.62, 0.62]) {
+      const arm = box(0.08, 0.06, 0.9, 0xc0c4c8);
+      arm.position.set(sx, 0.52, -0.02);
+      chair.add(arm);
+      for (const lz of [0.4, -0.45]) {
+        const leg = box(0.05, 0.5, 0.05, 0xc0c4c8);
+        leg.position.set(sx, 0.25, lz);
+        chair.add(leg);
+      }
+    }
+    const cupholder = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.1, 8), mat(0xc0c4c8, 0.4));
+    cupholder.position.set(0.72, 0.52, 0.3);
+    const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.2, 6), mat(0x5a3a1e, 0.3));
+    bottle.position.set(0.72, 0.62, 0.3);
+    chair.add(cupholder, bottle);
     const tvAt = { x: GB.x - 1.6, z: GB.z + 5 };
     chair.rotation.y = Math.atan2(tvAt.x - chairAt.x, tvAt.z - chairAt.z);
     chair.position.set(chairAt.x, terrainHeight(chairAt.x, chairAt.z), chairAt.z);
@@ -538,12 +554,57 @@ export function createFarther() {
         ui.toast('Big Moose Root Beer. Aggressively sassafras. Somehow correct.', '🍺');
       },
     });
-    // Gordy, in the chair, facing the set
+    // Gordy, in the chair, facing the set: sat forward on the seat (so the
+    // tail clears the back), legs out in front of him
     gordy = buildAnimal('skunk', { body: 0x2e2a2c, head: 0x2e2a2c });
-    gordy.position.set(chairAt.x, terrainHeight(chairAt.x, chairAt.z) + 0.3, chairAt.z);
-    gordy.rotation.y = chair.rotation.y;
+    const cf = chair.rotation.y;
+    const seatAt = { x: chairAt.x + Math.sin(cf) * 0.22, z: chairAt.z + Math.cos(cf) * 0.22 };
+    const seatY = terrainHeight(chairAt.x, chairAt.z) + 0.16;
+    const sitDown = () => {
+      gordy.position.set(seatAt.x, seatY, seatAt.z);
+      gordy.rotation.y = cf;
+      gordy.userData.parts.legs.forEach((l) => { l.rotation.x = -1.3; });
+    };
+    sitDown();
+    gordy.userData.noFidget = true;
     group.add(gordy);
-    zones.addBlocker(chairAt.x, chairAt.z, 0.6);
+    zones.addBlocker(chairAt.x, chairAt.z, 0.7);
+    // now and then: up, over to the cooler, a root beer, back to the chair
+    const trip = { mode: 'sit', t: 30 + Math.random() * 30, legT: 0 };
+    const cooler2 = { x: coolAt.x - 0.2, z: coolAt.z + 0.75 };
+    updates.push((dt, t, pp) => {
+      const g = gordy;
+      const busyTalking = ui.isBusy() && pp && Math.hypot(pp.x - g.position.x, pp.z - g.position.z) < 4;
+      if (trip.mode === 'sit') {
+        g.userData.parts.head.rotation.y = Math.sin(t * 0.3) * 0.12; // the fish is gonna get away this time
+        if (!busyTalking && (trip.t -= dt) <= 0) {
+          trip.mode = 'go';
+          g.userData.parts.legs.forEach((l) => { l.rotation.x = 0; });
+          g.position.y = terrainHeight(g.position.x, g.position.z);
+        }
+        return;
+      }
+      if (busyTalking) { animateGait(g, t, 0); return; }
+      const tg = trip.mode === 'go' ? cooler2 : seatAt;
+      const dx = tg.x - g.position.x, dz = tg.z - g.position.z, d = Math.hypot(dx, dz);
+      if (trip.mode === 'drink') {
+        animateGait(g, t, 0);
+        g.userData.parts.head.rotation.x = Math.sin(Math.min(1, (trip.legT += dt) / 1.5) * Math.PI) * -0.3;
+        if (trip.legT > 3) { trip.mode = 'back'; g.userData.parts.head.rotation.x = 0; }
+        return;
+      }
+      if (d < 0.15) {
+        if (trip.mode === 'go') { trip.mode = 'drink'; trip.legT = 0; g.rotation.y = Math.atan2(coolAt.x - g.position.x, coolAt.z - g.position.z); }
+        else { trip.mode = 'sit'; trip.t = 40 + Math.random() * 50; sitDown(); }
+        return;
+      }
+      const step = Math.min(d, 1.1 * dt);
+      g.position.x += (dx / d) * step;
+      g.position.z += (dz / d) * step;
+      g.position.y = terrainHeight(g.position.x, g.position.z);
+      g.rotation.y = turnToward(g.rotation.y, Math.atan2(dx, dz), dt, 6);
+      animateGait(g, t, 1, 9);
+    });
     register({
       getPos: () => gordy.position, r: 2.4,
       label: 'talk to Gordy',
@@ -1401,7 +1462,7 @@ export function createFarther() {
   };
   let poiCache = null;
   function makeWanderer(a, { home, lie = false, trail = false, stay = 15 }) {
-    return { a, home, lie, trail, mode: 'stay', timer: stay, target: null, stuck: 0, restY: a.rotation.y };
+    return { a, home, lie, trail, mode: 'stay', timer: stay, target: null, stuck: 0, restY: a.rotation.y, sideT: 0, best: Infinity, stall: 0 };
   }
   function pickTarget(w) {
     if (w.trail) {
@@ -1426,6 +1487,8 @@ export function createFarther() {
         w.target = pickTarget(w);
         w.mode = 'walk';
         w.stuck = 0;
+        w.best = Infinity;
+        w.stall = 0;
       }
       return;
     }
@@ -1441,17 +1504,30 @@ export function createFarther() {
       animateGait(a, t, 0); // you're in the way; they'll wait
       return;
     }
+    // no closer in four seconds? this spot isn't happening today; go home
+    if (d < w.best - 0.3) { w.best = d; w.stall = 0; } else if ((w.stall += dt) > 4) {
+      w.target = w.target === w.home ? pickTarget(w) : w.home;
+      w.best = Infinity;
+      w.stall = 0;
+      w.side = 0;
+      return;
+    }
     const want = Math.atan2(dx, dz), step = Math.min(d, 1.5 * dt);
     let moved = false;
-    for (const off of [0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6]) {
+    w.sideT = Math.max(0, w.sideT - dt);
+    // while committed to a detour, keep to that side a moment before trying straight again
+    const offs = w.sideT > 0 ? [0.5, 1.0, 1.6, 0, -0.5, -1.0, -1.6] : [0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6];
+    for (const off of offs) {
       const h = want + off * (w.side || 1);
       const nx = a.position.x + Math.sin(h) * step, nz = a.position.z + Math.cos(h) * step;
       if (!zones.islandCanStand(nx, nz, 0.35)) continue;
       a.position.x = nx;
       a.position.z = nz;
       a.rotation.y = turnToward(a.rotation.y, h, dt, 6);
-      if (off !== 0 && !w.side) w.side = Math.sign(off);
-      if (off === 0) w.side = 0;
+      if (off !== 0) {
+        if (!w.side) w.side = Math.sign(off);
+        w.sideT = 1.2;
+      } else if (w.sideT <= 0) w.side = 0;
       moved = true;
       break;
     }
@@ -1589,7 +1665,13 @@ export function createFarther() {
     const gy = zones.islandGroundHeight(sp.x, sp.z);
     a.position.set(sp.x, gy + (sp.y ?? 0), sp.z);
     a.rotation.y = Math.atan2(sp.face.x - sp.x, sp.face.z - sp.z);
-    if (sp.lie) { a.rotation.z = Math.PI / 2 * 0.9; a.rotation.y = Math.PI / 2; }
+    if (sp.lie) {
+      // along the sling (it runs east-west), sunk into it, legs tucked up
+      a.rotation.set(0, Math.PI / 2, 0);
+      a.position.y = gy + 0.32;
+      a.userData.parts.legs.forEach((l, i) => { l.rotation.x = i < 2 ? -1.3 : 1.3; });
+      a.userData.noFidget = true;
+    }
     group.add(a);
     let li = 0;
     campersHere.push(makeWanderer(a, {
