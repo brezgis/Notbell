@@ -20,7 +20,7 @@ import { ITEMS } from './catalog.js';
 import { buildAnimal, animateGait } from './animals.js';
 import { buildRover } from './island6.js';
 import { kaching, jingle, tone } from './audio.js';
-import { turnToward } from './utils.js';
+import { turnToward, smoothstep } from './utils.js';
 
 function mat(color, rough = 0.85) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -104,22 +104,56 @@ export function createLabsGrounds() {
   // thousand flowers is a lot of meshes — so they're instanced: one mesh per
   // shape-and-color, however many flowers it draws.
   const M0 = openSpot(ISLAND6.x - 1, ISLAND6.z + 8, 1.0, 10) ?? { x: ISLAND6.x, z: ISLAND6.z + 8, y: 1 };
-  const M = { x: M0.x - 3, z: M0.z, y: M0.y, rx: 19, rz: 13 };
+  // (wider than it was, and ragged at the edges: full in the middle,
+  // thinning out toward the rim and toward the Labs — see flowerDensity)
+  const M = { x: M0.x - 3, z: M0.z, y: M0.y, rx: 25, rz: 17 };
+  const M_CORE = { rx: 19, rz: 13 }; // the old, tidier oval: the kiosk still keys off it
   const inMeadow = (x, z, k = 1) => ((x - M.x) / (M.rx * k)) ** 2 + ((z - M.z) / (M.rz * k)) ** 2 < 1;
   const Y6 = SITES.labsYard, P6 = SITES.labsPad;
   // the places around the meadow, claimed before a single flower goes in:
   // the gift kiosk (toward the Labs), the hive (the empty north), and the
   // butterflies' house (the west edge)
-  const K = openSpot(M.x + M.rx * 0.75, M.z + M.rz + 2.5, 2.8, 8) ?? { x: M.x + M.rx * 0.75, z: M.z + M.rz + 2.5, y: terrainHeight(M.x + M.rx * 0.75, M.z + M.rz + 2.5) };
+  const kx = M.x + M_CORE.rx * 0.75, kz = M.z + M_CORE.rz + 2.5;
+  const K = openSpot(kx, kz, 2.8, 8) ?? { x: kx, z: kz, y: terrainHeight(kx, kz) };
   const HV = openSpot(ISLAND6.x - 12, ISLAND6.z - 22, 3.6, 12) ?? { x: ISLAND6.x - 12, z: ISLAND6.z - 22, y: terrainHeight(ISLAND6.x - 12, ISLAND6.z - 22) };
-  const BH = openSpot(M.x - M.rx - 4, M.z + 1, 4.2, 10) ?? { x: M.x - M.rx - 4, z: M.z + 1, y: terrainHeight(M.x - M.rx - 4, M.z + 1) };
-  const claimed = [[K, 3.4], [HV, 4.5], [BH, 5.5]];
-  // the Labs' picnic tables: round the back-left of the building, out by the
-  // hive (not in front of the doors — that's the yard's)
-  for (const [dx, dz, ry] of [[7, 3, 0.2], [9.5, -1, -0.3], [6.5, 6.5, 0.5]]) {
-    const sp = openSpot(HV.x + dx, HV.z + dz, 1.9, 5);
+  // the butterflies' house: out back, next door to the hive, in its own
+  // garden of great big flowers
+  const BH = openSpot(HV.x + 10, HV.z + 2, 4.2, 10) ?? { x: HV.x + 10, z: HV.z + 2, y: terrainHeight(HV.x + 10, HV.z + 2) };
+  const toM = Math.hypot(M.x - BH.x, M.z - BH.z) || 1;
+  const ARBOR = { x: BH.x + ((M.x - BH.x) / toM) * 5.2, z: BH.z + ((M.z - BH.z) / toM) * 5.2 }; // the arbor runs toward the meadow
+  // the little hill in the middle of the meadow: its top is where the moles
+  // come up (the Burrough's molehill; burrough.js builds it here)
+  let HILL = null;
+  for (let x = M.x - 14; x <= M.x + 2; x += 0.5) {
+    for (let z = M.z - 14; z <= M.z + 2; z += 0.5) {
+      const h = terrainHeight(x, z);
+      if (!zones.nearAnything(x, z, 1.4) && (!HILL || h > HILL.y + 0.01)) HILL = { x, z, y: h };
+    }
+  }
+  const claimed = [[K, 3.4], [HV, 4.5], [BH, 5.5], [ARBOR, 2.4], [HILL, 1.25]];
+  // the Labs' picnic tables: down by the kiosk, on the way to the beach
+  // (they used to be out by the hive; the butterflies moved in)
+  for (const [dx, dz, ry] of [[-6, 3, 0.2], [-9.5, 0.5, -0.3], [-5, 6.5, 0.5]]) {
+    const sp = openSpot(K.x + dx, K.z + dz, 1.9, 5);
     if (sp) { picnicTable(sp.x, sp.z, ry); claimed.push([sp, 1.8]); }
   }
+  // how thick the flowers grow here: full in the middle, thinning to a
+  // ragged edge (a wobble in the rim, so it's no tidy oval), and sparser
+  // toward the Labs
+  const flowerDensity = (x, z) => {
+    const a = Math.atan2(z - M.z, x - M.x);
+    const wob = 1 + 0.16 * Math.sin(3 * a + 1.3) + 0.1 * Math.sin(5 * a + 0.4) + 0.06 * Math.sin(8 * a + 2.1);
+    const rn = Math.hypot((x - M.x) / M.rx, (z - M.z) / M.rz) / wob;
+    let d = smoothstep(1.05, 0.4, rn);
+    d *= smoothstep(1, 16, Math.hypot(x - Y6.x, z - Y6.z) - Y6.r);
+    d *= smoothstep(1, 10, Math.hypot(x - P6.x, z - P6.z) - P6.r);
+    // and full again round the hive and the butterflies' house
+    d = Math.max(d, 0.85 * smoothstep(9, 4, Math.hypot(x - (HV.x + BH.x) / 2, z - (HV.z + BH.z) / 2)));
+    // and a ring of them round the molehill, up on its hill
+    const hd = Math.hypot(x - HILL.x, z - HILL.z);
+    if (hd < 3.4) d = Math.max(d, 0.95);
+    return d;
+  };
   const meadowOK = (x, z) => terrainHeight(x, z) > 0.4 &&
     Math.hypot(x - Y6.x, z - Y6.z) > Y6.r + 1 && Math.hypot(x - P6.x, z - P6.z) > P6.r + 1 &&
     claimed.every(([c, r]) => Math.hypot(x - c.x, z - c.z) > r) &&
@@ -138,11 +172,16 @@ export function createLabsGrounds() {
     const stems = [];
     const dummy = new THREE.Object3D();
     let placed = 0;
-    for (let i = 0; i < 3200 && placed < 2100; i++) {
-      // clustered: pick a clump center, then scatter a little around it
+    const GX = (HV.x + BH.x) / 2, GZ = (HV.z + BH.z) / 2;
+    for (let i = 0; i < 11000 && placed < 3400; i++) {
+      // most across the meadow (out past its rim, where the density thins
+      // them to nothing); some in the back garden, some round the molehill
       const a = hash(i, 11) * Math.PI * 2, r = Math.sqrt(hash(i, 12));
-      const x = M.x + Math.cos(a) * r * M.rx + (hash(i, 13) - 0.5) * 0.6;
-      const z = M.z + Math.sin(a) * r * M.rz + (hash(i, 14) - 0.5) * 0.6;
+      const where = hash(i, 23);
+      const [cx, cz, sx, sz] = where < 0.8 ? [M.x, M.z, M.rx * 1.3, M.rz * 1.3] : where < 0.93 ? [GX, GZ, 9, 9] : [HILL.x, HILL.z, 3.4, 3.4];
+      const x = cx + Math.cos(a) * r * sx + (hash(i, 13) - 0.5) * 0.6;
+      const z = cz + Math.sin(a) * r * sz + (hash(i, 14) - 0.5) * 0.6;
+      if (hash(i, 22) > flowerDensity(x, z)) continue;
       if (!meadowOK(x, z)) continue;
       const y = terrainHeight(x, z);
       // patches of one kind drift across the field, like real meadows do
@@ -215,13 +254,39 @@ export function createLabsGrounds() {
       }
       zones.addBlocker(x, z, 0.6, 'tree');
     }
-    const plaque = sign('WILDFLOWER TRIAL PLOT · DO NOT MOW', 2.2, 0.36, '#f3efe2', '#3f6a3a');
-    const pp = openSpot(M.x + M.rx * 0.95, M.z + M.rz * 0.4, 0.6, 4) ?? { x: M.x + M.rx, z: M.z, y: terrainHeight(M.x + M.rx, M.z) };
-    const post = box(0.1, 0.9, 0.1, 0x7a5230);
-    post.position.set(pp.x, pp.y + 0.45, pp.z);
-    plaque.position.set(pp.x, pp.y + 0.95, pp.z + 0.06);
-    group.add(post, plaque);
-    zones.addBlocker(pp.x, pp.z, 0.15);
+    // the back garden's great big flowers, taller than you, round the hive
+    // and the butterflies' house (it's their house; they went big)
+    for (let i = 0; i < 40; i++) {
+      const a = hash(i, 50) * Math.PI * 2, r = 3.5 + hash(i, 51) * 6.5;
+      const x = GX + Math.cos(a) * r, z = GZ + Math.sin(a) * r;
+      if (!meadowOK(x, z) || zones.nearAnything(x, z, 1.0)) continue;
+      const y = terrainHeight(x, z), h = 1.5 + hash(i, 52) * 1.3;
+      const col = [0xf2a0c0, 0xf2cf5b, 0xb9a3e8, 0xe8743a, 0xfbf7ef][i % 5];
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, h, 5), mat(0x4e9a45));
+      stem.position.set(x, y + h / 2, z);
+      stem.castShadow = true;
+      group.add(stem);
+      const head = new THREE.Group();
+      for (let k = 0; k < 6; k++) {
+        const pa = (k / 6) * Math.PI * 2;
+        const petal = new THREE.Mesh(new THREE.IcosahedronGeometry(0.26, 0), mat(col, 0.7));
+        petal.scale.set(1, 0.3, 0.55);
+        petal.position.set(Math.cos(pa) * 0.3, 0, Math.sin(pa) * 0.3);
+        petal.rotation.y = -pa;
+        head.add(petal);
+      }
+      const mid = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), mat(0xf2c230, 0.6));
+      head.add(mid);
+      head.position.set(x, y + h, z);
+      head.rotation.set((hash(i, 53) - 0.5) * 0.5, 0, (hash(i, 54) - 0.5) * 0.5);
+      head.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+      group.add(head);
+      const leafG = new THREE.Mesh(new THREE.IcosahedronGeometry(0.18, 0), mat(0x4e9a45));
+      leafG.scale.set(1.8, 0.3, 0.8);
+      leafG.position.set(x + 0.15, y + h * 0.45, z);
+      group.add(leafG);
+      zones.addBlocker(x, z, 0.2, 'tree');
+    }
   }
 
   // the meadow's two keepers: a butterfly and a bee, working the flowers
@@ -244,7 +309,11 @@ export function createLabsGrounds() {
       label: `talk to ${name}`,
       use: () => ui.say(lines[li++ % lines.length], { speaker: name, voice }),
     });
-    const crowded = (x, z) => fliers.some((o) => o !== me && Math.hypot(o.a.position.x - x, o.a.position.z - z) < 1.6);
+    // too close to another flier AND getting closer? (so two who start close
+    // can still part — they used to freeze inside each other)
+    const crowded = (x, z) => fliers.some((o) => o !== me &&
+      Math.hypot(o.a.position.x - x, o.a.position.z - z) < 1.6 &&
+      Math.hypot(o.a.position.x - x, o.a.position.z - z) < Math.hypot(o.a.position.x - a.position.x, o.a.position.z - a.position.z));
     updates.push((dt, t, playerPos) => {
       const near = playerPos && Math.hypot(playerPos.x - a.position.x, playerPos.z - a.position.z) < 3;
       const lift = bob(t);
@@ -276,8 +345,9 @@ export function createLabsGrounds() {
     const ang = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random()) * 0.85;
     return { x: M.x + Math.cos(ang) * rr * M.rx, z: M.z + Math.sin(ang) * rr * M.rz };
   };
+  let workerN = 0;
   const meadowWorker = (kind, colors, name, lines, voice, speed, bob) =>
-    flier(kind, colors, name, lines, voice, speed, bob, { pickTarget: meadowTarget });
+    flier(kind, colors, name, lines, voice, speed, bob, { pickTarget: meadowTarget, start: { x: M.x + (workerN++ ? 4 : -4), z: M.z + 2 } });
   meadowWorker('moth', { body: 0x3a3440, head: 0x3a3440, wing: 0x7ec3e8 }, 'Azure', [
     'Oh! Hello! Mind the asters. And the clover. And — well, mind everything, it’s all flowers, that’s the point.',
     'I’m a butterfly. People keep saying moth. I have a PH.D. in not being a moth.',
@@ -463,6 +533,26 @@ export function createLabsGrounds() {
     bud.scale.y = 1.4;
     bud.position.y = 4.4;
     g.add(bud);
+    // light, under the petal roof (it was very dark in there): a glowing
+    // flower lantern hung from the peak, and fairy lights round the posts.
+    // all glow, no lamps (VISUAL_CANON: emissive, not light)
+    const lanternStem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.8, 4), mat(0x4e9a52));
+    lanternStem.position.y = 2.95;
+    g.add(lanternStem);
+    const lantern = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 0), new THREE.MeshStandardMaterial({ color: 0xfff0c0, emissive: 0xffd88a, emissiveIntensity: 1.3, roughness: 0.4, flatShading: true }));
+    lantern.scale.y = 1.2;
+    lantern.position.y = 2.45;
+    lantern.castShadow = false;
+    g.add(lantern);
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const fl = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), new THREE.MeshStandardMaterial({ color: 0xfff6d8, emissive: [0xffe8a0, 0xffc0d8, 0xd8c8ff][i % 3], emissiveIntensity: 1.4 }));
+      fl.position.set(Math.cos(a) * 2.35, 2.55 + Math.sin(a * 4) * 0.08, Math.sin(a) * 2.35);
+      fl.castShadow = false;
+      g.add(fl);
+    }
+    floor.material.emissive = new THREE.Color(0x6a5030);
+    floor.material.emissiveIntensity = 0.35; // the lantern's glow, on the boards
     // three cradles on rockers, each with a swaddled chrysalis and a sleepy face
     const cradles = [];
     for (let i = 0; i < 3; i++) {
@@ -476,7 +566,7 @@ export function createLabsGrounds() {
       }
       const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.8, 10, 1, true, Math.PI / 2, Math.PI),
         new THREE.MeshStandardMaterial({ color: 0xe8d4a8, roughness: 0.9, side: THREE.DoubleSide, flatShading: true }));
-      basket.rotation.x = Math.PI / 2;
+      basket.rotation.x = -Math.PI / 2; // the open side up: a cradle, not a lid
       basket.position.y = 0.42;
       c.add(basket);
       const swaddle = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.4, 3, 8), mat([0xb8e0a0, 0xf2c0d0, 0xc8d8f0][i], 0.8));
@@ -527,18 +617,9 @@ export function createLabsGrounds() {
     }
     g.rotation.y = face;
     g.position.set(BH.x, y0, BH.z);
-    g.traverse((o) => { if (o.isMesh && !o.material.isMeshBasicMaterial) { o.castShadow = true; o.receiveShadow = true; } });
+    g.traverse((o) => { if (o.isMesh && !o.material.isMeshBasicMaterial && !(o.material.emissiveIntensity > 1)) { o.castShadow = true; o.receiveShadow = true; } });
     group.add(g);
     zones.addSurfaceDisc(BH.x, BH.z, 2.5, y0 + 0.24);
-    // the sign at the arbor's mouth
-    const sp = at(1.7, 7.4);
-    const post = box(0.1, 1.0, 0.1, 0x7a5230);
-    post.position.set(sp.x, terrainHeight(sp.x, sp.z) + 0.5, sp.z);
-    const board = sign('THE CHRYSALIS HOUSE', 1.6, 0.34, '#fbeaf0', '#8a4a6a');
-    board.position.set(sp.x, terrainHeight(sp.x, sp.z) + 1.05, sp.z);
-    board.rotation.y = face;
-    group.add(post, board);
-    zones.addBlocker(sp.x, sp.z, 0.15);
     updates.push((dt, t) => {
       cradles.forEach((c, i) => { c.rotation.z = Math.sin(t * 1.3 + i * 2.1) * 0.12; });
     });
@@ -614,7 +695,7 @@ export function createLabsGrounds() {
 
   // ====================================================== the gift kiosk ----
   {
-    const face = Math.atan2(M.x + 4 - K.x, M.z - K.z) + Math.PI * 0.35; // off to the side, opening onto the path down to the beach
+    const face = Math.atan2(ISLAND6_BEACH.x - K.x, ISLAND6_BEACH.z - K.z); // opening onto the beach, where the customers are
     // a proper booth now: walls on three sides, a counter across the front
     // with the window above it, a roof — and Dot INSIDE it (the old open
     // stall had her standing half through its back wall)
@@ -954,7 +1035,7 @@ export function createLabsGrounds() {
   function update(dt, t, playerPos) {
     for (const u of updates) u(dt, t, playerPos);
   }
-  return { group, update };
+  return { group, update, molehill: { x: HILL.x, z: HILL.z } };
 }
 
 function pick3(arr) {
