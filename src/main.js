@@ -341,19 +341,33 @@ if (w && w.day !== S.todayKey()) {
     })
     .catch(() => {});
 } else if (w) {
-  camYaw = w.camYaw ?? camYaw;
-  camPitch = w.camPitch ?? camPitch;
-  camDist = w.camDist ?? camDist;
+  const num = (v, d) => (Number.isFinite(v) ? v : d);
+  camYaw = num(w.camYaw, camYaw);
+  camPitch = num(w.camPitch, camPitch);
+  camDist = num(w.camDist, camDist);
   refreshCamOffset();
+  const spotOK = Number.isFinite(w.x) && Number.isFinite(w.z);
   // out rowing when the page closed? back in the same boat, same water
-  if (w.zone === 'sea') {
-    if (!boats.resumeRowing({ x: w.x, z: w.z, rotY: w.rotY })) S.state.rowing = null;
+  if (w.zone === 'sea' && spotOK) {
+    if (!boats.resumeRowing({ x: w.x, z: w.z, rotY: num(w.rotY, 0) })) S.state.rowing = null;
   } else {
-    zones.go(w.zone, { x: w.x, z: w.z, rotY: w.rotY }).catch(() => {});
+    // exactly where you left off — as long as that's somewhere you can
+    // stand. A saved spot can go bad (a room renamed away, a seat over the
+    // sea, a NaN): then the zone's own spawn, or the plaza. (These used to
+    // strand you in open water, or black-screen the game, for the day.)
+    zones.go(w.zone, spotOK ? { x: w.x, z: w.z, rotY: num(w.rotY, 0) } : undefined)
+      .then(() => {
+        const p = player.group.position;
+        const here = zones.current() === w.zone;
+        if (!here || !Number.isFinite(p.x) || !zones.canStand(p.x, p.z, 0.3)) return zones.go(here ? w.zone : 'island');
+        return null;
+      })
+      .catch(() => {});
   }
 }
 
 addEventListener('beforeunload', () => {
+  if (player.riding) { S.saveNow(); return; } // (a seat in motion is no place to wake up; keep where you boarded)
   S.state.where = {
     zone: zones.current(), day: S.todayKey(),
     x: player.group.position.x, z: player.group.position.z,
@@ -457,10 +471,14 @@ renderer.setAnimationLoop(() => {
     whereT = 2.5;
     markVisited(player, zone); // new shores ink themselves onto the chart
     updateHud(); // place name + clock keep pace as you wander
-    S.state.where = {
-      zone, day: S.todayKey(), x: playerPos.x, z: playerPos.z,
-      rotY: player.group.rotation.y, camYaw, camPitch, camDist,
-    };
+    // (not while riding: a refresh on a train used to wake you at the seat's
+    // spot — out over the strait, in the water, unable to move)
+    if (!player.riding) {
+      S.state.where = {
+        zone, day: S.todayKey(), x: playerPos.x, z: playerPos.z,
+        rotY: player.group.rotation.y, camYaw, camPitch, camDist,
+      };
+    }
     S.save();
   }
 

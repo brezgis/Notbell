@@ -670,7 +670,7 @@ export function createBuildings() {
     shop: { x: 300, z: 0 },
     cafe: { x: 300, z: 80 },
     museum: { x: 300, z: 160 },
-    post: { x: 300, z: 240 },
+    post: { x: 300, z: 2100 }, // (its own spot: it used to share (300, 240) with your cottage)
   };
 
   function wireDoors(name, spot, label) {

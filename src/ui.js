@@ -345,7 +345,7 @@ export function foundItem(id) {
 
 export function updateHUD() {
   const tools = Object.entries(state.tools)
-    .filter(([, owned]) => owned)
+    .filter(([t, owned]) => owned && ITEMS[t]) // (an unknown tool in an old save used to stop the boot)
     .map(([t]) => ITEMS[t].emoji)
     .join(' ');
   hud.innerHTML =

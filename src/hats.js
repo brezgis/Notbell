@@ -150,7 +150,7 @@ export function wireHatKey(playerGroup) {
   addEventListener('keydown', (e) => {
     if (e.code !== 'KeyH' || e.repeat || ui.isBusy()) return;
     if (!S.state.hats.length) return;
-    const cycle = [null, ...S.state.hats];
+    const cycle = [null, ...S.state.hats.filter((h) => ITEMS[h])]; // (skip hats the catalog no longer knows)
     const idx = cycle.indexOf(S.state.wearing);
     const next = cycle[(idx + 1) % cycle.length];
     S.wearHat(next);
