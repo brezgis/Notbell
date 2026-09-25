@@ -52,7 +52,9 @@ Notbell plaza over the footbridge, never in the sea), `probe_ride.mjs` (the
 Grove Line end to end), `probe_rail.mjs` (every station, both ends),
 `probe_pastime.mjs` (someone goes fishing), `probe_reach.mjs` (every
 interactable can still be walked up to), `probe_dive.mjs` (suit up, dive
-to the Dropped Crown, ride a bubble to the Glow), `probe_burrough.mjs` (down the Labs molehill, ride the
+to the Dropped Crown, ride a bubble to the Glow), `probe_swim.mjs` (on foot, with the suit: into the sea from the tide
+pools and back, into the footbridge's rails, and at the bridge from the water),
+`probe_burrough.mjs` (down the Labs molehill, ride the
 Boring Line to Uptown, up into the wine cellar and back through its little door).
 
 `canon.mjs` visits ~20 stable vantages (every island, key interiors, the

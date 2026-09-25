@@ -1387,7 +1387,7 @@ export function createCrown(player) {
     });
   }
 
-  // breath bubbles from your helmet, now and then
+  // breath bubbles from your snorkel, now and then
   let breath = 1;
   updates.push((dt) => {
     breath -= dt;

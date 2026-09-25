@@ -200,7 +200,7 @@ export const ITEMS = {
   // -- gear ------------------------------------------------------------------
   scuba_suit: {
     kind: 'gear', name: 'Salvage Diver’s Suit', emoji: '🤿', price: 1800,
-    blurb: 'Canvas, brass, and a bell-shaped helmet. One of Tansy’s divers left it behind. It never found the bell. It found everything else.',
+    blurb: 'A wetsuit, a pair of goggles, and a snorkel. One of Tansy’s divers left it behind. It never found the bell. It found everything else.',
   },
 
   skateboard: {
