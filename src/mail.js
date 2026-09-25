@@ -138,11 +138,20 @@ function firstLetter(name) {
 }
 
 // Penny's day: one job at a time, planned fresh whenever she's free
+let asleep = false; // after her rounds, Penny sleeps at the Post
 function planCarrier(now) {
   const a = carrier, m = box();
-  if (!a || a.goal || a.busy || a.pastime || a.away || a.riding || a.errand || a.meeting) return;
+  if (!a) return;
   const h = new Date().getHours();
   const onShift = h >= 7 && h < 21;
+  if (asleep) {
+    if (!onShift) return;
+    asleep = false; // morning: out the Post's door, bag on
+    a.away = false;
+    a.g.visible = true;
+    a.g.position.set(SPOTS.post.x, a.g.position.y, SPOTS.post.z);
+  }
+  if (a.goal || a.busy || a.pastime || a.away || a.riding || a.errand || a.meeting) return;
   const goTo = (spot, kind, extra, done) => {
     job = { kind, since: now, ...extra };
     a.goal = {
@@ -162,7 +171,12 @@ function planCarrier(now) {
     const to = best.to;
     return goTo(where(to), 'deliver', { to }, (t) => { for (const l of [...bag]) if (l.to === to) deliverLetter(l, t); });
   }
-  if (!onShift) return;
+  if (!onShift) {
+    // done for the day: walk to the Post and go in
+    const sleep = () => { asleep = true; a.away = true; a.g.visible = false; };
+    if (dist(SPOTS.post) > 2) return goTo(SPOTS.post, 'bed', {}, sleep);
+    return sleep();
+  }
   // 3. sorted letters waiting at the Post → pick them up
   const sorted = m.out.filter((l) => !l.delivered && !bag.has(l) && now - l.at >= SORT_MS);
   if (sorted.length) return goTo(SPOTS.post, 'post', {}, () => { for (const l of m.out) if (!l.delivered && Date.now() - l.at >= SORT_MS) bag.add(l); });

@@ -1474,7 +1474,7 @@ const ROSTER = [
   { kind: 'goose', body: 0xf5f2e9, head: 0xf5f2e9, range: 'cran', spawn: [-8, 14] },                 // Mabel
   // Penny, the mail carrier (a pigeon; mail.js gives her the rounds). she
   // starts by the plaza, at the Post.
-  { kind: 'parrot', body: 0x9aa3ad, head: 0x6a7a8a, wing: 0x8a94a0, tail: 0x5a646e, face: 0x9aa3ad, beak: 0x3a3634, range: 'notbell', spawnVillage: [3, -4] },
+  { kind: 'parrot', body: 0x9aa3ad, head: 0x6a7a8a, wing: 0x8a94a0, tail: 0x5a646e, face: 0x9aa3ad, beak: 0x3a3634, range: 'notbell', spawnVillage: [3, -2] }, // (off the porch post she used to spawn inside)
 ];
 
 function rangeOf(spec) {
@@ -1483,7 +1483,7 @@ function rangeOf(spec) {
   if (spec.range === 'volcano') return { x: VOLCANO_SHELF.x + 1, z: VOLCANO_SHELF.z + 1, R: VOLCANO_SHELF.r };
   if (spec.range === 'cave') return { x: SITES.cave.x, z: SITES.cave.z, R: 11 };
   if (spec.range === 'grove') return { x: ISLAND5.x, z: ISLAND5.z + 10, R: ISLAND5.r + 12 };
-  if (spec.range === 'creek') return { x: ISLAND9.x + 0.5, z: ISLAND9.z + 1, R: 6 }; // the turtles like it by the water
+  if (spec.range === 'creek') return { x: ISLAND9.x - 1, z: ISLAND9.z + 2, R: 9.5 }; // the turtles like it by the water (both houses' doors inside it)
   if (spec.range === 'cran') return { x: ISLAND9.x - 7, z: ISLAND9.z + 2, R: 15 };
   // Crumb claims every shore, but a sailor of naps stays near his bunk —
   // he keeps to the North Isle, within sight of the MouseBoat
@@ -1510,7 +1510,7 @@ export function createAnimals() {
       g.add(sprite);
       group.add(g);
       animals.push({
-        g, swims: false, long: false, sprite, range: rangeOf(spec), state: 'idle', timer: 1 + animals.length % 3,
+        g, swims: false, long: false, sprite, range: rangeOf(spec), homeRange: rangeOf(spec), state: 'idle', timer: 1 + animals.length % 3,
         target: new THREE.Vector3(), speed: spec.kind === 'turtle' ? 1.0 : 1.9, walk: 0, hopT: 1, emoteT: 0, phase: animals.length * 1.7,
       });
       continue;
@@ -1551,6 +1551,7 @@ export function createAnimals() {
       long: spec.kind === 'croc', // mostly snout: a second collision circle up front
       sprite,
       range,
+      homeRange: range, // (roaming borrows another island's range for a day; bedtime gives this one back)
       state: 'idle',
       timer: rand(0.5, 3),
       target: new THREE.Vector3(),

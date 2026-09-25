@@ -573,6 +573,39 @@ export const FRIENDS = [
     },
   },
   {
+    a: 'Marigold', b: 'Butterpat',
+    chats: [
+      [['a', 'Race you to the fence!'], ['b', 'I’ll meet you there.'], ['a', 'That’s not a race.'], ['b', 'It is if I say “go” very slowly.']],
+      [['b', 'The grass on your side any good?'], ['a', 'It’s grass. Good grass.'], ['b', 'That’s all I wanted to hear.']],
+    ],
+    meetLines: {
+      Marigold: 'Pasture talk! Very technical. Mostly about grass.',
+      Butterpat: 'We’re comparing meadows, dear. Hers is faster. Mine is calmer. Both are excellent.',
+    },
+  },
+  {
+    a: 'Sol', b: 'Brook',
+    chats: [
+      [['a', 'Warm today.'], ['b', '…'], ['a', 'Agreed.']],
+      [['b', 'The birds did a good job this morning.'], ['a', 'They always do. We should tip more.'], ['b', 'We tip in shade.']],
+    ],
+    meetLines: {
+      Sol: 'Crocodile business. Very slow. Very important.',
+      Brook: '…(Brook smiles at you. That’s the whole meeting, from her side.)',
+    },
+  },
+  {
+    a: 'Penny', b: 'Mabel',
+    chats: [
+      [['b', 'I found a letter.'], ['a', 'Mabel, that’s MY letter. From the bag.'], ['b', 'I’m returning it.'], ['a', '…Thank you.'], ['b', 'HONK.']],
+      [['a', 'Anything for the post today?'], ['b', 'A key, a glove, a gnome.'], ['a', 'That’s not mail.'], ['b', 'Not YET.']],
+    ],
+    meetLines: {
+      Penny: 'Postal inspection. She returns everything she relocates. Eventually. It counts.',
+      Mabel: 'We’re friends. She carries things, I carry things. HONK.',
+    },
+  },
+  {
     a: 'Barb', b: 'Ruth',
     chats: [
       [['a', 'Look.'], ['b', 'Oh. Look.'], ['a', 'Hrm.']],

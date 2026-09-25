@@ -74,6 +74,7 @@ const SCHEDULE = {
   Crumb: [22, 6],   // sleeps on deck, under whatever the sky is doing
   Ember: [21, 7],   // nights in her hut on the Far Isle…
   Barb: [20, 6],
+  Ruth: [19, 6],   // at Barb's (forty years; it's her house too)
   Null: [6, 14],    // up all night; sleeps through the morning, like a server
   Mabel: [22, 6],
 };
@@ -141,6 +142,10 @@ const HOME_LINES = {
   Barb: [
     'Hrm. Sit anywhere. Not the rocking chair. That’s Ruth’s. Forty years. Anywhere else.',
     'I keep a jar of creek water on the sill. Changes color with the seasons. Better than a calendar. Doesn’t argue.',
+  ],
+  Ruth: [
+    'Welcome, dear! Tea? It’s cranberry. Everything here is cranberry, eventually.',
+    'That scarf is for the creek. That one’s for Barb. That one’s for you. It’ll be done in the spring. Some spring.',
   ],
   Null: [
     'Don’t touch the blue cable. Or the green one. Actually just stand in the middle. Perfect. You’re in.',
@@ -1180,6 +1185,26 @@ export function createHouses(animals, obstacles = []) {
     });
   }
 
+  // Ruth lives at Barb's: same door, same room, her own spot by the yarn
+  {
+    const barb = households.find((vh) => vh.name === 'Barb');
+    const ruthA = animals.find((a) => a.identity?.name === 'Ruth');
+    if (barb && ruthA) {
+      const vh = { a: ruthA, name: 'Ruth', zoneId: barb.zoneId, seat: { x: barb.seat.x - 2.2, z: barb.seat.z + 1.4 }, doorOut: barb.doorOut, home: false };
+      households.push(vh);
+      let ri = 0;
+      register({
+        getPos: () => ruthA.g.position, r: 2.6, zone: barb.zoneId,
+        enabled: () => vh.home,
+        label: 'talk to Ruth',
+        use: async () => {
+          if (await birthdayTalk('Ruth', ruthA.identity.voice)) return;
+          ui.say(HOME_LINES.Ruth[ri++ % HOME_LINES.Ruth.length], { speaker: 'Ruth', voice: ruthA.identity.voice });
+        },
+      });
+    }
+  }
+
   // Ember keeps a second address: the cave, at her appointed hours
   const ember = households.find((vh) => vh.name === 'Ember');
   if (ember) {
@@ -1210,6 +1235,7 @@ export function createHouses(animals, obstacles = []) {
   // water by a late train — does the island quietly tuck them in anyway.
   function arriveHome(vh) {
     const a = vh.a;
+    if (a.homeRange) a.range = a.homeRange; // a day out's borrowed range ends at your own door
     vh.walking = false;
     vh.tries = 0;
     a.bedtime = false;

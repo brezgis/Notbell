@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { register } from './interact.js';
 import * as zones from './zones.js';
 import * as ui from './ui.js';
-import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7, ISLAND9 } from './terrain.js';
+import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7, ISLAND8, ISLAND9, ISLET_CH } from './terrain.js';
 import { rand, pick } from './utils.js';
 import { FRIENDS } from './villagers.js';
 import * as doors from './doors.js';
@@ -216,7 +216,10 @@ export function createAmbient(animals, scene) {
     // the things villagers did when nobody was watching). Too far apart
     // today? Then today isn't the day; the friendship survives.
     const hx = A.g.position.x, hz = A.g.position.z;
-    if (Math.hypot(B.g.position.x - hx, B.g.position.z - hz) > 42) return null;
+    // (friends on different islands walk over too, when there's a way — the
+    // bridges and trains — and it isn't a whole expedition)
+    const apart = Math.hypot(B.g.position.x - hx, B.g.position.z - hz);
+    if (apart > 42 && (apart > 140 || !zones.findRoute(zones.islandOf(hx, hz), zones.islandOf(B.g.position.x, B.g.position.z)))) return null;
     // a proper conversational distance: close enough to gossip, far enough
     // that nobody's beak ends up in anybody's ear
     const GAP = 2.5;
@@ -519,6 +522,8 @@ export function createAmbient(animals, scene) {
     grove: { x: ISLAND5.x, z: ISLAND5.z, R: ISLAND5.r - 5 },
     farther: { x: ISLAND7.x, z: ISLAND7.z, R: ISLAND7.r - 5 },
     cran: { x: ISLAND9.x - 8, z: ISLAND9.z + 3, R: 11 }, // the village side of the creek
+    oasis: { x: ISLAND8.x - 1, z: ISLAND8.z - 12, R: 9 }, // the Commons and the Parkway (the lawns are Beverly's)
+    chuckee: { x: ISLET_CH.x - 2, z: ISLET_CH.z, R: 2.5 },   // a brisket, a look at the cars, and back
   };
   let roamT = 30;
   function updateRoaming(dt) {
