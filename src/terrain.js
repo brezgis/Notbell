@@ -108,6 +108,12 @@ export function cranBedAt(x, z, pad = 0) {
   return CRAN_BEDS.find((b) => u > b.u0 - pad && u < b.u1 + pad && v > b.v0 - pad && v < b.v1 + pad) || null;
 }
 
+// the Chuckee's islet: a speck in the strait between the Labs' south beach
+// and Oasis Estates, just big enough for a travel stop — the footbridge
+// and the highway both stop here (the highway never touches the islands
+// themselves; there are no roads on any island)
+export const ISLET_CH = { x: -163, z: 4.5, r: 7 };
+
 const TERRACE = 2.4; // height of each AC-style terrace step
 
 function maskAt(x, z, cx, cz, R, wobbleAmp) {
@@ -169,6 +175,14 @@ function baseHeight(x, z) {
   const sd = Math.hypot(x - VOLCANO_SHELF.x, z - VOLCANO_SHELF.z);
   if (sd < VOLCANO_SHELF.r + 4) {
     h = Math.max(h, smoothstep(VOLCANO_SHELF.r + 4, VOLCANO_SHELF.r, sd) * 1.1 - 0.6);
+  }
+  // the Chuckee's islet: flat on top, a quick beach
+  {
+    const d = Math.hypot(x - ISLET_CH.x, z - ISLET_CH.z);
+    if (d < ISLET_CH.r + 4) {
+      const hh = d < 4.2 ? 0.9 : d < ISLET_CH.r ? 0.9 + (0.25 - 0.9) * smoothstep(4.2, ISLET_CH.r, d) : 0.25 + (-1.6 - 0.25) * smoothstep(ISLET_CH.r, ISLET_CH.r + 4, d);
+      h = Math.max(h, hh);
+    }
   }
   // the Isle of Cran: land a hand above the tide, the creek cut through it,
   // the bog beds sunk into it (one of them flooded to the brim)

@@ -558,6 +558,23 @@ export const ITEMS = {
     kind: 'keepsake', name: 'A Watercolor of the Bog', emoji: '🎨', price: 0,
     blurb: 'You painted the bog. It came out a pink smudge. Miss Dabble says that’s it exactly, and she’s right.',
   },
+  // Chuckee's (the travel stop in the strait)
+  chuckee_nuggets: {
+    kind: 'keepsake', name: 'Chuckee Nuggets', emoji: '🌽', price: 0,
+    blurb: 'Sweet, crunchy corn puffs in a bag with a woodchuck on it. The number in a bag changes every time Chuckee counts. It is never enough.',
+  },
+  brisket_sandwich: {
+    kind: 'keepsake', name: 'Brisket Sandwich', emoji: '🥪', price: 0,
+    blurb: 'Chopped brisket on a bun, with the pickles, wrapped in paper that says CHUCKEE’S in red. Smoked since the tide went out yesterday.',
+  },
+  chuckee_fudge: {
+    kind: 'keepsake', name: 'Chuckee’s Fudge', emoji: '🍫', price: 0,
+    blurb: 'Rocky road. The rocks are nuts. (Mostly nuts.) Do not tell the Chocoholics Anonymous group on Cran.',
+  },
+  chuckee_plush: {
+    kind: 'keepsake', name: 'Chuckee Plush', emoji: '🦫', price: 0,
+    blurb: 'A little woodchuck in a little red cap. Squeezing it does nothing. Chuckee likes it when you squeeze it anyway.',
+  },
   hoa_notice: {
     kind: 'keepsake', name: 'Notice of Violation', emoji: '📋', price: 0,
     blurb: 'A pink carbon copy from the Oasis Estates HOA, filled out in a very neat hand. Under “VIOLATION” it says “see attached.” There is nothing attached. That is also a violation.',
