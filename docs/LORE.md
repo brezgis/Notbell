@@ -261,6 +261,92 @@ reason.
   (Auger, Fitzgerald, the Daily Dirt: residents "not surprised," "a nice
   sound"). Nobody up top has ever asked them. A bell hook — do not resolve.
 
+## Oasis Estates (south-west, off the chart) — `oasis.js`
+
+A Planned Community, on an island that didn't happen so much as get
+approved: a flat oval of lawn (two and a half inches, mown in stripes,
+green in every season by covenant), seven identical houses — **the
+Standard** — around **the Circle**, the Commons (Trader Polly's and
+Dromedeals under one roof, the **CaMall**, Mirage Coffee and Cluck & Co. on
+the Parkway), a community pool nobody is ever in, and a gatehouse whose boom
+is always up. South-west of Notbell and wholly off the chart's west edge.
+**Not connected, on purpose (for now):** the ferry is *pending HOA
+approval* (Captain Brine has applied fourteen times; the horn is too loud,
+the boat is too loud, the sea is frankly very loud). A rowboat can land on
+the east beach.
+
+- **Not roads.** BULKO's sign is right: there are no roads on any island.
+  Oasis Estates has four point six miles of **parkway, drive, and circle**,
+  in asphalt, with a dashed yellow line, for walking on. There was a
+  meeting. ("THIS IS NOT A ROAD. IT IS A PARKWAY. — THE HOA.") The cars in
+  the lot and the driveways are warm, parked, and never seen driven — same
+  as BULKO's. Don't explain either.
+- **Beverly Humphries** (camel; visor, pearls, clipboard) — President of
+  the HOA. Catty, serious, and not to be messed with: step on the Humphries
+  lawn and she hands you a **Notice of Violation** (`hoa_notice`, "see
+  attached"; nothing is attached; that is also a violation). Ask who elected
+  her and you get another. Tell her she's doing a great job and — once —
+  she says thank you and asks you not to tell anyone. Her want: that nothing
+  on this island ever blows away again (the Squall took the lawn chairs, the
+  laundry, a whole gazebo; the covenant's Article 17 has not forgiven it).
+  Forty-one Yards of the Month in a row; the forty-second nail is already
+  in. She keeps everyone's birthdays in a file marked "Violations."
+  **Harold**, her husband, mows where she tells him and loves the part of
+  Volume Three about mailboxes.
+- **The bell hook (do not resolve):** Article 9 of the covenant forbids
+  bells — doorbells, bike bells, wind chimes, cowbells, the ice cream
+  truck's song (it still comes, in silence). Nobody knows why; the developer
+  wrote it into the deed: **Moledecai Developments**. A margin note in the
+  covenant, very old: "ask Moledecai why." Under it: "Do not." Trader
+  Polly's has a polished brass bell mount with no bell on it and a card:
+  PLEASE SAY "BRRRING." So Pico does.
+- **The Circle:** the Humphries; the **Featherstones** (parrots — Grandpa
+  **Sal** repeats the TV, **Sunny** repeats everything to Beverly, **Kiwi**
+  sings in the band); the **Brontos** (**Gary**, a brontosaurus, grills
+  burgers that have been almost ready since noon and can see over every
+  fence — mostly what he sees is Beverly coming; **Linda** likes the green
+  part of the game; **Junior** plays bass); **Todd** (camel, riding mower,
+  stripes; mows Harold's because Harold mows Beverly's) and the twins, who
+  will mow the ocean; **the Open House** (Tiffany the parrot, always there;
+  four bed, three bath, exactly like the others, which is the selling
+  point; the cookies are for the smell; 3,200,000 buttons before HOA fees);
+  the **Dunes** (Chad and Madison, new parents, moved here for the schools —
+  there aren't any schools; every box is BOX 12; baby **Sahara**, four
+  weeks old, already unimpressed); **Mildred & Walt** (Walt watches golf for
+  the whispering; butterscotch from '94 is forever; **Dolores** the lawn
+  flamingo is angled, always, at wherever Beverly is standing).
+- **No Outlet** — the garage band in the Brontos' garage (Kiwi, vocals and
+  guitar; Junior, bass; Dakota, a camel, drums). They are getting out of
+  this town. Their first single, "Cul-de-Sac," goes around and around and
+  doesn't lead anywhere, and that's the point. Noise permit: Tuesdays, 2–4.
+  Every day is Tuesday if you believe in something. Nobody is leaving yet.
+  They're practicing (on the lawn; nobody's allowed in the pool).
+- **The Commons:** **Trader Polly's** (Captain **Mango**, a scarlet macaw
+  in a floral shirt, sells dried mango and has made his peace with it —
+  mostly; **Pico** at the till; Everything But The Bell seasoning; the
+  Fearless Feather, whose letter asking why there's no bell has gone
+  unanswered for eleven years). **Dromedeals** (brand names, one hump or
+  two; **Deb**; compare-at prices are a feeling; the ceramic pineapples
+  come in every shipment and nobody ordered one; the tennis visor, compare
+  at 900, is 30). **Mirage** ("coffee, probably"; **Echo**, an African grey,
+  repeats every order back, every "um"; sizes Small, Medium, Dune; your
+  name on the cup, nearly). **Cluck & Co.** ("it's our pleasure"; **Tanner**;
+  the chick'n contains no chicken and never has — see the Burrough's hot
+  worms; closed Sundays; the cow on the roof can spell and is making a
+  choice).
+- **The CaMall:** a fountain (wishes cost one button), **Auntie Dune's**
+  pretzels, **Sahara** (Paloma; Eau de Oasis — top notes cut grass, heart
+  chlorine, base a minivan in the sun), **Hot Tropic** (closed; it's always
+  closed; Kiwi's cousin is asleep on a beanbag; the walkers have never gone
+  in — they're not ready), Sunglass Hump, SPACE AVAILABLE ("COMING SOON:
+  HOT WORMS, a Burrough franchise, contains no worms"), an escalator to a
+  second floor there isn't (at the top, a painting of one), **Rico** at the
+  lotion kiosk ("can I ask you a question?"), **Officer Dale** (bronto,
+  segway, "you'll never be fast, but you can be steady"), and the **mall
+  walkers** — **Mildred, Phyllis and Bunny**, three camels in matching
+  visors, forty laps a day, since seven.
+- **Reggie** keeps the gatehouse list. It is blank. It's very peaceful.
+
 ## The night sky
 
 Constellations (sky.js): **The Bell** (one star missing — the clapper; the

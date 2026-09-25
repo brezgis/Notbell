@@ -74,7 +74,7 @@ export async function boot({
     }
   }, hour, name, seed);
 
-  await page.goto(process.env.BASE_URL || `http://localhost:${port}/`, { waitUntil: 'networkidle0' });
+  await page.goto(process.env.BASE_URL || `http://localhost:${port}/`, { waitUntil: 'load', timeout: 120_000 }); // (not networkidle0: a busy renderer can starve that event forever; the waitForFunction below is the real gate)
   await page.waitForFunction(
     () => window.__notbell && !document.getElementById('loading'),
     { timeout: 90_000, polling: 200 },

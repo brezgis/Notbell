@@ -458,6 +458,77 @@ export const ITEMS = {
     kind: 'meteor', name: 'Meteoric Button', emoji: '🔘', price: 1500,
     blurb: 'A four-holed iron disc from BEFORE the island. Pip must never know about this. Tell Pip immediately.',
   },
+  // Oasis Estates — Trader Polly's (the Captain's picks)
+  ebtb_seasoning: {
+    kind: 'keepsake', name: 'Everything But The Bell Seasoning', emoji: '🧂', price: 0,
+    blurb: 'Sesame, poppy, garlic, onion, salt. Everything. Not the bell. The label is very clear about the bell.',
+  },
+  cookie_butter: {
+    kind: 'keepsake', name: 'Cookie Butter', emoji: '🍯', price: 0,
+    blurb: 'Cookies, ground down into a spread, which is the kind of idea you only get to have once. Eat it with a spoon, standing up, in the light of the fridge.',
+  },
+  two_button_chuck: {
+    kind: 'keepsake', name: 'Two-Button Chuck', emoji: '🧃', price: 0,
+    blurb: 'Sparkling grape juice in a very serious bottle. The label is a painting of a vineyard nobody has been to. Tastes of purple.',
+  },
+  dried_mango: {
+    kind: 'keepsake', name: 'Dried Mango', emoji: '🥭', price: 0,
+    blurb: 'Chewy, sweet, and a little awkward to buy from a parrot named Captain Mango. He rings it up without comment. It is costing him something.',
+  },
+  fearless_feather: {
+    kind: 'keepsake', name: 'The Fearless Feather', emoji: '📰', price: 0,
+    blurb: 'Trader Polly’s newsletter. Woodcut parrots, puns, and a column called “Why Is There No Bell? (A Letter From The Captain),” which does not answer the question.',
+  },
+  // Dromedeals (brand names, one hump or two)
+  live_laugh_lounge: {
+    kind: 'keepsake', name: '“Live Laugh Lounge” Sign', emoji: '🪧', price: 0,
+    blurb: 'A painted board in looping letters. Every house at Oasis Estates has one, hung in the same place. Now yours can match. COMPARE AT: 240🔘.',
+  },
+  ceramic_pineapple: {
+    kind: 'keepsake', name: 'Ceramic Pineapple', emoji: '🍍', price: 0,
+    blurb: 'Gold, glazed, heavier than it looks, and hollow for no reason. It means “welcome.” It also means “we went to Dromedeals.” COMPARE AT: 180🔘.',
+  },
+  candle_sand: {
+    kind: 'keepsake', name: 'Candle (Scent: “Sand”)', emoji: '🕯️', price: 0,
+    blurb: 'Smells exactly like sand. Warm sand, specifically. A camel lit one in the store and got homesick for a place none of them has ever been. COMPARE AT: 90🔘.',
+  },
+  tennis_visor: { kind: 'hat', name: 'Tennis Visor', emoji: '🧢', price: 0,
+    blurb: 'A crisp white visor. The Oasis Estates mall-walker look. Nobody here plays tennis. COMPARE AT: 900🔘.' },
+  // Mirage Coffee (coffee, probably)
+  mirage_cup: {
+    kind: 'keepsake', name: 'Mirage Cup (Your Name, Nearly)', emoji: '🥤', price: 0,
+    blurb: 'An empty plastic cup with a green straw and your name on the side, spelled the way it sounded to a parrot. Too good to throw away. Too sticky to keep. You keep it.',
+  },
+  // Cluck & Co. (it's our pleasure)
+  cluck_nuggets: {
+    kind: 'keepsake', name: 'Cluck Nuggets (8 ct.)', emoji: '🍗', price: 0,
+    blurb: 'Golden, crispy, and — per the laminated card — “chick’n,” which contains no chicken and never has. Nobody knows what they are. Everybody knows they’re good.',
+  },
+  waffle_fries: {
+    kind: 'keepsake', name: 'Waffle Fries', emoji: '🍟', price: 0,
+    blurb: 'Potatoes in a grid. The best shape a potato has ever been, and the potato would agree.',
+  },
+  cluck_sauce: {
+    kind: 'keepsake', name: 'Cluck Sauce', emoji: '🥫', price: 0,
+    blurb: 'A little tub of something gold and smoky-sweet. Tanner gave you three. He’d give you ten. It’s his pleasure.',
+  },
+  // the CaMall
+  pretzel: {
+    kind: 'keepsake', name: 'Auntie Dune’s Pretzel', emoji: '🥨', price: 0,
+    blurb: 'A soft pretzel, warm, twisted into a shape that is almost a knot and almost a heart. Salt like sand. You eat it walking, like everyone does, past a store you’ll never go in.',
+  },
+  dune_gloss: {
+    kind: 'keepsake', name: 'Dune Gloss', emoji: '💄', price: 0,
+    blurb: 'Sahara’s bestselling lip gloss, in shade “Oasis at Dusk.” It is pink. It is always pink. Paloma says it’s “a mood.”',
+  },
+  sand_scrub: {
+    kind: 'keepsake', name: 'Sahara Sand Scrub', emoji: '🫙', price: 0,
+    blurb: 'A luxury exfoliant. The ingredients list says “sand.” The ingredients list is honest, and that is its own luxury.',
+  },
+  hoa_notice: {
+    kind: 'keepsake', name: 'Notice of Violation', emoji: '📋', price: 0,
+    blurb: 'A pink carbon copy from the Oasis Estates HOA, filled out in a very neat hand. Under “VIOLATION” it says “see attached.” There is nothing attached. That is also a violation.',
+  },
 };
 
 // what a patient magnet pulls out of the dust sea

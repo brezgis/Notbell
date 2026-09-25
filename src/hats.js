@@ -81,6 +81,18 @@ const builders = {
     g.add(stem);
     return g;
   },
+  // Dromedeals' finest: a white tennis visor (the mall walkers' uniform)
+  tennis_visor() {
+    const g = new THREE.Group();
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.05, 5, 12), mat(0xfaf8f2, 0.6));
+    band.rotation.x = Math.PI / 2;
+    g.add(band);
+    const bill = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.035, 10, 1, false, -Math.PI / 2 - 0.9, 1.8), mat(0xfaf8f2, 0.6));
+    bill.position.set(0, -0.01, 0.06);
+    bill.scale.set(1.15, 1, 1.3);
+    g.add(bill);
+    return g;
+  },
   leaf_hat() {
     const g = new THREE.Group();
     const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 0), mat(0x55b055, 0.8));
