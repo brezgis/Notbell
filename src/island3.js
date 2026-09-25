@@ -886,8 +886,8 @@ export function createIsland3() {
       const tex = new THREE.CanvasTexture(cv);
       tex.colorSpace = THREE.SRGBColorSpace;
       const sx = fx0 + 1.9, sz = fz0 + 0.9, sy = terrainHeight(sx, sz);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, 0.1), mat(0x7a5230));
-      post.position.set(sx, sy + 0.55, sz);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.82, 0.1), mat(0x7a5230)); // (ends under the board: it used to run across the lettering)
+      post.position.set(sx, sy + 0.41, sz);
       const board = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.46, 0.06),
         [mat(0x9a7448), mat(0x9a7448), mat(0x9a7448), mat(0x9a7448), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }), mat(0x9a7448)]);
       board.position.set(sx, sy + 1.05, sz);

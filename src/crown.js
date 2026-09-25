@@ -986,7 +986,7 @@ export function createCrown(player) {
     cx.fillStyle = '#e8c56a'; cx.textAlign = 'center';
     cx.font = 'italic 700 46px Georgia, serif';
     cx.fillText('The Lady Button', 256, 60);
-    cx.font = '600 22px ui-rounded, system-ui, sans-serif';
+    cx.font = '600 16px ui-rounded, system-ui, sans-serif'; // (at 22 it ran off both edges)
     cx.fillStyle = '#f3ead6';
     cx.fillText('LUXURY RESIDENCES · EXPOSED BEAMS · ORIGINAL BARNACLES', 256, 104);
     const signTex = new THREE.CanvasTexture(cv);
@@ -1267,8 +1267,13 @@ export function createCrown(player) {
       lines.forEach((l, i) => c.fillText(l, 128, 64 + (i - (lines.length - 1) / 2) * (size + 6)));
       const tex = new THREE.CanvasTexture(cv);
       tex.colorSpace = THREE.SRGBColorSpace;
-      const face = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
-      face.position.y = 1.9;
+      // a board with a face on its front (it used to be one double-sided
+      // plane on the post's centerline: mirrored from behind, post through the text)
+      const back = box(1.46, 0.76, 0.08, 0x2f7d4f);
+      back.position.y = 1.9;
+      g.add(back);
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), new THREE.MeshBasicMaterial({ map: tex }));
+      face.position.set(0, 1.9, 0.045);
       g.add(face);
       g.position.set(x, crownHeight(x, z), z);
       g.rotation.y = ry;

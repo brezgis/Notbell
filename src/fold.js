@@ -212,6 +212,7 @@ function signBoard(text, w = 3.4, h = 0.8) {
   } while (ctx.measureText(text).width > 460 && size > 18);
   ctx.fillText(text, 256, 68);
   const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace; // (without it the browns went grey)
   const board = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08),
     new THREE.MeshStandardMaterial({ map: tex, flatShading: true, roughness: 0.9 }));
   board.castShadow = board.receiveShadow = true;

@@ -546,7 +546,8 @@ function makeScreenTex(key, step) {
     c.fillStyle = '#fffaf0';
     c.font = '900 28px ui-rounded, "Segoe UI", system-ui, sans-serif';
     c.fillText('SWIM', 34, 49);
-    c.fillText('WHERE FISH', 178, 49);
+    c.font = '900 21px ui-rounded, "Segoe UI", system-ui, sans-serif'; // (it ran off the edge at 28)
+    c.fillText('WHERE FISH', 168, 49);
     c.font = '900 20px ui-rounded, "Segoe UI", system-ui, sans-serif';
     c.fillText('GOSSIP', 203, 73);
     c.fillStyle = '#3d3126';
@@ -1104,7 +1105,7 @@ export function createBulko(player) {
       chill.position.set(MC.x, 2.5, MC.z);
       group.add(chill);
       const bigSign = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.9),
-        textPanel([['❄  COLD FRESH MOO JUICE  ❄', 64, 44]], 768, 100, '#2f5a6e', '#eaf6fb'));
+        textPanel([['❄  COLD FRESH MOO JUICE  ❄', 50, 44]], 768, 100, '#2f5a6e', '#eaf6fb'));
       bigSign.position.set(MC.x, 5.0, MC.z - 7.78); // up over the shelf headers
       group.add(bigSign);
       // the cold wall (north): real steel shelving now, in sections — milk,
@@ -1140,7 +1141,7 @@ export function createBulko(player) {
       };
       const header = (text, x) => {
         const h = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.45),
-          textPanel([[text, 64, 34]], 384, 66, '#eaf6fb', '#2f5a6e'));
+          textPanel([[text, 33, 34]], 384, 66, '#eaf6fb', '#2f5a6e')); // (centered: it was drawn at y 64 of 66, half cut off)
         h.position.set(MC.x + x, 4.35, WZ + 0.1);
         group.add(h);
       };
@@ -1529,10 +1530,14 @@ export function createBulko(player) {
       group.add(menuPost);
     }
     const menuMat = textPanel([['HOT DOG + FIZZ  ·  1.5ᵇ', 80, 42]], 512, 160, '#2a2a2a', '#fffaf0');
-    menuMat.side = THREE.DoubleSide;
     const menuBoard = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 1.5), menuMat);
     menuBoard.position.set(B.x + 12, 3.6, B.z + 5.95);
     group.add(menuBoard);
+    // (its back is plain board now — it used to read backwards from behind the counter)
+    const menuBack = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 1.5), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 }));
+    menuBack.position.set(B.x + 12, 3.6, B.z + 5.94);
+    menuBack.rotation.y = Math.PI;
+    group.add(menuBack);
 
     // the apparatus, on the counter where you can watch it work: a roller
     // grill (four dogs, geologically patient) and the fizz machine

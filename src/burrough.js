@@ -161,7 +161,10 @@ function box(w, h, d, color) {
 }
 function sign(lines, w, h, bg = '#f3e6c8', fg = '#3a2a1c', { weight = 800, border = null, align = 'center' } = {}) {
   const cv = document.createElement('canvas');
-  cv.width = 512; cv.height = Math.max(64, Math.round(512 * h / w));
+  // the canvas takes the plane's shape (a long thin band used to get a
+  // squat canvas, and its text stretched sideways)
+  cv.height = Math.max(64, Math.round(512 * h / w));
+  cv.width = Math.round(cv.height * w / h);
   const c = cv.getContext('2d');
   c.fillStyle = bg;
   c.fillRect(0, 0, cv.width, cv.height);
@@ -581,7 +584,7 @@ export function createBurrough(player, { molehill = null } = {}) {
   ladder(LADDER_E.x, LADDER_E.z, true);
   {
     // west: a hard-hat-yellow sign on a post; east: a brass-and-velvet rope
-    signPost(LADDER_W.x + 1.6, LADDER_W.z + 1.2, '↑ UP TO THE LABS\n(mind your head)', 1.7, 0.7, '#f2cf5b', '#2e2a26');
+    signPost(LADDER_W.x - 1.6, LADDER_W.z + 1.2, '↑ UP TO THE LABS\n(mind your head)', 1.7, 0.7, '#f2cf5b', '#2e2a26');
     signPost(LADDER_E.x - 1.8, LADDER_E.z + 1.2, '↑ THE MOLEDECAI CELLAR\nresidents & guests', 1.9, 0.7, '#2e3a2a', '#e8d49a');
     for (const dx of [-1.1, 1.1]) {
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 8), mat(0xc9a24a, 0.3));
@@ -1172,7 +1175,7 @@ export function createBurrough(player, { molehill = null } = {}) {
       leg.position.set(sx, 0.7, -0.05);
       g.add(leg);
     }
-    const chalk = sign('THEOREM: this tunnel cannot be\nproved to have an end.\nPROOF: (keep digging)    ∎', 2.4, 1.4, '#2e3a32', '#e8efe8', { weight: 500 });
+    const chalk = sign('THEOREM:\nthis tunnel cannot be\nproved to have an end.\nPROOF:\n(keep digging)  ∎', 2.4, 1.4, '#2e3a32', '#e8efe8', { weight: 500 });
     chalk.position.set(0, 1.5, 0.05);
     g.add(chalk);
     put(g, -39.5, -30.2);
@@ -2063,7 +2066,7 @@ export function createBurrough(player, { molehill = null } = {}) {
     });
     // the union corner: a bulletin board, a photo, the water cooler
     F.wallSign(-6.4, 2.2, 'LOCAL 1 BULLETIN\n• 15 min. breaks: WON\n• Wendell: on break\n• bake sale: Tues.', 2.2, 1.5, '#c8a878', '#2e2a26', { weight: 600, align: 'left' });
-    F.wallSign(-1.2, 2.4, 'THE NIGHT WE DUG IT\n(photo: very dark)', 1.3, 0.9, '#1a1410', '#e8dcc0', { border: '#8a6a44', weight: 600 });
+    F.wallSign(-3.6, 3.4, 'THE NIGHT WE DUG IT\n(photo: very dark)', 1.3, 0.9, '#1a1410', '#e8dcc0', { border: '#8a6a44', weight: 600 });
     {
       const cooler = new THREE.Group();
       const baseC = box(0.5, 1.0, 0.5, 0xe8e8e0);
@@ -2191,7 +2194,7 @@ export function createBurrough(player, { molehill = null } = {}) {
         return f;
       });
       rm.updates.push((dt, t) => flames.forEach((f, i) => { f.scale.y = 1 + Math.sin(t * (7 + i * 2) + i) * 0.2; }));
-      const portrait = sign('A. MOLE\nfounder\n“dug here, thought here”', 1.1, 1.3, '#4a3a2a', '#e8d49a', { border: '#c9a24a', weight: 600 });
+      const portrait = sign('A. MOLE\nfounder\n“dug here,\nthought here”', 1.1, 1.3, '#4a3a2a', '#e8d49a', { border: '#c9a24a', weight: 600 });
       P(portrait, 0, -4.84, 3.0);
     }
     F.shelf(-4.8, -4.6, 3.6, 3.2, 4);
@@ -2234,7 +2237,7 @@ export function createBurrough(player, { molehill = null } = {}) {
       const page = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.03, 0.4), mat(0xf7f5f0));
       P(page, sx * 0.4, 1.5, 0.87);
     }
-    F.wallSign(-3.1, 2.5, 'SILENCE\n(thinking in progress)', 1.4, 0.6, '#e8dcc8', '#6a2a20', { border: '#6a2a20' });
+    F.wallSign(-4.8, 3.65, 'SILENCE\n(thinking in progress)', 1.4, 0.6, '#e8dcc8', '#6a2a20', { border: '#6a2a20' });
     // the tea urn, always hot, always four
     {
       const urn = new THREE.Group();
@@ -2648,9 +2651,8 @@ export function createBurrough(player, { molehill = null } = {}) {
       const LX = 5.2, LZ = 2.2;
       F.shelf(LX, LZ - 1.5, 3.4, 2.2, 3);
       F.desk(LX, LZ - 0.5, 2.6, 0.8, 0x8a6a44);
-      F.wallSign(LX + 3.2, 2.4, 'LITTLE DESK\nSESSIONS', 1.3, 0.7, '#f3efe2', '#b8433a', { weight: 700 });
-      const tag = sign('LITTLE DESK SESSIONS', 1.6, 0.25, '#b8433a', '#f3efe2');
-      P(tag, LX, LZ - 0.08, 0.6);
+      const tag = sign('LITTLE DESK SESSIONS', 1.8, 0.3, '#b8433a', '#f3efe2');
+      P(tag, LX, LZ - 1.27, 2.4); // on top of the shelves, over the band's heads
       // the band: upright bass (a mole), ukulele (a hamster), brushes (a groundhog)
       const bassist = F.critter('mole', { body: 0x4e4540 }, LX - 1.0, LZ + 0.3, Math.PI * 0.95, 0, true);
       const bass = new THREE.Group();

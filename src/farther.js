@@ -724,10 +724,16 @@ export function createFarther() {
     const crate = box(0.7, 0.5, 0.7, 0xa97c50);
     crate.position.set(-2.6, 0.49, 3.4);
     ext.add(crate);
-    // the sign hangs from the porch roof, saying where you are
+    // the sign stands on the porch roof's front edge, saying where you are
+    // (it used to hang under the roof, where the camera never saw it)
     const sign = signBoard('FARTHER GENERAL', 3.0, 0.7);
-    sign.position.set(0, 2.05, 4.35);
+    sign.position.set(0, 2.85, 4.62);
     ext.add(sign);
+    for (const bx of [-1.2, 1.2]) {
+      const bracket = box(0.08, 0.35, 0.08, 0x8a5a3a);
+      bracket.position.set(bx, 2.52, 4.6);
+      ext.add(bracket);
+    }
     ext.position.set(STORE.x, sy, STORE.z);
     ext.rotation.y = Math.atan2(C.x - STORE.x, C.z - STORE.z); // porch faces the camp
     group.add(ext);
@@ -1355,8 +1361,8 @@ export function createFarther() {
   {
     const T0 = TRAIL7[0];
     const ty = terrainHeight(T0.x - 1, T0.z - 1);
-    const post = box(0.14, 1.4, 0.14, 0x6e5136);
-    post.position.set(T0.x - 1, ty + 0.7, T0.z - 1);
+    const post = box(0.14, 1.05, 0.14, 0x6e5136); // (ends under the board, not through its face)
+    post.position.set(T0.x - 1, ty + 0.525, T0.z - 1);
     group.add(post);
     const board = signBoard('SUMMIT TRAIL ↑', 1.9, 0.5);
     board.position.set(T0.x - 1, ty + 1.3, T0.z - 1);
@@ -1955,6 +1961,7 @@ function signBoard(text, w = 3.4, h = 0.8) {
   } while (ctx.measureText(text).width > 460 && size > 18);
   ctx.fillText(text, 256, 68);
   const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace; // (without it the browns went grey)
   const board = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08),
     new THREE.MeshStandardMaterial({ map: tex, flatShading: true, roughness: 0.9 }));
   board.castShadow = board.receiveShadow = true;
