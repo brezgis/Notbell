@@ -990,9 +990,9 @@ export function createOasis(player) {
   solidDisc(12.5, LOT.v1 - 4.2, 0.55);
   // the lot's cars (warm, recently driven, by nobody)
   car(-14.4, LOT.v0 + 2.9, 0, 0xe8e4dc);
-  car(-9.2, LOT.v0 + 2.9, 0.05, 0x9aa0a6);
+  car(-11.6, LOT.v0 + 2.9, 0.05, 0x9aa0a6); // (not in front of the mall doors: someone parked there once and a visitor got stuck)
   car(-1.3, LOT.v0 + 2.9, -0.04, 0x2e3e5c, { van: true });
-  car(6.5, LOT.v0 + 2.9, 0, 0xd9c08f);
+  car(9.4, LOT.v0 + 2.9, 0, 0xd9c08f); // (clear of Trader Polly's door, likewise)
   car(-11.8, LOT.v1 - 1.5, Math.PI, 0x7a8a6a);
   car(9.1, LOT.v1 - 1.5, Math.PI + 0.05, 0xe8e4dc, { van: true });
   car(14.3, LOT.v1 - 1.5, Math.PI, 0xa8232d);
@@ -1047,8 +1047,9 @@ export function createOasis(player) {
   }
   // the patio out front of the two of them: tables, umbrellas
   {
-    slab(18, -0.9, 13, 2.8, CONCRETE, 0.04);
-    for (const [tu, col] of [[13.2, 0x2f5f50], [16.2, 0x2f5f50], [20.3, 0xc8342c], [23.2, 0xc8342c]]) {
+    slab(18, -0.9, 15, 2.8, CONCRETE, 0.04);
+    // (the tables keep clear of both doors — you step out onto open patio)
+    for (const [tu, col] of [[11.4, 0x2f5f50], [16.2, 0x2f5f50], [23.0, 0xc8342c], [25.8, 0xc8342c]]) {
       const t = new THREE.Group();
       const top = cyl(0.5, 0.5, 0.06, 8, 0xfaf6ec);
       top.position.y = 0.72;
