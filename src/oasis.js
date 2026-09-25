@@ -1712,7 +1712,7 @@ export function createOasis(player) {
           hl.position.set(X(lx), 2.6, Z(-1.5));
           group.add(hl);
         }
-        bl.push({ x: X(3.4), z: Z(-4.05), w: 2.4, d: 0.7 }, { x: X(5.2), z: Z(-3.95), w: 1.0, d: 0.8 }, { x: X(3.6), z: Z(-1.5), w: 2.2, d: 1.0 });
+        bl.push({ x: X(3.4), z: Z(-4.05), w: 2.4, d: 0.7 }, { x: X(5.2), z: Z(-3.95), w: 1.0, d: 0.8 }, { x: X(3.6), z: Z(-1.5), w: 2.2, d: 1.0 }, { x: X(3.6), z: Z(-0.6), w: 1.6, d: 0.45 }); // (and the stools)
         // the dining table, by the door, for company
         table(X(3.6), Z(1.9), 1.7, 1.0);
         for (const [cx, cz, cr] of [[2.9, 1.2, 0], [4.3, 1.2, 0], [2.9, 2.6, Math.PI], [4.3, 2.6, Math.PI]]) chair(X(cx), Z(cz), cr);

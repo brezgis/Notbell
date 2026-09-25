@@ -289,6 +289,7 @@ export function createFarther() {
   };
 
   // tents: canvas prisms, one lived-in, one politely spare
+  const tentDoors = [];
   function tent(x, z, ry, color, id) {
     const g = new THREE.Group();
     const y = terrainHeight(x, z);
@@ -312,6 +313,7 @@ export function createFarther() {
     // the flap is on the tent's local +x: step up to it and duck inside
     const dx = Math.cos(ry), dz = -Math.sin(ry);
     const doorOut = { x: x + dx * 2.3, z: z + dz * 2.3, rotY: Math.atan2(dx, dz) };
+    tentDoors.push({ doorOut, x, z, dx, dz, id: `tent_${id}` }); // (nudged onto open ground once the camp is built)
     const T = TENT_ROOMS[id];
     campRoom(`tent_${id}`, T.name, 'tent', doorOut, { canvas: color, ...T });
     register({
@@ -1847,6 +1849,16 @@ export function createFarther() {
     o.castShadow = true;
     o.receiveShadow = true;
   });
+
+  // every tent's door steps you out onto open ground (the spare tent's used
+  // to set you down on a bench that went up after it)
+  for (const td of tentDoors) {
+    let od = 2.3;
+    while (od < 4.5 && !zones.islandCanStand(td.x + td.dx * od, td.z + td.dz * od, 0.32)) od += 0.25;
+    td.doorOut.x = td.x + td.dx * od;
+    td.doorOut.z = td.z + td.dz * od;
+    zones.setDoor(td.id, { x: td.doorOut.x, z: td.doorOut.z });
+  }
 
   function update(dt, t, playerPos) {
     const zone = zones.current();

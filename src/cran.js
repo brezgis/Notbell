@@ -99,7 +99,7 @@ const GAZ = { u: -8, v: 0, r: 2.4 };
 const OAK = { u: 22, v: -3 };          // the big one, on the east shore
 const BENCH = { u: 22.6, v: 1.2, ry: Math.PI / 2 }; // facing the sea (east)
 // the creek's footbridges (planks across, u from..to at v)
-const CREEK_BRIDGES = [{ v: -5, u0: 2.4, u1: 8.6 }, { v: 11, u0: 5.6, u1: 12.4 }];
+const CREEK_BRIDGES = [{ v: -5, u0: 2.4, u1: 8.6 }, { v: 11, u0: 5.6, u1: 11.8 }]; // (the second ends short of the south bed's vines)
 
 // interiors, off in the elsewhere (the x = -300 column, past Oasis Estates)
 const IN = {
@@ -233,7 +233,9 @@ export function createCran(player) {
   {
     const A = CRAN_BRIDGE.a, B = CRAN_BRIDGE.b;
     const dx = B.x - A.x, dz = B.z - A.z, L = Math.hypot(dx, dz), ry = Math.atan2(dx, dz);
-    const deckAt = (t) => 1.0 + Math.sin(Math.PI * t) * 0.6; // a gentle hump over the water
+    // meets each shore at the shore's own height (no step up onto the first plank), with a gentle hump over the water
+    const hA = Math.max(terrainHeight(A.x, A.z), 0.2) + 0.05, hB = Math.max(terrainHeight(B.x, B.z), 0.2) + 0.05;
+    const deckAt = (t) => hA + (hB - hA) * t + Math.sin(Math.PI * t) * 0.7;
     const n = Math.ceil(L / 0.5);
     for (let k = 0; k < n; k++) {
       const t = (k + 0.5) / n;
@@ -292,7 +294,9 @@ export function createCran(player) {
   // down it to the sea (that's how you can tell which way it flows)
   for (const cb of CREEK_BRIDGES) {
     const L = cb.u1 - cb.u0, mid = (cb.u0 + cb.u1) / 2;
-    const deck = (u) => 1.05 + Math.sin(((u - cb.u0) / L) * Math.PI) * 0.35;
+    const e0 = W(cb.u0, cb.v), e1 = W(cb.u1, cb.v);
+    const hA = Math.max(terrainHeight(e0.x, e0.z), 0.2) + 0.05, hB = Math.max(terrainHeight(e1.x, e1.z), 0.2) + 0.05;
+    const deck = (u) => { const t = Math.max(0, Math.min(1, (u - cb.u0) / L)); return hA + (hB - hA) * t + Math.sin(t * Math.PI) * 0.45; }; // (flush with each bank)
     for (let k = 0; k < 10; k++) {
       const u = cb.u0 + (L * (k + 0.5)) / 10;
       const plank = box(L / 10 * 0.92, 0.1, 1.6, 0x8a6a48);
@@ -502,7 +506,7 @@ export function createCran(player) {
   }
   oak(OAK.u, OAK.v, 1.35, 0.5); // the bench oak
   for (const [u, v, s] of [[-19, -13, 1.0], [-12, -21, 0.9], [-2, -20, 1.1], [-21, 0, 0.85], [-9, 18, 1.0], [15, 17, 0.95], [18, -15, 0.9], [-14, 12, 0.8], [8, 21, 0.9], [-3, 10, 0.75]]) {
-    if (roomAt(u, v, 1.4)) oak(u, v, s);
+    if (roomAt(u, v, 1.4 + 1.3 * s)) oak(u, v, s); // (room for the crown and the moss, not just the trunk)
   }
 
   // ------------------------------------------------ moss & ferns underfoot

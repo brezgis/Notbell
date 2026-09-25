@@ -160,7 +160,9 @@ export function createChuckee(player) {
   // ================================================== the footbridge ----
   function span(v0, v1) {
     const L = v1 - v0, n = Math.ceil(Math.abs(L) / 0.5);
-    const deck = (v) => 1.0 + Math.sin(((v - v0) / L) * Math.PI) * 0.45;
+    const pa = P(WALK_U, v0), pb = P(WALK_U, v1);
+    const hA = Math.max(terrainHeight(pa.x, pa.z), 0.2) + 0.05, hB = Math.max(terrainHeight(pb.x, pb.z), 0.2) + 0.05;
+    const deck = (v) => { const t = Math.max(0, Math.min(1, (v - v0) / L)); return hA + (hB - hA) * t + Math.sin(t * Math.PI) * 0.7; }; // (flush with the shore at each end)
     for (let k = 0; k < n; k++) {
       const v = v0 + (L * (k + 0.5)) / n, p = P(WALK_U, v);
       const pl = box(1.8, 0.1, Math.abs(L / n) * 0.92, k % 2 ? 0xb8a888 : 0xa89878);
@@ -397,7 +399,7 @@ export function createChuckee(player) {
       }
     });
     register({
-      getPos: () => at(HWY_U - 3.2, 0.5), r: 1.8,
+      getPos: () => at(2.2, 4.4), r: 2.0, // (at the store's south corner, where you can see the window)
       label: 'watch the drive-thru',
       use: () => ui.say([
         'A car pulls up to the window. A paw comes out of the window. A bag goes into the paw. The car drives on, around the loop, and back. It will be back in a minute. It is always back in a minute.',
@@ -546,6 +548,7 @@ export function createChuckee(player) {
     brisket.position.set(X(5), 1.25, Z(-2.8));
     group.add(counter, top, board, brisket);
     blockers.push({ x: X(5), z: Z(-2.8), w: 4.5, d: 1.0 });
+    blockers.push({ x: X(5.6), z: Z(-4.4), w: 5.8, d: 2.2 }); // behind the counter is Chuckee's side
     const chuckee = buildAnimal('groundhog', { body: 0x8a5a3a, head: 0x8a5a3a });
     const cap = new THREE.Group();
     const crown = cyl(0.36, 0.32, 0.18, 9, 0xd8342c);

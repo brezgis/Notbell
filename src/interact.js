@@ -55,8 +55,9 @@ addEventListener('keydown', (e) => {
 // debug: every static interactable (the reachability probe checks each one
 // can still be stood near after collision changes)
 export function debugList() {
-  return interactables.filter((it) => it.pos).map((it) => ({
-    x: it.pos.x, z: it.pos.z, r: it.r,
+  // (getPos ones too — the talk targets — wherever they are right now)
+  return interactables.filter((it) => it.pos || it.getPos).map((it) => ({
+    x: (it.pos || it.getPos()).x, z: (it.pos || it.getPos()).z, r: it.r, moving: !it.pos,
     zone: typeof it.zone === 'function' ? null : it.zone,
     label: typeof it.label === 'function' ? it.label() : it.label,
   }));
