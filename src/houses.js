@@ -289,6 +289,8 @@ function buildPlotVisual(stage, seed) {
 
 // --------------------------------------------------- villager interiors ----
 
+// furniture a particular home adds that a body shouldn't walk through
+const HOME_SOLIDS = {};
 function buildVillagerInterior(group, B, name, style) {
   // the shell: floor, three walls, a warm lamp
   const floor = new THREE.Mesh(new THREE.BoxGeometry(11, 0.4, 9), mat(0x9a7448));
@@ -368,6 +370,16 @@ function buildVillagerInterior(group, B, name, style) {
       bunch.position.set(B.x - 4 + i * 2, 3.1, B.z - 4.1);
       group.add(bunch);
     }
+    // the drying rail they hang from (they used to hang from nothing)
+    const rail = box(8.6, 0.06, 0.06, 0x8a5a3a);
+    rail.position.set(B.x, 3.1, B.z - 4.1);
+    group.add(rail);
+    // and the shelf the bottles stand on
+    for (const sy of [1.4, 1.9]) {
+      const ledge = box(1.3, 0.08, 0.35, 0x8a5a3a);
+      ledge.position.set(B.x + 3.25, sy - 0.16, B.z - 4.0);
+      group.add(ledge);
+    }
     for (let i = 0; i < 4; i++) {
       const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, rand(0.2, 0.35), 6),
         mat(pick([0xbfe6f2, 0xe2a9ff, 0xffd9c9]), 0.3));
@@ -388,6 +400,7 @@ function buildVillagerInterior(group, B, name, style) {
     group.add(post); // the scratching post. for wolf reasons.
     const bookStand = box(0.8, 1.0, 0.5, 0x55483a);
     bookStand.position.set(B.x + 3.4, 0.5, B.z + 1.8);
+    HOME_SOLIDS[name] = [{ x: B.x + 3.4, z: B.z - 3.2, r: 0.3 }, { x: B.x + 3.4, z: B.z + 1.8, w: 0.8, d: 0.5 }];
     const book = box(0.62, 0.1, 0.45, 0xc25b4e);
     book.position.set(B.x + 3.4, 1.06, B.z + 1.8);
     book.rotation.z = 0.08;
@@ -442,6 +455,7 @@ function buildVillagerInterior(group, B, name, style) {
     churn.add(handle);
     churn.position.set(B.x + 3.2, 0, B.z - 3.4);
     group.add(churn);
+    HOME_SOLIDS[name] = [{ x: B.x + 3.2, z: B.z - 3.4, r: 0.45 }];
     for (let i = 0; i < 3; i++) {
       const pail = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.34, 8), mat(0x9aa0a6, 0.5));
       pail.position.set(B.x - 1 + i * 0.7, 0.17, B.z - 3.9);
@@ -991,7 +1005,7 @@ export function createHouses(animals, obstacles = []) {
       root: room,
       floorY: 0,
       bounds: { x0: B.x - 5.1, x1: B.x + 5.1, z0: B.z - 4.0, z1: B.z + 4.4 },
-      blockers: [{ x: B.x - 3.4, z: B.z - 2.8, r: 1.3 }], // the bed
+      blockers: [{ x: B.x - 3.4, z: B.z - 2.8, r: 1.3 }, ...(HOME_SOLIDS[name] || [])], // the bed, and whatever else this home keeps
       spawn: { x: B.x, z: B.z + 3.6, rotY: Math.PI },
       lighting: {
         bg: 0x2a2018, fog: 0x2a2018, fogNear: 20, fogFar: 50,

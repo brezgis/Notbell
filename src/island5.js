@@ -714,7 +714,7 @@ export function createIsland5(player) {
       floorY: 0,
       bounds: { x0: B.x - 9.6, x1: B.x + 9.6, z0: B.z - 6.4, z1: B.z + 7.2 },
       blockers: [
-        { x: B.x + 3, z: B.z + 2, r: 2.2 },
+        { x: B.x + 3, z: B.z + 2, w: 6.1, d: 1.7 }, // the long table, end to end
         { x: B.x - 9.5, z: B.z - 2, r: 1.4 },
         { x: B.x + 8.5, z: B.z - 3.95, w: 2.5, d: 3.4 }, // the staircase
       ],
@@ -1036,7 +1036,11 @@ export function createIsland5(player) {
       root: cellarRoom,
       floorY: 0,
       bounds: { x0: C2.x - 6.6, x1: C2.x + 6.6, z0: C2.z - 3.6, z1: C2.z + 4.1 },
-      blockers: [{ x: C2.x - 5, z: C2.z - 3.4, r: 1.6 }],
+      blockers: [
+        { x: C2.x - 5, z: C2.z - 3.4, r: 1.6 },
+        { x: C2.x - 5.5, z: C2.z + 2.5, r: 0.75 }, // the wheel of parmesan
+        { x: C2.x, z: C2.z + 1, w: 0.55, d: 0.55 }, // the candle stand
+      ],
       spawn: { x: C2.x, z: C2.z + 3.2, rotY: Math.PI },
       lighting: {
         bg: 0x14100c, fog: 0x14100c, fogNear: 16, fogFar: 44,

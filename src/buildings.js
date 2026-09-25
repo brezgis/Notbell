@@ -741,7 +741,7 @@ export function createBuildings() {
       floorY: 0,
       bounds: { x0: B.x - 7.5, x1: B.x + 7.5, z0: B.z - 4.4, z1: B.z + 5.4 },
       blockers: [
-        { x: B.x, z: B.z - 2.5, r: 1.6 },      // counter
+        { x: B.x, z: B.z - 2.5, w: 5, d: 1.2 }, // counter (its full length: the ends used to be walk-in)
         { x: B.x + 6.5, z: B.z - 2, r: 0.9 },  // pedestal
       ],
       spawn: { x: B.x, z: B.z + 4.6, rotY: Math.PI },
@@ -900,9 +900,12 @@ export function createBuildings() {
       floorY: 0,
       bounds: { x0: B.x - 6.5, x1: B.x + 6.5, z0: B.z - 3.9, z1: B.z + 4.9 },
       blockers: [
-        { x: B.x - 2, z: B.z - 2.8, r: 1.5 },   // counter
+        { x: B.x - 2, z: B.z - 2.8, w: 4.6, d: 1.2 }, // counter (its full length)
         { x: B.x + 3.4, z: B.z + 0.6, r: 1.1 }, // tables
         { x: B.x - 3.6, z: B.z + 1.6, r: 1.1 },
+        // their stools, and Chip on his
+        ...[[3.4, 0.6], [-3.6, 1.6]].flatMap(([tx, tz]) => [0.7, 2.6].map((a) => ({ x: B.x + tx + Math.cos(a) * 1.7, z: B.z + tz + Math.sin(a) * 1.7, r: 0.4 }))),
+        { x: B.x + 5.2, z: B.z - 2.6, r: 0.55 },
       ],
       spawn: { x: B.x + 1, z: B.z + 4.2, rotY: Math.PI },
       lighting: {
@@ -1317,8 +1320,12 @@ export function createBuildings() {
         { x: B.x - 12.25, z: B.z + 7, r: 6.4 }, { x: B.x + 12.25, z: B.z + 7, r: 6.4 },
         { x: B.x - 13.9, z: B.z - 10.5, r: 5.2 }, { x: B.x + 13.9, z: B.z - 10.5, r: 5.2 },
         { x: B.x - 5.4, z: B.z - 11.2, r: 3.6 }, { x: B.x, z: B.z - 11.2, r: 3.6 }, { x: B.x + 5.4, z: B.z - 11.2, r: 3.6 }, // the tank — full width, no walking in
-        { x: B.x - 14, z: B.z + 0.2, r: 2.6 }, // the dig pit
+        { x: B.x - 14, z: B.z + 0.2, w: 7, d: 5 }, // the dig pit (its rim, not a circle inside it)
         { x: B.x - 1.5, z: B.z - 2.2, r: 1.0 }, // Fern
+        // the benches, the fossil plinths, the terrarium stands (none was solid)
+        { x: B.x - 3, z: B.z - 3.4, w: 2.0, d: 0.7, rot: 0.3 }, { x: B.x + 3.4, z: B.z + 0.6, w: 2.0, d: 0.7, rot: -0.4 },
+        ...[0, 1, 2, 3, 4].map((i) => ({ x: B.x - 17 + i * 1.9, z: B.z - 5.4, w: 1.0, d: 1.0 })),
+        ...[0, 1, 2, 3, 4, 5].map((i) => ({ x: B.x + 10.5 + (i % 3) * 3.2, z: B.z - 4.6 + Math.floor(i / 3) * 6.4, w: 2.2, d: 1.6 })),
       ],
       spawn: { x: B.x, z: B.z + 9.4, rotY: Math.PI },
       lighting: {

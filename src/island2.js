@@ -183,8 +183,9 @@ export function createIsland2() {
       floorY: 0,
       bounds: { x0: B.x - 7.1, x1: B.x + 7.1, z0: B.z - 4.4, z1: B.z + 5.1 },
       blockers: [
-        { x: B.x - 2.5, z: B.z - 2.8, r: 1.5 },
+        { x: B.x - 2.5, z: B.z - 2.8, w: 4.6, d: 1.2 }, // the counter, its full length
         { x: B.x + 3.4, z: B.z - 3.4, r: 1.2 },
+        ...[0.6, 2.2].map((a) => ({ x: B.x + 3.4 + Math.cos(a) * 1.6, z: B.z - 2.2 + Math.sin(a) * 1.6, r: 0.4 })), // the stools
       ],
       spawn: { x: B.x, z: B.z + 4.4, rotY: Math.PI },
       lighting: {

@@ -406,10 +406,10 @@ export function createFold() {
         { x: B.x - 2.6, z: B.z - 4.4, r: 0.8 },  // candles
         { x: B.x + 2.6, z: B.z - 4.4, r: 0.8 },  // candles
         { x: B.x - 3.6, z: B.z + 5.6, r: 1.3 },  // harvest table
-        { x: B.x - 2.4, z: B.z - 0.6, r: 1.5 },  // pews, port side
-        { x: B.x + 2.4, z: B.z - 0.6, r: 1.5 },
-        { x: B.x - 2.4, z: B.z + 1.4, r: 1.5 },
-        { x: B.x + 2.4, z: B.z + 1.4, r: 1.5 },
+        // the pews: all three rows, seat and back, each a box its own size
+        // (two rows of circles used to leave the back row, by the door, walk-through)
+        ...[0, 1, 2].flatMap((r) => [-2.4, 2.4].map((sx) => ({ x: B.x + sx, z: B.z - 0.78 + r * 2.0, w: 3.4, d: 0.95 }))),
+        { x: B.x + 0.9, z: B.z - 3.9, r: 0.5 },  // Elder Amos
       ],
       spawn: { x: B.x, z: B.z + 5.9, rotY: Math.PI },
       lighting: {

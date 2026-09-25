@@ -1271,7 +1271,7 @@ export function createIsland6(player) {
       const bench = box(5.4, 1.0, 1.3, 0xd9d4c8);
       bench.position.set(B.x - 14.2, 0.5, bz);
       room.add(bench);
-      blockers.push({ x: B.x - 14.2, z: bz, r: 1.9 });
+      blockers.push({ x: B.x - 14.2, z: bz, w: 5.4, d: 1.3 }); // (a circle left both ends walk-in)
       for (let i = 0; i < 4; i++) {
         const fl = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 1),
           new THREE.MeshStandardMaterial({
@@ -1600,6 +1600,9 @@ export function createIsland6(player) {
       pinion.userData.parts.head.add(comb);
       pinion.position.set((gx + KG.x1) / 2, 0, (KG.z0 + KG.z1) / 2 - 1);
       room.add(pinion);
+      blockers.push({ x: pinion.position.x, z: pinion.position.z, r: 0.5 });
+      blockers.push({ x: blocksPos[0] + 0.28, z: blocksPos[2] + 0.1, w: 1.1, d: 0.75 }); // the block tower
+      blockers.push({ x: KG.x1 - 1.6, z: KG.z1 - 1.6, r: 0.5 }); // the napper
       let pinionIdx = 0;
       const PINION_LINES = [
         'Miss Pinion. Early rover development. We do shapes, naps, and trajectories, in that order, because that is the correct order.',

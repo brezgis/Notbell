@@ -1399,6 +1399,7 @@ export function createBulko(player) {
         bounds: { x0: MC.x - 10.5, x1: MC.x + 10.5, z0: MC.z - 6.2, z1: MC.z + 7.6 }, // (the cold wall's shelves)
         blockers: [
           { x: MC.x - 5, z: MC.z - 2, w: 5.6, d: 3.0 }, { x: MC.x + 5, z: MC.z - 2, w: 5.6, d: 3.0 },
+          { x: MC.x - 7, z: MC.z + 2.6, r: 0.8 }, { x: MC.x + 7, z: MC.z + 2.6, r: 0.8 }, // Cocoa and Sundae
         ],
         spawn: { x: MC.x, z: MC.z + 6.5, rotY: 0 },
         lighting: {
@@ -1770,6 +1771,7 @@ export function createBulko(player) {
         { x: B.x + 4, z: B.z - 7, r: 4 }, { x: B.x + 12, z: B.z - 7, r: 4 },
         { x: B.x - 8, z: B.z - 3, r: 3 },   // the tank
         { x: B.x + 12, z: B.z + 6.5, r: 2 }, // food court counter
+        { x: B.x - 6.5, z: B.z + 8, r: 0.8 }, // Gus, who is a tortoise and a system
         // the TV stand — overlapping circles so there's no walk-through gap
         { x: B.x - 1.2, z: B.z + 1.6, r: 1.1 }, { x: B.x + 0.6, z: B.z + 1.6, r: 1.1 },
         { x: B.x + 2.4, z: B.z + 1.6, r: 1.1 }, { x: B.x + 4.2, z: B.z + 1.6, r: 1.1 },

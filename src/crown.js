@@ -967,8 +967,8 @@ export function createCrown(player) {
     // solid hull (walk up to its open side and look in)
     const hc = Math.cos(0.3), hs = Math.sin(0.3);
     for (let k = -3; k <= 3; k++) {
-      const lx = k * 2.3, lz = -1;
-      blockers.push({ x: W.x + lx * hc + lz * hs, z: W.z - lx * hs + lz * hc, r: 2.2 });
+      const lx = k * 2.3, lz = -0.3; // (on the keel's midline: you used to wade knee-deep into its near side)
+      blockers.push({ x: W.x + lx * hc + lz * hs, z: W.z - lx * hs + lz * hc, r: 2.4 });
     }
     updates.push((dt, t) => {
       for (const [k, jb] of jellies.entries()) jb.position.y = 4.0 + Math.sin(t * 1.5 + k) * 0.1;

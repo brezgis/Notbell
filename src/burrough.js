@@ -381,7 +381,21 @@ export function createBurrough(player, { molehill = null } = {}) {
       const tg = points[w.i];
       const dx = tg.x - g.position.x, dz = tg.z - g.position.z, d = Math.hypot(dx, dz);
       if (d < 0.3) { w.i = (w.i + 1) % points.length; w.pause = w.rest ?? 1 + h01() * 2.5; return; }
-      const nx = g.position.x + (dx / d) * speed * dt, nz = g.position.z + (dz / d) * speed * dt;
+      let nx = g.position.x + (dx / d) * speed * dt, nz = g.position.z + (dz / d) * speed * dt;
+      // somebody coming the other way (or dawdling ahead)? step round them on
+      // your right, the way people do on a sidewalk; wait only if there's no
+      // room to (walkers used to walk straight through each other)
+      const inWay = (x, z) => movers.some((o) => o !== g && Math.hypot(o.position.x - x, o.position.z - z) < 0.85 &&
+        Math.hypot(o.position.x - x, o.position.z - z) < Math.hypot(o.position.x - g.position.x, o.position.z - g.position.z));
+      if (inWay(nx, nz)) {
+        const ux = dx / d + (dz / d) * 1.2, uz = dz / d - (dx / d) * 1.2, ul = Math.hypot(ux, uz);
+        const sx = g.position.x + (ux / ul) * speed * dt, sz = g.position.z + (uz / ul) * speed * dt;
+        if (inWay(sx, sz) || sd(sx - O.x, sz - O.z) > -0.6 || solid(sx - O.x, sz - O.z)) {
+          animateGait(g, t, 0);
+          return;
+        }
+        nx = sx; nz = sz;
+      }
       g.position.set(nx, burroughHeight(nx, nz), nz);
       g.rotation.y = turnToward(g.rotation.y, Math.atan2(dx, dz), dt, 6);
       animateGait(g, t, 1, w.rate ?? 10);
@@ -956,7 +970,7 @@ export function createBurrough(player, { molehill = null } = {}) {
       // clear of Old Faithful, the lamps and the signposts — walkers don't
       // steer, so their paths have to)
       { kind: 'mole', body: 0x5e5048, hat: () => fedora(0x6a5a48), path: [[-62, 2.1], [-8, 1.9], [30, 2.2], [66, 1.0], [96, 1.0], [66, 1.0], [30, 2.2], [-8, 1.9]], speed: 1.5 },
-      { kind: 'hamster', body: 0xd8a068, hat: () => beret(0xb8433a), path: [[40, 2.6], [-20, 2.6], [-62, 2.2], [-68, 0.6], [-110, 0.6], [-68, 0.6], [-62, 2.2], [-20, 2.6]], speed: 1.8 },
+      { kind: 'hamster', body: 0xd8a068, hat: () => beret(0xb8433a), path: [[40, 2.6], [8, 1.8], [-20, 1.8], [-62, 2.2], [-68, 0.6], [-110, 0.6], [-68, 0.6], [-62, 2.2], [-20, 1.8], [8, 1.8]], speed: 1.8 }, // (past Marjorie's crate at a polite distance)
       { kind: 'mole', body: 0x6a5a50, hat: () => hardHat(), path: [[-58, 2.4], [-64, 0.6], [-130, 0.6], [-64, 0.6]], speed: 1.2 },
       { kind: 'groundhog', body: 0x9a7048, hat: () => flatCap(0x4a5a6a), path: [[64, 2.0], [14, 1.9], [-40, 2.1], [14, 1.9]], speed: 1.3 },
       { kind: 'mole', body: 0x4e4540, hat: () => topHat(0x2a2420), path: [[58, 2.3], [66, 0.8], [150, 0.8], [66, 0.8]], speed: 1.0 },
@@ -1309,12 +1323,12 @@ export function createBurrough(player, { molehill = null } = {}) {
   {
     frontage({ x: APT.x, z: APT.z, w: APT.w, h: APT.h, d: 6, color: 0x8a6448, trim: 0xd8c8a8, name: '', rows: 4, cols: 4, door: true, doorColor: 0x4a3020 });
     // the canopy, out to the curb, with the name on its front
-    const canopy = box(1.9, 0.12, 3.0, 0x2e4a3a);
+    const canopy = box(1.6, 0.12, 3.0, 0x2e4a3a); // (narrow enough to clear the ground-floor portholes)
     put(canopy, APT.x, APT.z + 1.5, 2.75);
-    const valance = sign('THE LOAMSWORTH ARMS', 1.9, 0.34, '#2e4a3a', '#e8d49a');
+    const valance = sign('THE LOAMSWORTH ARMS', 1.6, 0.3, '#2e4a3a', '#e8d49a');
     valance.position.set(O.x + APT.x, at(APT.x, APT.z) + 2.55, O.z + APT.z + 3.02);
     group.add(valance);
-    for (const sx of [-0.88, 0.88]) {
+    for (const sx of [-0.74, 0.74]) {
       const pole = box(0.06, 2.75, 0.06, 0xc9a24a);
       put(pole, APT.x + sx, APT.z + 2.95, 1.37);
       block(APT.x + sx, APT.z + 2.95, 0.12);
@@ -2771,6 +2785,7 @@ export function createBurrough(player, { molehill = null } = {}) {
       F.solidBox(-5.2, -2.6, 1.9, 1.4);
       const bench = box(0.9, 0.5, 0.4, 0x14110f);
       P(bench, -5.2, -1.4, 0.25);
+      F.solidBox(-5.2, -1.4, 0.9, 0.4);
       register({
         pos: worldPos(rm, -5.2, -0.6), r: 1.3, zone: rm.zone, label: 'play the grand piano',
         use: () => {
