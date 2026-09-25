@@ -1012,6 +1012,173 @@ export function buildAnimal(kind, colors = {}) {
     tailR.rotation.x = -Math.PI / 2 - 0.4;
     tailR.position.set(0, 0.55, -0.82);
     g.add(tailR);
+  } else if (kind === 'camel') {
+    // Oasis Estates. long legs, a long curved neck, a hump (or two — the
+    // colors say which), and the eyelids: half-lowered, permanently, at you
+    for (const leg of parts.legs) g.remove(leg);
+    parts.legs.length = 0;
+    const longLeg = new THREE.CylinderGeometry(0.09, 0.07, 0.72, 6);
+    longLeg.translate(0, -0.36, 0);
+    for (const [sx, sz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+      const leg = new THREE.Mesh(longLeg, bodyMat);
+      leg.position.set(sx * 0.24, 0.74, sz * 0.36);
+      g.add(leg);
+      parts.legs.push(leg);
+    }
+    parts.bodyY = 0.98;
+    parts.body.position.y = parts.bodyY;
+    parts.body.scale.set(0.95, 0.85, 1.35);
+    const humps = colors.humps ?? 1;
+    for (let i = 0; i < humps; i++) {
+      const hump = new THREE.Mesh(ico(0.3), bodyMat);
+      hump.scale.set(0.95, 0.9, 1.05);
+      hump.position.set(0, 1.36, humps === 1 ? -0.05 : (i ? -0.28 : 0.2));
+      hump.userData.notFace = true;
+      g.add(hump);
+    }
+    // the neck: down and forward from the chest, then up — the camel S
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.22, 0.8, 6), bodyMat);
+    neck.position.set(0, 1.42, 0.62);
+    neck.rotation.x = 0.35;
+    neck.userData.notFace = true;
+    g.add(neck);
+    parts.headY = 1.9;
+    parts.head.scale.set(0.78, 0.74, 1.12);
+    parts.head.position.set(0, parts.headY, 0.82);
+    const muzzle = new THREE.Mesh(ico(0.19), mat(colors.muzzle ?? 0xe6d2b0));
+    muzzle.scale.set(0.95, 0.8, 1.1);
+    muzzle.position.set(0, 1.8, 1.2);
+    g.add(muzzle);
+    const lip = new THREE.Mesh(ico(0.1, 0), mat(colors.muzzle ?? 0xe6d2b0));
+    lip.scale.set(1.3, 0.55, 0.9);
+    lip.position.set(0, 1.67, 1.26); // the droop, the unbothered droop
+    g.add(lip);
+    parts.eyes.forEach((e, i) => { e.position.set((i ? 1 : -1) * 0.25, 1.98, 1.06); e.scale.setScalar(1.3); });
+    const lidMat = mat(colors.lids ?? (colors.head ?? colors.body ?? 0xc9a06a));
+    for (const sx of [-1, 1]) {
+      const lid = new THREE.Mesh(new THREE.SphereGeometry(0.085, 6, 3, 0, Math.PI * 2, 0, Math.PI / 2), lidMat);
+      lid.position.set(sx * 0.25, 1.99, 1.07);
+      lid.rotation.x = 0.55; // half-mast, at everything, always
+      g.add(lid);
+      const ear = new THREE.Mesh(ico(0.08, 0), headMat);
+      ear.scale.set(0.8, 1.2, 0.6);
+      ear.position.set(sx * 0.25, 2.2, 0.66);
+      g.add(ear);
+      (parts.ears ??= []).push(ear);
+    }
+    const tuft = new THREE.Mesh(ico(0.13, 0), mat(colors.tuft ?? 0x9a7448));
+    tuft.scale.set(1.2, 0.6, 1);
+    tuft.position.set(0, 2.2, 0.8);
+    g.add(tuft);
+    const tailC = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.55, 5), bodyMat);
+    tailC.rotation.x = 0.3;
+    tailC.position.set(0, 0.85, -0.82);
+    g.add(tailC);
+  } else if (kind === 'parrot') {
+    // loud, bright, and exactly as tall as everyone else. two legs, a hooked
+    // beak, a face patch, wings in a second color and a tail in a third
+    for (const leg of parts.legs) g.remove(leg);
+    parts.legs.length = 0;
+    const birdLeg = new THREE.CylinderGeometry(0.05, 0.04, 0.42, 5);
+    birdLeg.translate(0, -0.21, 0);
+    for (const sx of [-1, 1]) {
+      const leg = new THREE.Mesh(birdLeg, mat(0x5a5a5e));
+      leg.position.set(sx * 0.16, 0.42, 0.05);
+      g.add(leg);
+      parts.legs.push(leg);
+    }
+    parts.body.scale.set(0.92, 1.05, 1.0);
+    const beakMat = mat(colors.beak ?? 0x3a3634, 0.5);
+    const upper = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 5), beakMat);
+    upper.rotation.x = Math.PI / 2 + 0.75; // hooked: the point curls down
+    upper.position.set(0, 1.12, 0.78);
+    g.add(upper);
+    const lower = new THREE.Mesh(ico(0.08, 0), beakMat);
+    lower.scale.set(1, 0.7, 1);
+    lower.position.set(0, 1.0, 0.72);
+    g.add(lower);
+    const face = mat(colors.face ?? 0xf5f2e9);
+    for (const sx of [-1, 1]) {
+      const patch = new THREE.Mesh(ico(0.15, 0), face);
+      patch.scale.set(0.6, 1, 0.9);
+      patch.position.set(sx * 0.2, 1.2, 0.6);
+      g.add(patch);
+      const wing = new THREE.Mesh(ico(0.3, 0), mat(colors.wing ?? 0x3a7dd8));
+      wing.scale.set(0.3, 0.85, 1.05);
+      wing.position.set(sx * 0.46, 0.66, -0.05);
+      wing.rotation.x = -0.25;
+      wing.userData.notFace = true;
+      g.add(wing);
+    }
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.21, 1.28, 0.66));
+    const tailMat = mat(colors.tail ?? 0xf2cf5b);
+    for (const [sx, len] of [[-0.08, 1.0], [0.08, 0.85]]) {
+      const feather = new THREE.Mesh(new THREE.ConeGeometry(0.1, len, 4), tailMat);
+      feather.rotation.x = -2.2;
+      feather.scale.z = 0.45;
+      feather.position.set(sx, 0.52, -0.72 - len * 0.2);
+      g.add(feather);
+    }
+    const crest = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.26, 4), headMat);
+    crest.position.set(0, 1.62, 0.2);
+    crest.rotation.x = -0.6;
+    g.add(crest);
+  } else if (kind === 'bronto') {
+    // a brontosaurus. a big soft body on four stumps, a tail for balance, a
+    // neck that goes up, up, up — and at the top of it, a very small,
+    // very friendly head. sees over every fence on the street.
+    parts.bodyY = 0.78;
+    parts.body.position.y = parts.bodyY;
+    parts.body.scale.set(1.3, 1.1, 1.55);
+    const stump = new THREE.CylinderGeometry(0.15, 0.16, 0.5, 7);
+    stump.translate(0, -0.25, 0);
+    parts.legs.forEach((leg, i) => {
+      leg.geometry = stump;
+      leg.position.set((i % 2 ? 1 : -1) * 0.36, 0.5, i < 2 ? 0.42 : -0.42);
+    });
+    const belly = new THREE.Mesh(ico(0.45), mat(colors.belly ?? 0xd8e0b0));
+    belly.scale.set(1.1, 0.8, 1.3);
+    belly.position.set(0, 0.62, 0.12);
+    belly.userData.notFace = true;
+    g.add(belly);
+    // the neck, three segments swept up and a touch forward
+    for (const [y, z, r0, r1, rx] of [[1.3, 0.62, 0.2, 0.26, 0.55], [1.85, 0.86, 0.16, 0.2, 0.28], [2.38, 0.96, 0.13, 0.16, 0.08]]) {
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, 0.62, 7), bodyMat);
+      seg.position.set(0, y, z);
+      seg.rotation.x = rx;
+      seg.userData.notFace = true;
+      g.add(seg);
+    }
+    parts.headY = 2.78;
+    parts.head.scale.set(0.62, 0.55, 0.78);
+    parts.head.position.set(0, parts.headY, 1.1);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.17, 2.86, 1.33));
+    const snout = new THREE.Mesh(ico(0.16), headMat);
+    snout.scale.set(1.1, 0.8, 1);
+    snout.position.set(0, 2.72, 1.36);
+    g.add(snout);
+    for (const sx of [-1, 1]) {
+      const nostril = new THREE.Mesh(ico(0.025, 0), NOSE_MAT);
+      nostril.position.set(sx * 0.06, 2.78, 1.51);
+      g.add(nostril);
+    }
+    // a smile; brontosauruses are famously pleased about things
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.018, 4, 8, Math.PI), NOSE_MAT);
+    smile.rotation.z = Math.PI;
+    smile.position.set(0, 2.68, 1.5);
+    g.add(smile);
+    const tailB = new THREE.Mesh(new THREE.ConeGeometry(0.24, 1.5, 7), bodyMat);
+    tailB.rotation.x = -Math.PI / 2 + 0.25;
+    tailB.position.set(0, 0.62, -1.3);
+    g.add(tailB);
+    // back plates? no — that's the other one. a row of soft spots instead
+    for (let i = 0; i < 3; i++) {
+      const spot = new THREE.Mesh(ico(0.1, 0), mat(colors.spots ?? 0x6f9a6a));
+      spot.scale.set(1, 0.4, 1);
+      spot.position.set((i - 1) * 0.28, 1.26 - Math.abs(i - 1) * 0.08, -0.15 + (i % 2) * 0.2);
+      spot.userData.notFace = true;
+      g.add(spot);
+    }
   } else if (kind === 'worm') {
     // an earthworm. with legs. six, in little white sneakers. nobody asks.
     // long and low: the head is just the front of the worm
