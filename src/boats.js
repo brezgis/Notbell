@@ -381,7 +381,7 @@ export function createBoats(player) {
     ],
     oasis: [
       ['“Oasis Estates. Fourteen applications I sent that woman. FOURTEEN. ‘The horn is too loud.’ I took off the horn. ‘The boat is too loud.’ I can’t take off the BOAT.”',
-       '“So I stopped asking. It’s a pier. I’m a tugboat. Tugboats and piers go back further than any covenant.”',
+       '“And what did she approve in the end? One route. BULKO and back. For PAPER TOWELS. The Persistent is now, officially, a paper towel boat.”',
        '“There’ll be a camel with a clipboard at the end of it. Wave. She won’t wave back. She’ll write down that you waved.”'],
       ['“Every house on that island is the same house. I sailed past twice to be sure. Then a third time, in case I’d gone funny. Same house.”',
        '“The parrot at the gatehouse waved all three times. Keeps a list. The list is blank. Lovely lad.”'],
@@ -471,7 +471,7 @@ export function createBoats(player) {
       land: { x: FARTHER_DOCK.x, z: FARTHER_DOCK.z, rotY: FARTHER_DOCK.rotY },
       sea: seaOff(FARTHER_DOCK.x, FARTHER_DOCK.z, ISLAND7.x, ISLAND7.z),
     },
-    // (pending HOA approval. she goes anyway.)
+    // (the ONE route the HOA approved: BULKO and back — see stopMenu)
     oasis: {
       label: '🏡 Oasis Estates',
       land: { x: OASIS_DOCK.x, z: OASIS_DOCK.z, rotY: OASIS_DOCK.rotY },
@@ -577,8 +577,10 @@ export function createBoats(player) {
       ], { speaker: 'Captain Brine', voice: 340 });
       return;
     }
+    // Oasis Estates approved exactly one ferry route: to BULKO and back
     const choices = Object.entries(STOPS)
       .filter(([id]) => id !== hereId)
+      .filter(([id]) => (hereId === 'oasis' ? id === 'bulko' : id !== 'oasis' || hereId === 'bulko'))
       .map(([id, s]) => ({
         label: s.label, value: id,
         hint: id === 'home' ? 'free' : '10🔘',

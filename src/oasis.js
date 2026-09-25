@@ -6,8 +6,9 @@
 // Humphries is the president of the Homeowners' Association. Do not mess
 // with Beverly.
 //
-// There is no ferry. The ferry is pending HOA approval. (A rowboat can land
-// on the east beach; the HOA has not yet noticed rowboats.)
+// One ferry: the HOA approved exactly one route, to BULKO and back (bulk
+// goods are consistent with the character of the community). A rowboat can
+// also land on the east beach; the HOA has not yet noticed rowboats.
 //
 // Bell hook (do not resolve): the covenant forbids bells — doorbells, bike
 // bells, wind chimes, the ice cream truck's song. Nobody knows why. The
@@ -132,9 +133,9 @@ const IN = {
 };
 const HOUSE_IN_Z0 = IN_Z0 + 400; // then the seven houses, 80 apart
 
-// the pier, out the east end of the Parkway — and the Persistent calls
-// there now (pending approval; she calls anyway). boats.js reads this; it's
-// plain numbers, so creation order doesn't matter.
+// the pier, out the east end of the Parkway — the Persistent calls here on
+// the one route the HOA approved: to BULKO and back. boats.js reads this;
+// it's plain numbers, so creation order doesn't matter.
 const PIER = { u0: 30.2, u1: 42, v: -10, w: 2.2, top: 0.62 };
 export const OASIS_DOCK = {
   x: OASIS_PAD.x + PIER.u1 - 1.6, z: OASIS_PAD.z + PIER.v, rotY: -Math.PI / 2, // step off facing the island
@@ -162,11 +163,13 @@ function talk(key, name, lines) {
 }
 
 const REGGIE = [
-  'Name? … Name? … You’re not on the list. Nobody’s on the list. Go ahead.',
-  'I keep the list. The list is blank. Some people would call that a slow day. I call it security.',
-  'The boom’s up. The boom is always up. If I put it down people would have to walk around it and then they’d all have opinions. Up is easier.',
-  'I repeat everything that comes through this gate. Everything. Nobody comes through this gate. It’s very peaceful.',
-  'Beverly checks my log every evening. Blank, blank, blank. She says “good.” I think she means it.',
+  'Mm-mm. Name? … Honey, you are not on the list. Nobody is on the list. I just like to watch you wait.',
+  'Security. Gatehouse. Me. Yes, I’m small. So is a stapler, sweetie, and you’ve never once argued with a stapler.',
+  'The boom is UP because I am generous. Do not make me reconsider.',
+  'Is that a lantern? Cute. Very “I rowed here.” Go on. Go.',
+  'I see everything. Every lawn. Every flamingo. The goose with the boat thinks I don’t see the goose. I see the goose.',
+  'Beverly signs my timesheet. I sign Beverly’s. It’s called checks and balances, baby.',
+  'No loitering. … That’s MY job. Move along.',
 ];
 
 const NOTICES = [
@@ -191,7 +194,7 @@ const BEVERLY = [
   'Forty-one Yards of the Month. In a row. It’s not a competition. If it were a competition, I would be winning it. I am winning it.',
   'The Bronto boy’s band has a permit. Tuesdays, two to four. And yet I hear them every single day. Apparently it’s always Tuesday somewhere. I have it written down. All of it.',
   'Todd mows beautifully. Todd mows beautifully because I watch Todd mow.',
-  'A ferry. Fourteen applications, from a goose. The horn is too loud. The boat is too loud. The sea is, frankly, very loud. It’s under review. … She ties up at my pier anyway. Every day. I’ve cited the boat. The boat does not care.',
+  'A ferry. Fourteen applications, from a goose. The horn is too loud. The boat is too loud. The sea is, frankly, very loud. It took fourteen applications. I approved ONE route: here to BULKO and back. Paper towels are a need. Everything else is a want, and wants are under review.',
   'Article Nine. No bells. No, I don’t know why. It’s in the deed; the developer wrote it. Moledecai-something. You don’t question a deed, dear. You enforce a deed.',
   'Mildred has a flamingo. A pink plastic flamingo. In her front yard. Three notices. It hasn’t moved. It watches me. I watch it back.',
   'Before the lawns, the wind used to take everything off this island. Lawn chairs. Laundry. A whole gazebo, once. Now we have rules, and nothing has blown away in thirty years. You’re welcome.',
@@ -993,9 +996,11 @@ export function createOasis(player) {
   car(-11.6, LOT.v0 + 2.9, 0.05, 0x9aa0a6); // (not in front of the mall doors: someone parked there once and a visitor got stuck)
   car(-1.3, LOT.v0 + 2.9, -0.04, 0x2e3e5c, { van: true });
   car(9.4, LOT.v0 + 2.9, 0, 0xd9c08f); // (clear of Trader Polly's door, likewise)
-  car(-11.8, LOT.v1 - 1.5, Math.PI, 0x7a8a6a);
-  car(9.1, LOT.v1 - 1.5, Math.PI + 0.05, 0xe8e4dc, { van: true });
-  car(14.3, LOT.v1 - 1.5, Math.PI, 0xa8232d);
+  // the far row (nose to nose with the near row, never on top of it, and
+  // never in the walk to a door)
+  car(1.2, LOT.v1 - 1.8, Math.PI, 0x7a8a6a);
+  car(12.0, LOT.v1 - 1.8, Math.PI + 0.05, 0xe8e4dc, { van: true });
+  car(17.0, LOT.v1 - 1.8, Math.PI, 0xa8232d);
 
   // --- Mirage Coffee & Cluck & Co., side by side on the Parkway ---
   const MIRAGE = { u: 14.5, v: -4.6, w: 5.6, d: 4.4, h: 3.0 };
@@ -1098,13 +1103,24 @@ export function createOasis(player) {
     arm.rotation.z = 1.2; // up
     arm.rotation.y = Math.PI / 2;
     put(arm, 23.2, BLVD.v0 + 0.2, 1.0);
-    // Reggie, in the booth (a grey parrot; the window frames him)
+    // Reggie, out front of the booth on his stool: gatehouse security. small.
+    // sassy. sees everything. the sunglasses are not optional.
+    const stool = cyl(0.22, 0.18, 0.55, 7, 0x3a3a3e);
+    put(stool, G.u - 0.4, G.v + 1.35, 0.27);
     const reggie = buildAnimal('parrot', { body: 0x9aa0a8, head: 0x9aa0a8, wing: 0x7a8088, tail: 0xc8342c });
-    reggie.scale.setScalar(0.85);
-    put(reggie, G.u, G.v + 0.2, 0);
+    reggie.scale.setScalar(0.72);
+    put(reggie, G.u - 0.4, G.v + 1.35, 0.5, 0);
     capOn(reggie, 0x2e3e5c);
+    {
+      const e = reggie.userData.parts.eyes[0];
+      const shades = box(0.5, 0.1, 0.06, 0x111114);
+      shades.position.set(0, e.position.y, e.position.z + 0.04);
+      (e.parent || reggie).add(shades);
+    }
+    solidDisc(G.u - 0.4, G.v + 1.35, 0.45);
+    attend(reggie, 'island', { r: 7 });
     register({
-      pos: new THREE.Vector3(O.x + G.u, 0, O.z + G.v + 1.6), r: 1.8,
+      getPos: () => reggie.position, r: 2.4,
       label: 'talk to Reggie',
       use: () => ui.say(nextLine('reggie', REGGIE), { speaker: 'Reggie', voice: VOICE.reggie }),
     });
@@ -1154,16 +1170,16 @@ export function createOasis(player) {
       group.add(b);
       zones.addBlocker(OASIS_DOCK.buoyPos.x, OASIS_DOCK.buoyPos.z, 0.4);
     }
-    const board = sign(['FERRY LANDING', 'SERVICE PENDING HOA APPROVAL', 'THE PERSISTENT CALLS ANYWAY'], { w: 2.2, h: 1.2, bg: '#fffaf0', fg: '#2f5f50', border: '#2f5f50' });
+    const board = sign(['FERRY LANDING', 'APPROVED ROUTE: BULKO ONLY', 'BULK GOODS ARE IN CHARACTER'], { w: 2.2, h: 1.2, bg: '#fffaf0', fg: '#2f5f50', border: '#2f5f50' });
     put(board, P1 - 0.6, PV - PW / 2 - 0.1, top + 1.4 - GY, 0);
     put(box(0.12, 1.4, 0.12, 0x6e5a44), P1 - 0.6, PV - PW / 2 - 0.1, top + 0.4 - GY);
     register({
       pos: new THREE.Vector3(O.x + P1 - 0.8, 0, O.z + PV), r: 1.8,
       label: 'read the ferry sign',
       use: () => ui.say([
-        'FERRY LANDING. SERVICE PENDING HOA APPROVAL. THANK YOU FOR YOUR PATIENCE.',
-        'Under it, smaller, on a laminated card: “The Board has reviewed the ferry proposal (submitted by Captain Brine, 14 times) and requires the following revisions: a quieter horn. No horn. A different boat. A different sea. — B. Humphries, President.”',
-        'Under THAT, in marker, on a luggage tag tied to the post: “Stopped asking. It’s a pier. I’m a tugboat. Knock on the buoy. — Capt. B.”',
+        'FERRY LANDING. APPROVED ROUTE: BULKO ONLY. BULK GOODS ARE CONSISTENT WITH THE CHARACTER OF THE COMMUNITY.',
+        'Under it, smaller, on a laminated card: “After fourteen applications, the Board has approved ONE (1) ferry route, to the warehouse club and back, for paper towels, parmesan, and the rotisserie item. All other destinations remain under review. — B. Humphries, President.”',
+        'Under THAT, in marker, on a luggage tag tied to the post: “BULKO and back. That’s the deal. Knock on the buoy. — Capt. B.”',
       ]),
     });
   }
@@ -1631,12 +1647,76 @@ export function createOasis(player) {
     doorway(`oasis_${h.id}`, ...h.L(-1.9, HD / 2 + 0.2), h.ry, d.enterLabel ?? `knock at ${h.name}`);
   }
 
+  // ============================================= folk who notice you ----
+  // attend(a, zone): turn to look at you when you come near, and back to
+  // whatever they were doing when you go. wanderer(a, zone, area): walk
+  // about a room (or a lawn) like a villager — pick a spot, go there, stand
+  // a while, go somewhere else; stop and face you if you're talking; wait
+  // if you're in the way. Both are solid to you (movers).
+  function listFor(zone) {
+    return zone === 'island' ? outdoor : (inside[zone] ??= []);
+  }
+  function attend(a, zone, { r = 4.5 } = {}) {
+    const base = a.rotation.y;
+    listFor(zone).push((dt, t, pp) => {
+      if (!a.visible || a.userData.walking) return;
+      const d = Math.hypot(pp.x - a.position.x, pp.z - a.position.z);
+      const want = d < r ? Math.atan2(pp.x - a.position.x, pp.z - a.position.z) : (a.userData.restY ?? base);
+      a.rotation.y = turnToward(a.rotation.y, want, dt, 3);
+    });
+  }
+  function roomArea(X, Z) {
+    return { x0: X(-5.4), x1: X(5.4), z0: Z(-3.3), z1: Z(3.9) };
+  }
+  function free(x, z) {
+    const r = 0.32;
+    return zones.canWalk(x, z) && zones.canWalk(x + r, z) && zones.canWalk(x - r, z) && zones.canWalk(x, z + r) && zones.canWalk(x, z - r);
+  }
+  function wanderer(a, zone, area, { speed = 0.9, pause = [2, 6] } = {}) {
+    const w = { tx: null, tz: null, wait: 1 + Math.random() * 3 };
+    zones.addMover({ zone, obj: a, r: 0.4 });
+    listFor(zone).push((dt, t, pp) => {
+      if (!a.visible) return;
+      const near = Math.hypot(pp.x - a.position.x, pp.z - a.position.z);
+      const face = () => { a.rotation.y = turnToward(a.rotation.y, Math.atan2(pp.x - a.position.x, pp.z - a.position.z), dt, 3); };
+      if (ui.isBusy() && near < 3.5) { face(); animateGait(a, t, 0); a.userData.walking = false; return; }
+      if (w.wait > 0) {
+        w.wait -= dt;
+        if (near < 3) face();
+        animateGait(a, t, 0);
+        a.userData.walking = false;
+        return;
+      }
+      if (w.tx === null) {
+        for (let k = 0; k < 10; k++) {
+          const x = area.x0 + Math.random() * (area.x1 - area.x0), z = area.z0 + Math.random() * (area.z1 - area.z0);
+          if (Math.hypot(x - a.position.x, z - a.position.z) > 1.5 && free(x, z)) { w.tx = x; w.tz = z; break; }
+        }
+        if (w.tx === null) { w.wait = 1; return; }
+      }
+      const dx = w.tx - a.position.x, dz = w.tz - a.position.z, d = Math.hypot(dx, dz);
+      if (d < 0.15) { w.tx = null; w.wait = pause[0] + Math.random() * (pause[1] - pause[0]); return; }
+      const step = Math.min(d, speed * dt);
+      const nx = a.position.x + (dx / d) * step, nz = a.position.z + (dz / d) * step;
+      if (!free(nx, nz) || Math.hypot(pp.x - nx, pp.z - nz) < 1.0) { w.tx = null; w.wait = 0.4 + Math.random(); return; }
+      a.position.x = nx;
+      a.position.z = nz;
+      a.rotation.y = turnToward(a.rotation.y, Math.atan2(dx, dz), dt, 6);
+      a.userData.walking = true;
+      animateGait(a, t, 1, 8);
+    });
+  }
+
   // ================================================== the families ----
   const CAMEL = 0xd8b27a, CAMEL_DK = 0xc49a66, CAMEL_LT = 0xe6c896;
-  const talkThing = (getPos, key, name, lines, label = `talk to ${name}`, r = 2.2) =>
-    ({ getPos, r, label, use: talk(key, name, lines) });
+  const talkThing = (getPos, key, name, lines, label = `talk to ${name}`, r = 2.2, enabled = undefined) =>
+    ({ getPos, r, label, enabled, use: talk(key, name, lines) });
+  // the ones who sometimes step out (the strollers, below): their at-home
+  // selves, so they can be not-at-home
+  const INDOOR = {};
+  const homeNow = (k) => !INDOOR[k] || INDOOR[k].visible;
   // Beverly spends her days out on the Circle; after hours she's home
-  const bevHome = () => { const h = hourNow(); return h < 7 || h >= 20; };
+  const bevHome = () => { const h = hourNow(); return h < 7 || h >= 22; };
   const mildredHome = () => { const h = hourNow(); return h < 7 || h >= 18; };
 
   HOUSE_DRESS.humphries = {
@@ -1664,10 +1744,13 @@ export function createOasis(player) {
       const paper = box(0.6, 0.02, 0.4, 0xf3efe2);
       paper.position.set(X(3.6), 0.8, Z(1.7));
       group.add(paper);
-      things.push(talkThing(() => harold.position, 'harold', 'Harold', HAROLD));
+      INDOOR.harold = harold;
+      wanderer(harold, 'oasis_humphries', roomArea(X, Z));
+      things.push(talkThing(() => harold.position, 'harold', 'Harold', HAROLD, undefined, 2.2, () => harold.visible));
       // Beverly, after hours, at the island, with a clipboard
       const bevIn = folk('camel', { body: CAMEL_LT, humps: 1 }, X(3.6), 0, Z(-0.2), 0.2, { visor: 0xffffff, pearls: [1.28, 0.62, 0.35], clipboard: true, fidget: true });
       (inside[`oasis_humphries`] ??= []).push(() => { bevIn.visible = bevHome(); });
+      wanderer(bevIn, 'oasis_humphries', roomArea(X, Z), { speed: 0.7 });
       things.push({ getPos: () => bevIn.position, r: 2.2, label: 'talk to Beverly', enabled: () => bevHome(), use: () => beverlyTalk(true) });
     },
   };
@@ -1682,9 +1765,12 @@ export function createOasis(player) {
       group.add(arm, armBack);
       bl.push({ x: X(-5.0), z: Z(-1.6), w: 1.2, d: 1.1 });
       const sal = folk('parrot', { body: 0x9aa0a8, head: 0x9aa0a8, wing: 0x7a8088, tail: 0xc8342c }, X(-4.9), 0.35, Z(-1.6), 2.6, { shirt: 0xb8a88a, glasses: true });
+      attend(sal, 'oasis_featherstones');
       things.push(talkThing(() => sal.position, 'sal', 'Grandpa Sal', SAL));
       const sunny = folk('parrot', { body: 0x5cbf4a, head: 0x5cbf4a, wing: 0x2e8a5a, tail: 0x3a7dd8, face: 0xf2e08a }, X(3.6), 0, Z(-0.4), 0, { apron: 0xf28fb0, fidget: true });
-      things.push(talkThing(() => sunny.position, 'sunny', 'Sunny', SUNNY));
+      INDOOR.sunny = sunny;
+      wanderer(sunny, 'oasis_featherstones', roomArea(X, Z), { speed: 1.1 });
+      things.push(talkThing(() => sunny.position, 'sunny', 'Sunny', SUNNY, undefined, 2.2, () => sunny.visible));
       // a perch by the window, because some habits are for keeps
       const perch = cyl(0.04, 0.04, 1.4, 5, 0x8a6a4a);
       perch.position.set(X(-5.2), 0.7, Z(2.6));
@@ -1701,7 +1787,9 @@ export function createOasis(player) {
     build: (B, X, Z, bl, things) => {
       const linda = folk('bronto', { body: 0x9ab8a0, head: 0x9ab8a0, belly: 0xe0e6c8, spots: 0x7a9a80 }, X(-3.2), 0.28, Z(0.1), Math.PI, { pearls: [1.1, 0.72, 0.5] });
       linda.scale.setScalar(0.85);
-      things.push(talkThing(() => linda.position, 'linda', 'Linda', LINDA));
+      INDOOR.linda = linda;
+      attend(linda, 'oasis_brontos');
+      things.push(talkThing(() => linda.position, 'linda', 'Linda', LINDA, undefined, 2.2, () => linda.visible));
       // an extremely large salad bowl
       const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 4, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat(0xfaf6ec));
       bowl.position.set(X(3.6), 1.55, Z(-1.5));
@@ -1719,7 +1807,8 @@ export function createOasis(player) {
       const k1 = folk('camel', { body: CAMEL, humps: 1 }, X(-3.9), 0, Z(-2.5), Math.PI, { scale: 0.55, cap: 0x3a7dd8 });
       const k2 = folk('camel', { body: CAMEL, humps: 1 }, X(-2.5), 0, Z(-2.6), Math.PI, { scale: 0.55, cap: 0xd8342c });
       things.push({ getPos: () => k1.position, r: 1.8, label: 'talk to the twins', use: () => ui.say(nextLine('twins', TWINS)) });
-      void k2;
+      wanderer(k2, 'oasis_todd', roomArea(X, Z), { speed: 1.4, pause: [1, 3] }); // one twin can't sit still
+      attend(k1, 'oasis_todd', { r: 2.5 });
       for (let k = 0; k < 6; k++) {
         const blk = box(0.22, 0.22, 0.22, [0xd8342c, 0x3a7dd8, 0xf2cf5b][k % 3]);
         blk.position.set(X(-1.2 + (k % 3) * 0.3), 0.11 + Math.floor(k / 3) * 0.22, Z(0.9 + (k % 2) * 0.2));
@@ -1735,6 +1824,7 @@ export function createOasis(player) {
     stairs: 'The stairs go up to three staged bedrooms. Each bed has eleven throw pillows. Nobody has ever sat on any of them. That’s how you know it’s staged.',
     build: (B, X, Z, bl, things) => {
       const tiffany = folk('parrot', { body: 0xe86a9a, head: 0xe86a9a, wing: 0xb03a6a, tail: 0xf2cf5b, face: 0xfff0f4 }, X(0.6), 0, Z(1.2), 0, { shirt: 0xf6c0d4, fidget: true });
+      wanderer(tiffany, 'oasis_openhouse', roomArea(X, Z), { speed: 1.0, pause: [1.5, 4] }); // showing the house. to you. constantly.
       things.push({ getPos: () => tiffany.position, r: 2.2, label: 'talk to Tiffany', use: () => tiffanyTalk() });
       // staging: a bowl of lemons (plastic), a tray of cookies (for the smell)
       for (let k = 0; k < 5; k++) {
@@ -1761,8 +1851,15 @@ export function createOasis(player) {
     build: (B, X, Z, bl, things) => {
       const chad = folk('camel', { body: CAMEL, humps: 1 }, X(1.9), 0, Z(0.9), -0.4, { shirt: 0x5a6a7a });
       const madison = folk('camel', { body: CAMEL_LT, humps: 1 }, X(-0.4), 0, Z(1.0), 0.4, { shirt: 0xd8b8c8, bow: 0xf28fb0 });
-      things.push({ getPos: () => chad.position, r: 2.2, label: 'talk to Chad & Madison', use: () => ui.say(nextLine('dunes', DUNES2)) });
-      void madison;
+      INDOOR.chad = chad;
+      INDOOR.madison = madison;
+      wanderer(chad, 'oasis_dunes', roomArea(X, Z));
+      wanderer(madison, 'oasis_dunes', roomArea(X, Z), { speed: 1.1 });
+      things.push({ getPos: () => (chad.visible ? chad : madison).position, r: 2.2, label: 'talk to the Dunes',
+        enabled: () => chad.visible && madison.visible, use: () => ui.say(nextLine('dunes', DUNES2)) });
+      things.push({ getPos: () => (chad.visible ? chad : madison).position, r: 2.2, label: 'talk to whichever Dune is home',
+        enabled: () => chad.visible !== madison.visible,
+        use: () => ui.say(chad.visible ? 'Madison’s out. Mirage, then Sahara, then Mirage. I’m on baby duty. I have a vest for it.' : 'Chad’s out getting coffee. For both of us. And for himself again.', { speaker: chad.visible ? 'Chad' : 'Madison', voice: chad.visible ? VOICE.chad : VOICE.madison }) });
       // moving boxes, still, all labeled the same
       for (let k = 0; k < 7; k++) {
         const bx = box(0.7, 0.55, 0.6, 0xc9a77a);
@@ -1799,6 +1896,7 @@ export function createOasis(player) {
       group.add(rec, recBack);
       bl.push({ x: X(-5.0), z: Z(-1.2), w: 1.2, d: 1.2 });
       const walt = folk('camel', { body: 0xc8b08a, humps: 2, tuft: 0xe8e0d0 }, X(-4.9), 0.35, Z(-1.2), 2.6, { shirt: 0x6a5a8a, glasses: true });
+      attend(walt, 'oasis_mildred');
       things.push(talkThing(() => walt.position, 'walt', 'Walt', WALT));
       const cat = buildAnimal('cat', { body: 0xe8a860 });
       cat.scale.setScalar(0.45);
@@ -1819,6 +1917,7 @@ export function createOasis(player) {
       // Mildred, after the mall closes: her walking shoes by the door, and her
       const mil = folk('camel', { body: 0xd8c0a0, humps: 1 }, X(1.0), 0, Z(1.4), 0, { shirt: 0xb89ad8, visor: 0xffffff, fidget: true });
       (inside['oasis_mildred'] ??= []).push(() => { mil.visible = mildredHome(); });
+      wanderer(mil, 'oasis_mildred', roomArea(X, Z), { speed: 1.2 }); // forty laps a day; the living room is lap forty-one
       things.push({ getPos: () => mil.position, r: 2.2, label: 'talk to Mildred', enabled: () => mildredHome(), use: talk('mildred', 'Mildred', MILDRED) });
       for (let k = 0; k < 7; k++) {
         const tr = box(0.22, 0.34, 0.12, 0xd9b24a);
@@ -2186,6 +2285,38 @@ export function createOasis(player) {
       grille.rotation.y = H.ry;
       group.add(grille);
     }
+    // the garage light: a bare tube on the ceiling, always on (band practice
+    // is all day), and the warm pool it throws on the floor (a glow, not a
+    // light — the budget)
+    {
+      const [lx, lz] = at(2.3, -0.2);
+      const tube = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 1.8), new THREE.MeshBasicMaterial({ color: 0xfff2c8 }));
+      tube.position.set(lx, GY + 2.1, lz);
+      tube.rotation.y = H.ry;
+      group.add(tube);
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 64;
+      const c = cv.getContext('2d');
+      const gr = c.createRadialGradient(32, 32, 2, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(255,220,150,0.8)');
+      gr.addColorStop(1, 'rgba(255,220,150,0)');
+      c.fillStyle = gr;
+      c.fillRect(0, 0, 64, 64);
+      const tex = new THREE.CanvasTexture(cv);
+      const pool = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 4.4), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      pool.rotation.x = -Math.PI / 2;
+      pool.rotation.z = H.ry;
+      pool.position.set(lx, GY + floorY + 0.03, lz);
+      group.add(pool);
+      for (const sx of [-0.8, 0.8]) {
+        // and a warm wash up the back wall
+        const [wx, wz] = at(2.3 + sx, -HD / 2 + 0.23);
+        const wash = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+        wash.position.set(wx, GY + 1.3, wz);
+        wash.rotation.y = H.ry;
+        group.add(wash);
+      }
+    }
     const [px, pz] = at(2.3, -HD / 2 + 0.22);
     const poster = sign(['NO OUTLET', 'getting out of this town', 'tues 2–4 (all days)'], { w: 1.3, h: 0.9, d: 0.03, bg: '#2a2a30', fg: '#7ad85a' });
     poster.position.set(px, GY + 1.5, pz);
@@ -2361,6 +2492,124 @@ export function createOasis(player) {
     });
   }
 
+  // ================================================ out and about ----
+  // Residents step out: to the shops, to a neighbor's, and home again —
+  // along the walks, the Circle, Circle Drive and the Parkway (they walk
+  // down the middle of it; it is not a road). While someone's out, their
+  // at-home self isn't home. From seven in the morning to eleven at night.
+  {
+    const LANE = 7.9;                      // their lap of the Circle (Beverly keeps the inside lane; they pass her)
+    const HUB = { u: SPUR.u, v: -10 };     // the foot of Circle Drive, on the Parkway
+    const W2 = (u, v) => ({ x: O.x + u, z: O.z + v });
+    const P = (x, z) => ({ x, z });
+    function houseAccess(h) {
+      const lz = HOUSE_R - Math.sqrt(LANE * LANE - 1.9 * 1.9);
+      const [cu, cv] = h.L(-1.9, lz);
+      const pts = [EXIT[`oasis_${h.id}`], W2(cu, cv)];
+      let a = Math.atan2(cv - RING.v, cu - RING.u);
+      const goal = -Math.PI / 2;
+      let d = Math.atan2(Math.sin(goal - a), Math.cos(goal - a));
+      const n = Math.max(1, Math.ceil(Math.abs(d) / 0.2));
+      for (let k = 1; k <= n; k++) {
+        const aa = a + (d * k) / n;
+        pts.push(W2(RING.u + Math.cos(aa) * LANE, RING.v + Math.sin(aa) * LANE));
+      }
+      pts.push(W2(HUB.u, HUB.v));
+      return pts;
+    }
+    const SHOP_ACCESS = {
+      mall: () => [EXIT.mall, W2(-9, -10), W2(HUB.u, HUB.v)],
+      polly: () => [EXIT.polly, W2(5, -10), W2(HUB.u, HUB.v)],
+      drom: () => [EXIT.drom, W2(14, -10), W2(HUB.u, HUB.v)],
+      mirage: () => [EXIT.mirage, W2(13.4, -1.7), W2(18.05, -1.7), W2(18.05, -10), W2(HUB.u, HUB.v)],
+      cluck: () => [EXIT.cluck, W2(20.4, -1.7), W2(18.05, -1.7), W2(18.05, -10), W2(HUB.u, HUB.v)],
+    };
+    const access = (dest) => (SHOP_ACCESS[dest] ? SHOP_ACCESS[dest]() : houseAccess(HOUSE[dest]));
+    function route(from, to) {
+      const a = access(from), b = access(to).reverse();
+      // two houses: meet on the Circle, not down at the Parkway
+      if (!SHOP_ACCESS[from] && !SHOP_ACCESS[to]) { a.splice(-2); b.splice(0, 2); }
+      else { a.pop(); } // (the hub once, not twice)
+      return [...a, ...b].map((p) => P(p.x, p.z));
+    }
+    const STROLLERS = [
+      { key: 'harold', home: 'humphries', kind: 'camel', colors: { body: CAMEL_DK, humps: 2 }, o: { shirt: 0x8a9a7a, glasses: true }, likes: ['polly', 'mall', 'mildred', 'drom'],
+        lines: ['Just walking to the mailbox. And past it. And back to it. It’s the only exercise Beverly hasn’t scheduled.', 'Trader Polly’s. She wants the good seasoning. Everything But The Bell. I don’t ask about the bell. Nobody asks about the bell.'] },
+      { key: 'sunny', home: 'featherstones', kind: 'parrot', colors: { body: 0x5cbf4a, head: 0x5cbf4a, wing: 0x2e8a5a, tail: 0x3a7dd8, face: 0xf2e08a }, o: { apron: 0xf28fb0 }, likes: ['polly', 'humphries', 'dunes', 'cluck'],
+        lines: ['Running to Trader Polly’s! We’re out of iced tea. We are NEVER out of iced tea. It’s a crisis.', 'Hi, hon! Can’t stop — Beverly wants a report on the Dunes’ recycling. It’s all box twelve.'] },
+      { key: 'linda', home: 'brontos', kind: 'bronto', colors: { body: 0x9ab8a0, head: 0x9ab8a0, belly: 0xe0e6c8, spots: 0x7a9a80 }, o: { pearls: [1.1, 0.72, 0.5] }, scale: 0.85, likes: ['cluck', 'mall', 'mirage'],
+        lines: ['Evening stroll. Gary’s still at the grill. The burgers are still almost ready. I’m getting nuggets.', 'I like to walk the Parkway. It’s not a road, you know. I walk right down the yellow line. Very freeing.'] },
+      { key: 'chad', home: 'dunes', kind: 'camel', colors: { body: CAMEL, humps: 1 }, o: { shirt: 0x5a6a7a }, likes: ['mirage', 'cluck', 'todd'],
+        lines: ['Getting a shaken espresso. For me. And one for Madison. And one for me again.', 'Madison says I walk like a dad now. I’ve been practicing. Heel, toe, jingle the keys.'] },
+      { key: 'madison', home: 'dunes', kind: 'camel', colors: { body: CAMEL_LT, humps: 1 }, o: { shirt: 0xd8b8c8, bow: 0xf28fb0 }, likes: ['mirage', 'mall', 'openhouse'],
+        lines: ['Mirage, then Sahara, then Mirage. That’s a loop. That’s my cardio.', 'Chad has the baby. This is my walk. I’m walking. Look at me walk.'] },
+    ];
+    for (const st of STROLLERS) {
+      const a = folk(st.kind, st.colors, 0, GY, 0, 0, st.o);
+      if (st.scale) a.scale.setScalar(st.scale);
+      a.visible = false;
+      zones.addMover({ zone: 'island', obj: a, r: 0.5 });
+      st.a = a;
+      st.state = 'home';
+      st.timer = 3 + Math.random() * 30;
+      register({ getPos: () => a.position, r: 2.2, label: `talk to ${st.key[0].toUpperCase() + st.key.slice(1)}`, enabled: () => a.visible,
+        use: () => ui.say(nextLine(`out_${st.key}`, st.lines), { speaker: st.key[0].toUpperCase() + st.key.slice(1), voice: VOICE[st.key] ?? 400 }) });
+    }
+    function setOut(st, out) {
+      st.a.visible = out === 'walking';
+      if (INDOOR[st.key]) INDOOR[st.key].visible = out === 'home';
+    }
+    outdoor.push((dt, t, pp) => {
+      const hr = hourNow();
+      const awake = hr >= 7 && hr < 23;
+      for (const st of STROLLERS) {
+        const a = st.a;
+        if (st.state === 'home' || st.state === 'in') {
+          st.timer -= dt;
+          if (st.timer > 0) continue;
+          if (st.state === 'home' && !awake) { st.timer = 30; continue; }
+          // somebody stays home: housemates take turns going out
+          if (st.state === 'home' && STROLLERS.some((o) => o !== st && o.home === st.home && o.state !== 'home')) { st.timer = 10 + Math.random() * 20; continue; }
+          const from = st.state === 'home' ? st.home : st.at;
+          const to = st.state === 'home' ? st.likes[Math.floor(Math.random() * st.likes.length)] : st.home;
+          st.path = route(from, to);
+          st.i = 0;
+          st.dest = to;
+          st.state = 'walking';
+          a.position.set(st.path[0].x, GY, st.path[0].z);
+          setOut(st, 'walking');
+          continue;
+        }
+        // walking the path
+        if (ui.isBusy() && Math.hypot(pp.x - a.position.x, pp.z - a.position.z) < 3.5) {
+          a.rotation.y = turnToward(a.rotation.y, Math.atan2(pp.x - a.position.x, pp.z - a.position.z), dt, 3);
+          animateGait(a, t, 0);
+          continue;
+        }
+        const tg = st.path[st.i];
+        const dx = tg.x - a.position.x, dz = tg.z - a.position.z, d = Math.hypot(dx, dz);
+        if (d < 0.2) {
+          st.i++;
+          if (st.i >= st.path.length) {
+            // arrived: in the door they go
+            st.at = st.dest;
+            st.state = st.dest === st.home ? 'home' : 'in';
+            st.timer = st.state === 'home' ? 25 + Math.random() * 60 : 15 + Math.random() * 35;
+            setOut(st, st.state === 'home' ? 'home' : 'in');
+          }
+          continue;
+        }
+        const step = Math.min(d, 1.25 * dt);
+        const nx = a.position.x + (dx / d) * step, nz = a.position.z + (dz / d) * step;
+        if (Math.hypot(pp.x - nx, pp.z - nz) < 1.0) { animateGait(a, t, 0); continue; } // after you
+        if (bev.visible && Math.hypot(bev.position.x - nx, bev.position.z - nz) < 0.55) { animateGait(a, t, 0); continue; } // nobody walks INTO Beverly
+        a.position.set(nx, GY, nz);
+        a.rotation.y = turnToward(a.rotation.y, Math.atan2(dx, dz), dt, 7);
+        animateGait(a, t, 1, 8);
+      }
+    });
+  }
+
   // ======================================================== shopping ----
   // one buying loop for every till on the island: pick a thing, pay, hear
   // about it. goods: [{ id?, label?, emoji?, price, say, then? }]
@@ -2456,8 +2705,15 @@ export function createOasis(player) {
         const pico = folk('parrot', { body: 0x7ad85a, head: 0xf2e05b, wing: 0x3a9a4a, tail: 0x3a7dd8, face: 0xf2e05b }, X(-4.8), 0, Z(2.2), Math.PI, { scale: 0.75, floral: ['#c0392b', '#f2cf5b', '#ffffff'], fidget: true });
         pico.rotation.y = 0;
         pico.position.z = Z(2.0);
+        attend(pico, 'polly');
+        // shoppers, working the aisles
+        for (const [c, lx, lz] of [[{ body: 0xe0c8a0, humps: 1 }, 7, -0.2], [{ body: 0x3a9ad8, head: 0x3a9ad8, wing: 0xf2cf5b, tail: 0xd8342c }, -7, -3.5]]) {
+          const shopper = folk(c.humps ? 'camel' : 'parrot', c, X(lx), 0, Z(lz), 0, c.humps ? { shirt: 0xd8b8c8 } : {});
+          wanderer(shopper, 'polly', { x0: X(-7.4), x1: X(7.4), z0: Z(-4.2), z1: Z(1.2) });
+        }
         // the Captain, by the flowers, in the shirt
         const mango = folk('parrot', { body: 0xd8342c, head: 0xd8342c, wing: 0x2a6fd0, tail: 0xf2cf5b }, X(3.2), 0, Z(2.2), -0.4, { floral: ['#3fb8a8', '#f2cf5b', '#f28fb0', '#ffffff'], fidget: true });
+        wanderer(mango, 'polly', { x0: X(-7.4), x1: X(7.4), z0: Z(-4.2), z1: Z(1.4) }, { speed: 0.8, pause: [3, 7] }); // the Captain walks the deck
         // flower buckets by the door
         for (let k = 0; k < 5; k++) {
           const bucket = cyl(0.26, 0.22, 0.45, 8, 0x9aa0a6);
@@ -2586,6 +2842,9 @@ export function createOasis(player) {
         // shoppers, treasure-hunting
         const s1 = folk('camel', { body: 0xe0c8a0, humps: 1 }, X(-3.2), 0, Z(-1.4), 2.4, { visor: 0xffffff, shirt: 0x9ad8c8 });
         const s2 = folk('parrot', { body: 0xf2cf5b, head: 0xf2cf5b, wing: 0x3a7dd8, tail: 0xd8342c }, X(2.6), 0, Z(-0.8), -0.8, {});
+        attend(deb, 'drom');
+        wanderer(s1, 'drom', { x0: X(-7.4), x1: X(7.2), z0: Z(-4.4), z1: Z(2.6) }, { speed: 0.7, pause: [3, 8] });
+        wanderer(s2, 'drom', { x0: X(-7.4), x1: X(7.2), z0: Z(-4.4), z1: Z(2.6) }, { speed: 0.9, pause: [2, 6] });
         things.push({ getPos: () => s1.position, r: 1.8, label: 'talk to the shopper',
           use: () => ui.say('I came in for a lamp. I am leaving with a ceramic pineapple, a candle that smells like sand, and a sense that the lamp was never the point.', { speaker: 'a shopper', voice: 420 }) });
         things.push({ getPos: () => s2.position, r: 1.8, label: 'talk to the other shopper',
@@ -2655,6 +2914,11 @@ export function createOasis(player) {
           group.add(straw);
         }
         const echo = folk('parrot', { body: 0x9aa0a8, head: 0x9aa0a8, wing: 0x7a8088, tail: 0xc8342c }, X(-0.8), 0, Z(-3.2), 0, { apron: 0x2f5f50, fidget: true });
+        attend(echo, 'mirage');
+        {
+          const regular = folk('parrot', { body: 0x5cbf4a, head: 0x5cbf4a, wing: 0xf2cf5b, tail: 0xd8342c }, X(1.0), 0, Z(0.5), 0, { shirt: 0x6a5a8a });
+          wanderer(regular, 'mirage', { x0: X(-5.2), x1: X(5.2), z0: Z(-1.2), z1: Z(3.8) }, { speed: 0.8, pause: [3, 8] });
+        }
         // tables: a laptop camel "working remotely"; a quiet corner
         table(X(-3.8), Z(1.4), 1.1, 0.8, 0x3a3a3e);
         chair(X(-3.8), Z(2.1), Math.PI, 0x3a3a3e);
@@ -2731,6 +2995,13 @@ export function createOasis(player) {
         bl.push({ x: X(0), z: Z(-2.3), w: 6.5, d: 0.9 });
         for (const lx of [-2, 0, 2]) tillBox(X(lx), Z(-2.3));
         const tanner = folk('camel', { body: CAMEL, humps: 1 }, X(0), 0, Z(-3.3), 0, { cap: 0xc8342c, apron: 0xffffff, fidget: true });
+        attend(tanner, 'cluck');
+        {
+          const hungry = folk('camel', { body: CAMEL_DK, humps: 2 }, X(1.5), 0, Z(1.0), 0, { cap: 0x3a7dd8 });
+          wanderer(hungry, 'cluck', { x0: X(-5.2), x1: X(3.0), z0: Z(-1.2), z1: Z(3.8) }, { speed: 0.8, pause: [3, 7] });
+          const kid = folk('parrot', { body: 0xf2cf5b, head: 0xf2cf5b, wing: 0x3a7dd8, tail: 0xd8342c }, X(4.3), 0.25, Z(2.6), 0.4, { scale: 0.5 });
+          (inside.cluck ??= []).push((dt, t) => { kid.position.y = 0.25 + Math.abs(Math.sin(t * 3.1)) * 0.35; kid.rotation.y += dt * 0.8; }); // the ball pit: bouncing
+        }
         // booths, red, along the west wall
         for (const lz of [-0.4, 2.0]) {
           table(X(-4.4), Z(lz), 1.2, 0.9, 0xfaf6ec);
@@ -2803,7 +3074,7 @@ export function createOasis(player) {
         basin.position.set(X(FT.x), 0.3, Z(FT.z));
         const water = cyl(1.9, 1.9, 0.08, 14, 0x49c6e0);
         water.material = new THREE.MeshStandardMaterial({ color: 0x49c6e0, roughness: 0.2, transparent: true, opacity: 0.85, flatShading: true });
-        water.position.set(X(FT.x), 0.56, Z(FT.z));
+        water.position.set(X(FT.x), 0.64, Z(FT.z)); // (sits above the basin's rim cap — they used to fight over the same height)
         const spout = cyl(0.25, 0.35, 1.4, 8, 0xe8dcc8);
         spout.position.set(X(FT.x), 1.0, Z(FT.z));
         const bowl = cyl(0.7, 0.3, 0.25, 10, 0xe8dcc8);
@@ -2820,7 +3091,7 @@ export function createOasis(player) {
         for (let k = 0; k < 14; k++) {
           const b = cyl(0.06, 0.06, 0.02, 8, [0xd9b24a, 0x9aa0a6, 0xc98f5a][k % 3]);
           const a = rand(0, Math.PI * 2), r = rand(0.9, 1.7);
-          b.position.set(X(FT.x) + Math.cos(a) * r, 0.53, Z(FT.z) + Math.sin(a) * r);
+          b.position.set(X(FT.x) + Math.cos(a) * r, 0.62, Z(FT.z) + Math.sin(a) * r);
           group.add(b);
         }
         bl.push({ x: X(FT.x), z: Z(FT.z), r: 2.3 });
@@ -2912,6 +3183,7 @@ export function createOasis(player) {
         counterTop(X(-8.5), Z(backZ + 2.6), 2.6, 0.8, 0x111111, 0xffffff);
         bl.push({ x: X(-8.5), z: Z(backZ + 2.6), w: 2.6, d: 0.8 });
         const paloma = folk('parrot', { body: 0xf28fb0, head: 0xf28fb0, wing: 0xb89ad8, tail: 0x111111, face: 0xffffff }, X(-8.5), 0, Z(backZ + 1.6), 0, { apron: 0x111111, fidget: true });
+        attend(paloma, 'mall');
         const sahGoods = [
           { id: 'dune_gloss', price: 8, say: 'Dune Gloss, in Oasis at Dusk. It’s pink. It’s always pink. It’s a mood, babe. You’re a mood now.' },
           { id: 'sand_scrub', price: 6, say: 'The Sand Scrub. Ingredients: sand. That’s it. That’s the luxury. Honesty is the new exfoliant.' },
@@ -2994,6 +3266,7 @@ export function createOasis(player) {
           group.add(pz);
         }
         const auntie = folk('camel', { body: 0xc8b08a, humps: 2, tuft: 0xf0e8e0 }, X(-14.9), 0, Z(3.2), Math.PI / 2, { apron: 0xd9a45a, fidget: true });
+        attend(auntie, 'mall');
         things.push({ getPos: () => auntie.position, r: 2.4, label: 'talk to Auntie Dune',
           use: async () => {
             await ui.say(nextLine('auntie', AUNTIE), { speaker: 'Auntie Dune', voice: 300 });
@@ -3055,6 +3328,7 @@ export function createOasis(player) {
           }
           bl.push({ x: X(kx), z: Z(kz), w: 1.9, d: 1.1 });
           const rico = folk('parrot', { body: 0x3a9ad8, head: 0x3a9ad8, wing: 0xf2cf5b, tail: 0xd8342c }, X(kx - 1.4), 0, Z(kz + 0.3), -Math.PI / 2 - 0.5, { shirt: 0x2a2a2e, fidget: true });
+          attend(rico, 'mall', { r: 9 }); // he always sees you. always.
           things.push({ getPos: () => rico.position, r: 2.4, label: 'make eye contact with Rico',
             use: () => ui.say(nextLine('rico', RICO), { speaker: 'Rico', voice: VOICE.rico }) });
         }
@@ -3098,7 +3372,7 @@ export function createOasis(player) {
           ].map((w, k) => {
             const a = folk('camel', { body: [0xd8c0a0, 0xc8a878, 0xe8d0a8][k], humps: 1 + (k % 2) }, 0, 0, 0, 0, { shirt: w.suit, visor: 0xffffff });
             zones.addMover({ zone: 'mall', obj: a, r: 0.5 });
-            return { ...w, a, ph: k * 0.55 };
+            return { ...w, a, ph: k * (Math.PI * 2 / 3) }; // spread round the court, not nose to tail
           });
           const RX = 6.8, RZ = 4.4;
           let lap = 0;
@@ -3120,6 +3394,18 @@ export function createOasis(player) {
           });
           things.push({ getPos: () => walkers[1].a.position, r: 2.8, label: 'walk with the mall walkers',
             use: () => ui.say(nextLine('walkers', WALKERS).map(([sp, text]) => ({ speaker: sp, voice: VOICE[sp.toLowerCase()] ?? 400, text }))) });
+        }
+        // shoppers, bags in paw, going nowhere in particular
+        for (const [kind, c, lx, lz] of [
+          ['camel', { body: 0xe8d0a8, humps: 1 }, -6, 5],
+          ['parrot', { body: 0xe86a9a, head: 0xe86a9a, wing: 0x3fb8a8, tail: 0xf2cf5b }, 6, 7],
+          ['camel', { body: 0xc49a66, humps: 2 }, -2, 6.5],
+        ]) {
+          const sh = folk(kind, c, X(lx), 0, Z(lz), 0, kind === 'camel' ? { shirt: [0x3fb8a8, 0xf28fb0][Math.abs(lx) % 2] } : {});
+          const bag = box(0.3, 0.35, 0.12, [0xffffff, 0x111111, 0xf2cf5b][Math.abs(lz | 0) % 3]);
+          bag.position.set(0.45, 0.5, 0.1);
+          sh.userData.parts.body.add(bag);
+          wanderer(sh, 'mall', { x0: X(-14), x1: X(14), z0: Z(-5.4), z1: Z(9) }, { speed: 1.0, pause: [2, 6] });
         }
         // the entrance mat
         rug(X(0), Z(D0 / 2 - 0.9), 3.2, 1.2, 0x3fb8a8);

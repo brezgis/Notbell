@@ -39,9 +39,9 @@ fixes, the "new" rounds, routines, and the ambitious ideas)._
 - **Fishing/bug depth.** Shadows and skittish bugs shipped; a second pass
   on difficulty per species would make rare catches feel earned.
 
-- **Oasis Estates — next.** The Persistent calls there (pending HOA
-  approval; she goes anyway). Beverly finally approving the ferry would be
-  a story beat worth writing. Also open: villagers from the Circle as
+- **Oasis Estates — next.** The HOA approved one ferry route (Oasis ↔
+  BULKO). Beverly approving a second one would be a story beat worth
+  writing. Also open: villagers from the Circle as
   wanderers, the ice cream truck (silent), and No Outlet actually getting
   out of this town, someday.
 

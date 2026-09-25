@@ -270,11 +270,14 @@ Standard** — around **the Circle**, the Commons (Trader Polly's and
 Dromedeals under one roof, the **CaMall**, Mirage Coffee and Cluck & Co. on
 the Parkway), a community pool nobody is ever in, and a gatehouse whose boom
 is always up. South-west of Notbell and wholly off the chart's west edge.
-The ferry is *pending HOA approval* (Captain Brine has applied fourteen
-times; the horn is too loud, the boat is too loud, the sea is frankly very
-loud) — so Brine stopped asking and **the Persistent calls at the east pier
-anyway**. Knock on the buoy (its bell removed, per Article 9). Beverly has
-cited the boat. The boat does not care. It's still pending.
+**One ferry.** After fourteen applications from Captain Brine (the horn
+was too loud, the boat was too loud, the sea is frankly very loud), the HOA
+approved exactly **one** route: **Oasis Estates ↔ BULKO**, for paper towels,
+parmesan and the rotisserie item ("bulk goods are consistent with the
+character of the community"). Every other destination remains under
+review — to get anywhere else you go via the warehouse. Knock on the buoy
+on the east pier (its bell removed, per Article 9). The Persistent is now,
+officially, a paper towel boat; Brine has feelings about this.
 
 - **Not roads.** BULKO's sign is right: there are no roads on any island.
   Oasis Estates has four point six miles of **parkway, drive, and circle**,
@@ -346,7 +349,14 @@ cited the boat. The boat does not care. It's still pending.
   segway, "you'll never be fast, but you can be steady"), and the **mall
   walkers** — **Mildred, Phyllis and Bunny**, three camels in matching
   visors, forty laps a day, since seven.
-- **Reggie** keeps the gatehouse list. It is blank. It's very peaceful.
+- **Reggie** (a small grey parrot in a cap and sunglasses, on a stool out
+  front of the gatehouse) is security. Sassy. Keeps a list nobody is on,
+  "just to watch you wait." The boom is up because he is generous.
+- **Out and about:** residents step out to the shops and to each other's
+  houses from seven till eleven (Harold to Trader Polly's for the seasoning,
+  Sunny on Beverly's errands, Linda down the yellow line of the Parkway,
+  Chad and Madison on the Mirage loop); while they're out, they aren't
+  home. Indoors, folk walk about their rooms and turn to look at you.
 
 ## The night sky
 
