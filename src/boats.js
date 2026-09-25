@@ -19,6 +19,7 @@ import { glowWindow, glowLevel } from './nightglow.js';
 import { BULKO_DOCK } from './bulko.js';
 import { LABS_DOCK } from './island6.js';
 import { FARTHER_DOCK } from './farther.js';
+import { OASIS_DOCK } from './oasis.js';
 
 function mat(color, rough = 0.85) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -378,6 +379,15 @@ export function createBoats(player) {
        '“The sea’s been keeping our bell a hundred years. About time somebody from this archipelago went somewhere the sea can’t follow.”',
        'She says nothing else the rest of the way. It’s not a sad nothing.'],
     ],
+    oasis: [
+      ['“Oasis Estates. Fourteen applications I sent that woman. FOURTEEN. ‘The horn is too loud.’ I took off the horn. ‘The boat is too loud.’ I can’t take off the BOAT.”',
+       '“So I stopped asking. It’s a pier. I’m a tugboat. Tugboats and piers go back further than any covenant.”',
+       '“There’ll be a camel with a clipboard at the end of it. Wave. She won’t wave back. She’ll write down that you waved.”'],
+      ['“Every house on that island is the same house. I sailed past twice to be sure. Then a third time, in case I’d gone funny. Same house.”',
+       '“The parrot at the gatehouse waved all three times. Keeps a list. The list is blank. Lovely lad.”'],
+      ['“No bells on that island, you know. It’s in their rules. A Moledecai wrote it.”',
+       '“Funny, a Moledecai not wanting to hear a bell. You’d think they’d be the ones listening hardest.”'],
+    ],
     home: [
       ['“Homeward. Best heading there is.” The Persistent seems to agree; she runs a half-knot faster pointed at her own pier.'],
       ['“You know what I love about that island? Lost the bell, kept the NAME. No moping. Straight to paperwork.” She laughs like a goose, which she is.'],
@@ -460,6 +470,12 @@ export function createBoats(player) {
       label: '🏕️ Farther Isle',
       land: { x: FARTHER_DOCK.x, z: FARTHER_DOCK.z, rotY: FARTHER_DOCK.rotY },
       sea: seaOff(FARTHER_DOCK.x, FARTHER_DOCK.z, ISLAND7.x, ISLAND7.z),
+    },
+    // (pending HOA approval. she goes anyway.)
+    oasis: {
+      label: '🏡 Oasis Estates',
+      land: { x: OASIS_DOCK.x, z: OASIS_DOCK.z, rotY: OASIS_DOCK.rotY },
+      sea: OASIS_DOCK.sea,
     },
   };
 
@@ -624,6 +640,7 @@ export function createBoats(player) {
   if (BULKO_DOCK.buoyPos) PORT_BUOYS.push(['bulko', BULKO_DOCK.buoyPos]);
   if (LABS_DOCK.buoyPos) PORT_BUOYS.push(['labs', LABS_DOCK.buoyPos]);
   if (FARTHER_DOCK.buoyPos) PORT_BUOYS.push(['farther', FARTHER_DOCK.buoyPos]);
+  PORT_BUOYS.push(['oasis', OASIS_DOCK.buoyPos]);
   for (const [id, pos] of PORT_BUOYS) {
     register({
       pos, r: 2.6,

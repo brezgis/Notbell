@@ -132,6 +132,16 @@ const IN = {
 };
 const HOUSE_IN_Z0 = IN_Z0 + 400; // then the seven houses, 80 apart
 
+// the pier, out the east end of the Parkway — and the Persistent calls
+// there now (pending approval; she calls anyway). boats.js reads this; it's
+// plain numbers, so creation order doesn't matter.
+const PIER = { u0: 30.2, u1: 42, v: -10, w: 2.2, top: 0.62 };
+export const OASIS_DOCK = {
+  x: OASIS_PAD.x + PIER.u1 - 1.6, z: OASIS_PAD.z + PIER.v, rotY: -Math.PI / 2, // step off facing the island
+  sea: { x: OASIS_PAD.x + PIER.u1 + 7, z: OASIS_PAD.z + PIER.v - 3 },
+  buoyPos: new THREE.Vector3(OASIS_PAD.x + PIER.u1 - 4.8, 0, OASIS_PAD.z + PIER.v + 0.75), // (well clear of the sign: one prompt at a time)
+};
+
 const VOICE = {
   beverly: 330, harold: 250, gary: 150, linda: 190, junior: 200, kiwi: 620, dakota: 380,
   todd: 280, tiffany: 600, mildred: 360, phyllis: 400, bunny: 440, walt: 230,
@@ -181,7 +191,7 @@ const BEVERLY = [
   'Forty-one Yards of the Month. In a row. It’s not a competition. If it were a competition, I would be winning it. I am winning it.',
   'The Bronto boy’s band has a permit. Tuesdays, two to four. And yet I hear them every single day. Apparently it’s always Tuesday somewhere. I have it written down. All of it.',
   'Todd mows beautifully. Todd mows beautifully because I watch Todd mow.',
-  'A ferry. Fourteen applications, from a goose. The horn is too loud. The boat is too loud. The sea is, frankly, very loud. It’s under review.',
+  'A ferry. Fourteen applications, from a goose. The horn is too loud. The boat is too loud. The sea is, frankly, very loud. It’s under review. … She ties up at my pier anyway. Every day. I’ve cited the boat. The boat does not care.',
   'Article Nine. No bells. No, I don’t know why. It’s in the deed; the developer wrote it. Moledecai-something. You don’t question a deed, dear. You enforce a deed.',
   'Mildred has a flamingo. A pink plastic flamingo. In her front yard. Three notices. It hasn’t moved. It watches me. I watch it back.',
   'Before the lawns, the wind used to take everything off this island. Lawn chairs. Laundry. A whole gazebo, once. Now we have rules, and nothing has blown away in thirty years. You’re welcome.',
@@ -1114,7 +1124,7 @@ export function createOasis(player) {
   }
   {
     // the pier: out from the end of the Parkway into the east water
-    const P0 = 30.2, P1 = 42, PV = -10, PW = 2.2, top = 0.62;
+    const P0 = PIER.u0, P1 = PIER.u1, PV = PIER.v, PW = PIER.w, top = PIER.top;
     const deck = box(P1 - P0, 0.18, PW, 0xa98b62);
     put(deck, (P0 + P1) / 2, PV, top - 0.09 - GY);
     for (let u = P0 + 1; u <= P1; u += 2.4) {
@@ -1130,7 +1140,20 @@ export function createOasis(player) {
     });
     zones.addSeaWall({ contains: (x, z) => x >= x0 - 0.3 && x <= x1 + 0.3 && z >= z0 - 0.3 && z <= z1 + 0.3 });
     solidBox((P0 + P1) / 2, PV, P1 - P0, PW + 0.3); // its edges and pilings; the walk down the middle is the crossing
-    const board = sign(['FERRY LANDING', 'SERVICE PENDING HOA APPROVAL', 'THANK YOU FOR YOUR PATIENCE'], { w: 2.2, h: 1.2, bg: '#fffaf0', fg: '#2f5f50', border: '#2f5f50' });
+    // the Persistent's buoy, at the end of the pier (its bell removed, per
+    // Article 9; you knock on it — she comes anyway)
+    {
+      const b = new THREE.Group();
+      const base = cyl(0.3, 0.4, 0.8, 7, 0xb0453a);
+      base.position.y = 0.4;
+      const topBall = ball(0.18, 0xf2cf5b);
+      topBall.position.y = 0.95;
+      b.add(base, topBall);
+      b.position.set(OASIS_DOCK.buoyPos.x, top, OASIS_DOCK.buoyPos.z);
+      group.add(b);
+      zones.addBlocker(OASIS_DOCK.buoyPos.x, OASIS_DOCK.buoyPos.z, 0.4);
+    }
+    const board = sign(['FERRY LANDING', 'SERVICE PENDING HOA APPROVAL', 'THE PERSISTENT CALLS ANYWAY'], { w: 2.2, h: 1.2, bg: '#fffaf0', fg: '#2f5f50', border: '#2f5f50' });
     put(board, P1 - 0.6, PV - PW / 2 - 0.1, top + 1.4 - GY, 0);
     put(box(0.12, 1.4, 0.12, 0x6e5a44), P1 - 0.6, PV - PW / 2 - 0.1, top + 0.4 - GY);
     register({
@@ -1139,6 +1162,7 @@ export function createOasis(player) {
       use: () => ui.say([
         'FERRY LANDING. SERVICE PENDING HOA APPROVAL. THANK YOU FOR YOUR PATIENCE.',
         'Under it, smaller, on a laminated card: “The Board has reviewed the ferry proposal (submitted by Captain Brine, 14 times) and requires the following revisions: a quieter horn. No horn. A different boat. A different sea. — B. Humphries, President.”',
+        'Under THAT, in marker, on a luggage tag tied to the post: “Stopped asking. It’s a pier. I’m a tugboat. Knock on the buoy. — Capt. B.”',
       ]),
     });
   }

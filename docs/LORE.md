@@ -270,10 +270,11 @@ Standard** — around **the Circle**, the Commons (Trader Polly's and
 Dromedeals under one roof, the **CaMall**, Mirage Coffee and Cluck & Co. on
 the Parkway), a community pool nobody is ever in, and a gatehouse whose boom
 is always up. South-west of Notbell and wholly off the chart's west edge.
-**Not connected, on purpose (for now):** the ferry is *pending HOA
-approval* (Captain Brine has applied fourteen times; the horn is too loud,
-the boat is too loud, the sea is frankly very loud). A rowboat can land on
-the east beach.
+The ferry is *pending HOA approval* (Captain Brine has applied fourteen
+times; the horn is too loud, the boat is too loud, the sea is frankly very
+loud) — so Brine stopped asking and **the Persistent calls at the east pier
+anyway**. Knock on the buoy (its bell removed, per Article 9). Beverly has
+cited the boat. The boat does not care. It's still pending.
 
 - **Not roads.** BULKO's sign is right: there are no roads on any island.
   Oasis Estates has four point six miles of **parkway, drive, and circle**,

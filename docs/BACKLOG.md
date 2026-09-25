@@ -39,13 +39,11 @@ fixes, the "new" rounds, routines, and the ambitious ideas)._
 - **Fishing/bug depth.** Shadows and skittish bugs shipped; a second pass
   on difficulty per species would make rare catches feel earned.
 
-- **Oasis Estates — getting there.** Built (2026-09-24) and deliberately
-  unconnected: the ferry is "pending HOA approval," and only a rowboat
-  lands. When it's time: a `STOPS` entry in `boats.js` at the east pier
-  (the pier and its crossing already exist in `oasis.js`), and Beverly
-  finally approving it would be a story beat worth writing. Also open:
-  villagers from the Circle as wanderers, the ice cream truck (silent),
-  and No Outlet actually getting out of this town, someday.
+- **Oasis Estates — next.** The Persistent calls there (pending HOA
+  approval; she goes anyway). Beverly finally approving the ferry would be
+  a story beat worth writing. Also open: villagers from the Circle as
+  wanderers, the ice cream truck (silent), and No Outlet actually getting
+  out of this town, someday.
 
 ## Parked — needs Anna's call
 
