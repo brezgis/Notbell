@@ -12,6 +12,7 @@ import { ITEMS, COFFEE_PRICE, COFFEE_BOOST_SECS, FERN_LORE, GROWTH, SHOP_HATS, S
 import { kaching, sip, jingle, requestSong } from './audio.js';
 import { buildAnimal } from './animals.js';
 import * as mail from './mail.js';
+import * as doors from './doors.js';
 import { rand, turnToward } from './utils.js';
 import { HOLIDAY } from './calendar.js';
 import { hangCafeArt, artPiece, makeFramed } from './art.js';
@@ -40,6 +41,7 @@ function makeDoor(color = 0x6b4a2e) {
   const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.07, 0), mat(0xf2cf5b, 0.4));
   knob.position.set(0.36, 1.0, 0.18);
   g.add(frame, door, knob);
+  g.userData.isDoor = [door, knob]; // (doors.js hangs it on a hinge once it's in place)
   return g;
 }
 
@@ -619,6 +621,10 @@ export function createBuildings() {
       else zones.addBlocker(wx, wz, b[2]);
     }
     // where a villager stands to go in (ambient errands walk here)
+    // the front door swings (errands walk through it)
+    let doorGroup = null;
+    ext.traverse((o) => { if (!doorGroup && o.userData.isDoor) doorGroup = o; });
+    if (doorGroup) doors.hinge(name, ...doorGroup.userData.isDoor);
     const DOOR_OUT = { shop: 4.0, cafe: 3.8, museum: 4.9, post: 3.6 };
     const dz = DOOR_OUT[name];
     zones.setDoor(name, { x: spot.x + dz * sn, z: spot.z + dz * c });

@@ -16,6 +16,7 @@ import { makeWindow, makeHangingLamp } from './buildings.js';
 import { currentWeather } from './almanac.js';
 import { BIRTHDAYS, birthdayTalk } from './villagers.js';
 import * as mail from './mail.js';
+import * as doors from './doors.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -178,6 +179,7 @@ function makeCottage({ wall, roof, door }, scale = 1) {
   const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(0xf2cf5b, 0.4));
   knob.position.set(0.3 * scale, 0.85 * scale, 2.12 * scale);
   g.add(knob);
+  g.userData.door = [doorMesh, knob]; // (doors.js can hang it on a hinge)
   const win = makeWindow(0.35 * scale); // round, like the others — and it glows at night
   win.position.set(-1.3 * scale, 1.5 * scale, 2.0 * scale);
   g.add(win);
@@ -959,6 +961,7 @@ export function createHouses(animals, obstacles = []) {
     if (!spot) continue;
     const style = HOUSE_STYLES[name];
     const house = makeCottage(style, 0.8);
+    doors.hinge(`house_${name}`, ...house.userData.door);
     house.position.set(spot.x, spot.h, spot.z);
     // face the house toward its villager's patch — but only a way whose
     // doorstep you can actually walk up to (dry, open, not a cliff); some
@@ -1133,7 +1136,14 @@ export function createHouses(animals, obstacles = []) {
     a.bedtime = true;
     a.goal = {
       x: door.x, z: door.z, r: 1.4,
-      done: () => { if (vh.walking) arriveHome(vh); },
+      done: () => {
+        if (!vh.walking) return;
+        const key = `house_${vh.name}`;
+        const th = vh.mode !== 'cave' && doors.threshold(key);
+        if (!th) { arriveHome(vh); return; }
+        doors.open(key, 1.8);
+        doors.through(a, a.g.position, th, () => { if (vh.walking) arriveHome(vh); });
+      },
       fail: () => {
         vh.tries = (vh.tries || 0) + 1;
         if (vh.tries >= 3 && vh.walking) arriveHome(vh); // re-sent from update otherwise
@@ -1165,8 +1175,17 @@ export function createHouses(animals, obstacles = []) {
       // out the front door into the morning (or out of the cave mouth, and
       // an amble home from there)
       const exit = was === 'cave' ? (zones.doorOf('cave') || vh.doorOut) : vh.doorOut;
-      vh.a.g.position.set(exit.x, terrainHeight(exit.x, exit.z), exit.z);
-      vh.a.g.rotation.y = vh.doorOut.rotY;
+      const th = !force && was === 'house' && doors.threshold(`house_${vh.name}`);
+      if (th) {
+        doors.open(`house_${vh.name}`, 1.8);
+        const a = vh.a;
+        doors.through(a, { x: th.x, y: th.y, z: th.z }, { x: exit.x, y: terrainHeight(exit.x, exit.z), z: exit.z }, () => {
+          a.g.rotation.y = vh.doorOut.rotY;
+        });
+      } else {
+        vh.a.g.position.set(exit.x, terrainHeight(exit.x, exit.z), exit.z);
+        vh.a.g.rotation.y = vh.doorOut.rotY;
+      }
       if (was === 'cave' && !force) vh.a.goal = { x: vh.doorOut.x, z: vh.doorOut.z, r: 2 };
       vh.a.state = 'idle';
       vh.a.timer = rand(1, 3);
@@ -1238,6 +1257,7 @@ export function createHouses(animals, obstacles = []) {
 
   function update(dt, t, playerPos) {
     for (const u of updates) u(dt, t, playerPos);
+    doors.update(dt, t); // every door on the islands, swinging as it's used
   }
 
   // test/debug: pin a villager home (true), out (false), or back to the clock (undefined)
