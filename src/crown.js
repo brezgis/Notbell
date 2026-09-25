@@ -119,6 +119,7 @@ export function crownHeight(x, z) {
 
 const blockers = [];
 function addBlock(x, z, r) { blockers.push({ x, z, r }); }
+const movers = []; // the walkers: solid to you, and polite to each other
 
 export function createCrown(player) {
   const group = new THREE.Group();
@@ -129,6 +130,12 @@ export function createCrown(player) {
     canWalk(x, z) {
       if (Math.hypot(x - MID.x, z - MID.z) > CROWN.r) return false;
       for (const b of blockers) if (Math.hypot(x - b.x, z - b.z) < b.r) return false;
+      // everybody walking about is solid too — unless you're already inside
+      // one of them (then they don't hold you, so you can always step away)
+      const pp = player.group.position;
+      for (const m of movers) {
+        if (Math.hypot(x - m.position.x, z - m.position.z) < 0.55 && Math.hypot(pp.x - m.position.x, pp.z - m.position.z) > 0.9) return false;
+      }
       return true;
     },
     spawn: { x: ARRIVE.x, z: ARRIVE.z, rotY: Math.PI },
@@ -553,6 +560,7 @@ export function createCrown(player) {
     const w = { g, points, i: 0, speed, pause: 1 + Math.random() * 2, ...opts };
     g.position.set(points[0].x, crownHeight(points[0].x, points[0].z), points[0].z);
     group.add(g);
+    movers.push(g);
     updates.push((dt, t, pp) => {
       if (w.pause > 0) {
         w.pause -= dt;
@@ -565,7 +573,20 @@ export function createCrown(player) {
       const tg = points[w.i];
       const dx = tg.x - g.position.x, dz = tg.z - g.position.z, d = Math.hypot(dx, dz);
       if (d < 0.4) { w.i = (w.i + 1) % points.length; w.pause = w.rest ?? 1.5 + Math.random() * 3; return; }
-      const nx = g.position.x + (dx / d) * speed * dt, nz = g.position.z + (dz / d) * speed * dt;
+      let nx = g.position.x + (dx / d) * speed * dt, nz = g.position.z + (dz / d) * speed * dt;
+      // somebody in the way? step round them on your right, or wait
+      // (walkers used to swim straight through each other)
+      const inWay = (x, z) => movers.some((o) => o !== g && Math.hypot(o.position.x - x, o.position.z - z) < 0.85 &&
+        Math.hypot(o.position.x - x, o.position.z - z) < Math.hypot(o.position.x - g.position.x, o.position.z - g.position.z));
+      if (inWay(nx, nz)) {
+        const ux = dx / d + (dz / d) * 1.2, uz = dz / d - (dx / d) * 1.2, ul = Math.hypot(ux, uz);
+        const sx = g.position.x + (ux / ul) * speed * dt, sz = g.position.z + (uz / ul) * speed * dt;
+        if (inWay(sx, sz) || blockers.some((b) => Math.hypot(sx - b.x, sz - b.z) < b.r)) {
+          animateGait(g, t, 0);
+          return;
+        }
+        nx = sx; nz = sz;
+      }
       if (pp && Math.hypot(pp.x - nx, pp.z - nz) < 1 && Math.hypot(pp.x - nx, pp.z - nz) < Math.hypot(pp.x - g.position.x, pp.z - g.position.z)) {
         animateGait(g, t, 0);
         return; // you're in the way; they wait

@@ -306,10 +306,11 @@ export function createMoon(player) {
     return r;
   }
 
-  function placeNPC(g, x, z, ry = 0) {
+  function placeNPC(g, x, z, ry = 0, solid = true) {
     g.position.set(x, moonHeight(x, z), z);
     g.rotation.y = ry;
     group.add(g);
+    if (solid) addMoonBlocker(x, z, 0.8); // a grown rover is a lot of rover (you used to walk right through them)
   }
 
   // the charging meadow: solar flowers, planted in rows, leaning sunward
@@ -748,7 +749,7 @@ export function createMoon(player) {
   // Comet, who does the perimeter (the perimeter does not need doing)
   {
     const comet = adultRover({ body: 0xeef2f6, scale: 1.15 });
-    placeNPC(comet, SET.x - 2, SET.z - 2, 0);
+    placeNPC(comet, SET.x - 2, SET.z - 2, 0, false); // (Comet does the perimeter: no fixed spot to be solid at)
     const state = { target: null, pauseT: 0 };
     updates.push((dt, t, playerPos) => {
       const pd = Math.hypot(playerPos.x - comet.position.x, playerPos.z - comet.position.z);
