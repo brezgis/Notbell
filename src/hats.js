@@ -93,6 +93,14 @@ const builders = {
     g.add(bill);
     return g;
   },
+  // Penny's: the mail carrier's cap — postal blue, a red band, a little badge
+  mail_cap() {
+    const g = capWithBrim(0x3a5aa8);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.06, 9), mat(0xd8342c, 0.6));
+    band.position.y = 0.0;
+    g.add(band);
+    return g;
+  },
   // Null's: over-ear headphones, a green light on one cup (she's listening
   // to something you'd need a password for)
   headphones() {

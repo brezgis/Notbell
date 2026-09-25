@@ -358,6 +358,65 @@ officially, a paper towel boat; Brine has feelings about this.
   Chad and Madison on the Mirage loop); while they're out, they aren't
   home. Indoors, folk walk about their rooms and turn to look at you.
 
+## The strait: Chuckee's — `chuckee.js`
+
+Between the Labs' south beach and Oasis Estates' north tip: a footbridge
+(the HOA paid for the lamp posts, and every one flies an Oasis Estates
+banner), and beside it a **highway**, with cars on it, driving. It starts
+and ends in a turnaround loop out over the water, a stride short of either
+shore — **there are no roads on any island**, and there still aren't; the
+highway is *between* islands ("END OF HIGHWAY: there are no roads on any
+island"). The cars loop it forever, wait for anyone on the road, and half of
+them stop at the drive-thru. Nobody has seen who drives them. Don't worry
+about it. In the middle, on an islet the size of a parking lot: **Chuckee's**,
+the travel stop (a woodchuck in a red cap on a pole sign both islands can
+see). Brisket, fudge, Chuckee Nuggets, the jerky wall, three pumps on the
+footbridge side no car can reach, and the **cleanest restrooms on any
+water**. Chuckee misses being asked how much wood a woodchuck would chuck.
+
+## The Isle of Cran — `cran.js`
+
+South-east of Notbell, over a footbridge from Grove Isle. A cranberry bog:
+dark moss older than the seasons, live oaks hung with Spanish moss, a creek
+that cuts the island in two (cranberries drift down it to the sea), the bog
+beds on the east bank — one flooded for the harvest, its berries floating
+edge to edge ("please do not swim in the product") — and a village on the
+west bank.
+
+- **Barb** (snapping turtle; the moss on her shell is her hat) and **Ruth**
+  (box turtle; knits; a scarf for the creek) have sat by the creek forty
+  years and said about a hundred words, ninety of them "look." They share
+  Barb's house. Barb has "RUTH" tattooed on her shell, in a heart. Ruth
+  pretends it's silly and visits it every day. Anchored to the creek.
+- **Null** (black cat; a hacker; headphones): "like the value, not like
+  nothing." Changed the Labs' password from "bell" to "notbell" two years
+  ago; nobody's noticed. The island runs on one router in a mossy log.
+  **Mabel** (goose; the party cone was on a birthday that wasn't using it)
+  doesn't steal, she relocates. Best enemies with Barb. Null backs things
+  up into the goose. Both roam.
+- **Bog Ink** (Spike, a skunk with a mohawk; tattoos and rock and roll; "NO
+  BELLS — they never come out right"), **Low Tide Records** (Sloane, a
+  sloth, slowly; the listening booth plays the island's songs), and the
+  **Cran Community Center**: zumba (Coach Lily; Barb in the back row, not
+  doing the arms; the goose banned from the front), watercolor (Miss
+  Dabble; everyone's bog comes out a pink smudge, which is accurate), and
+  **Chocoholics Anonymous** (Coco; "we don't judge the cheek"; Ruth keeps
+  bringing brownies "for support").
+- The **gazebo** has no bell in its cupola. It's a gazebo; nobody on Cran
+  thinks that's a question. The **flower pots** around it are rearranged
+  every morning by the Tuesday group (and on other days, by someone).
+- The **bench under the big oak** on the east shore: sit, and look at the
+  sea, until you choose to get up. Sometimes something glints far off on
+  the water. You let it be a glint. (A bell hook — do not resolve.)
+
+## The mail — `mail.js`
+
+**Penny** (a pigeon in a postal cap, with a blue satchel) carries it. Moss
+sorts; Penny walks every letter to its neighbor's box (bridges, trains, the
+lot), the flag goes up, and when they've written back she brings the answer
+to yours. Now and then a neighbor writes first. "The happy ones sit up
+straight in the bag."
+
 ## The night sky
 
 Constellations (sky.js): **The Bell** (one star missing — the clapper; the

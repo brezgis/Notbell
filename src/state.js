@@ -30,7 +30,7 @@ export const state = {
   where: null,        // { zone, x, z, rotY, camYaw, camPitch, camDist }
   rowboats: [],       // per rowboat: { x, z, rotY } where you last left it (null = at the pier)
   rowing: null,       // index of the rowboat you're out in, if any
-  mail: { out: [], inbox: [] }, // letters you've sent ({to, text, kind, at, delivered, replied}) and answers ({from, pages, at, read})
+  mail: { out: [], inbox: [], pending: [] }, // letters you've sent ({to, text, kind, at, delivered, deliveredAt, replied}), answers ({from, pages, at, read}), and letters written to you first, waiting in the writer's box for the carrier ({from, pages, at})
 };
 
 let saveTimer = 0;
@@ -86,6 +86,7 @@ export function load() {
         mail: {
           out: Array.isArray(data.mail?.out) ? data.mail.out.filter((l) => l && typeof l.to === 'string') : [],
           inbox: Array.isArray(data.mail?.inbox) ? data.mail.inbox.filter((l) => l && Array.isArray(l.pages)) : [],
+          pending: Array.isArray(data.mail?.pending) ? data.mail.pending.filter((l) => l && typeof l.from === 'string' && Array.isArray(l.pages)) : [],
         },
       });
     }

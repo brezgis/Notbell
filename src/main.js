@@ -36,6 +36,7 @@ import { createMoon } from './moon.js';
 import { createCrown } from './crown.js';
 import { createBurrough } from './burrough.js';
 import { createOasis } from './oasis.js';
+import * as mail from './mail.js';
 import { createCran } from './cran.js';
 import { createChuckee } from './chuckee.js';
 import { wireHatKey } from './hats.js';
@@ -197,6 +198,7 @@ nameVillagers(animals.animals);
 const island3 = createIsland3(); // before houses: Crumb sleeps on the MouseBoat
 const texas = createTexas();
 const houses = createHouses(animals.animals, nature.obstacles);
+mail.initCarrier(animals.animals, houses, zones.doorOf); // Penny takes the rounds (the Post's door and every mailbox now exist)
 player.bodies = animals.animals; // villagers are solid to you, too
 const bridge = createBridge(player, animals.animals);
 const island2 = createIsland2();

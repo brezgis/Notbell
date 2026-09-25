@@ -1472,6 +1472,9 @@ const ROSTER = [
   { kind: 'turtle', body: 0x8a6a3a, head: 0x8a6a3a, range: 'creek', spawn: [-1, -3] },               // Ruth (lives at Barb's; forty years)
   { kind: 'cat', body: 0x1e1e24, head: 0x1e1e24, range: 'cran', spawn: [-18, 15] },                  // Null
   { kind: 'goose', body: 0xf5f2e9, head: 0xf5f2e9, range: 'cran', spawn: [-8, 14] },                 // Mabel
+  // Penny, the mail carrier (a pigeon; mail.js gives her the rounds). she
+  // starts by the plaza, at the Post.
+  { kind: 'parrot', body: 0x9aa3ad, head: 0x6a7a8a, wing: 0x8a94a0, tail: 0x5a646e, face: 0x9aa3ad, beak: 0x3a3634, range: 'notbell', spawnVillage: [3, -4] },
 ];
 
 function rangeOf(spec) {
@@ -1493,10 +1496,12 @@ export function createAnimals() {
   const animals = [];
 
   for (const spec of ROSTER) {
-    const g = buildAnimal(spec.kind, { body: spec.body, head: spec.head, snapper: spec.snapper });
-    if (spec.spawn) {
+    const g = buildAnimal(spec.kind, { body: spec.body, head: spec.head, snapper: spec.snapper, wing: spec.wing, tail: spec.tail, face: spec.face, beak: spec.beak });
+    if (spec.spawn || spec.spawnVillage) {
       // a fixed start, no dice rolled (see the ROSTER note)
-      const x = ISLAND9.x + spec.spawn[0], z = ISLAND9.z + spec.spawn[1];
+      const [ox, oz] = spec.spawn ? [ISLAND9.x, ISLAND9.z] : [SITES.village.x, SITES.village.z];
+      const [sx0, sz0] = spec.spawn || spec.spawnVillage;
+      const x = ox + sx0, z = oz + sz0;
       g.position.set(x, terrainHeight(x, z), z);
       const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: emoteTexture('❗'), transparent: true, depthWrite: false }));
       sprite.scale.set(0.8, 0.8, 1);

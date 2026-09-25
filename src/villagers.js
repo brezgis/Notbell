@@ -12,7 +12,7 @@ import { ITEMS } from './catalog.js';
 
 // characters who belong to one place (the MouseBoat, the springs, the cave,
 // the duck nest) — they never wander off to other islands or take trains
-const ANCHORED = new Set(['Crumb', 'Mochi', 'Pondo', 'Sol', 'Brook', 'Ember', 'Admiral Greenbean', 'Puddle', 'Barb', 'Ruth']);
+const ANCHORED = new Set(['Crumb', 'Mochi', 'Pondo', 'Sol', 'Brook', 'Ember', 'Admiral Greenbean', 'Puddle', 'Barb', 'Ruth', 'Penny']);
 
 // what anyone says when you catch them mid-hobby (ambient.js pastimes)
 const FISHING_LINES = [
@@ -35,7 +35,7 @@ export const BIRTHDAYS = {
   Bramble: [7, 19], Puddle: [4, 14], 'Admiral Greenbean': [2, 8],
   Marigold: [8, 30], Ember: [1, 17], Tusk: [12, 1], Butterpat: [6, 3],
   Crumb: [9, 9], Mochi: [1, 2], Pondo: [1, 3], Sol: [7, 7], Brook: [3, 20],
-  Barb: [10, 14], Ruth: [3, 1], Null: [1, 1], Mabel: [4, 1],
+  Barb: [10, 14], Ruth: [3, 1], Null: [1, 1], Mabel: [4, 1], Penny: [2, 14],
 };
 
 export function birthdayToday(name, d = new Date()) {
@@ -270,6 +270,17 @@ const IDENTITIES = [
       'Zumba is just running around honking, with rules. I’m very good at it. I’m banned from the front row.',
     ],
   },
+  {
+    name: 'Penny', voice: 600, hat: 'mail_cap', // pigeon. the mail carrier. walks every bridge twice a day.
+    lines: [
+      'Mail! … Not for you. Not yet. Soon, maybe. I’ll know before you do.',
+      'Neither rain nor snow nor a very persuasive goose shall stay me from my rounds. The goose has tried.',
+      'I walk every bridge in the archipelago. Twice a day, some days. My feet have opinions. The opinions are also mail.',
+      'Moss sorts, I carry. He’s thorough, I’m quick. Between us: a whole postal service.',
+      'I don’t read the letters. I can tell what’s in them by how they sit in the bag, though. The happy ones sit up straight.',
+      'Pigeons have been carrying messages for longer than there have been messages. We just call it walking now. I prefer walking. The view’s lower.',
+    ],
+  },
 ];
 
 // ------------------------------------------------------------ friendships ----
@@ -435,6 +446,14 @@ export const MAIL_REPLIES = {
     ],
     postcard: 'A postcard! I’m keeping it forever. I keep EVERYTHING forever. Ask the cat.',
     sign: 'Mabel 🪿 (HONK)',
+  },
+  Penny: {
+    letters: [
+      'A letter FOR me! I carried it to myself. It was very strange. I delivered it to my own box and then stood there. Thank you. I read it twice, once as the carrier and once as me.',
+      'You wrote to the mail carrier. Nobody writes to the mail carrier. I put it in the bag with the others so it wouldn’t be lonely, then I remembered it was mine. Thank you. Truly.',
+    ],
+    postcard: 'A postcard from Farther! I’ve walked to Farther. By train, then by foot. The postcard is prettier than the walk. Don’t tell Farther.',
+    sign: 'Penny (Notbell Post, rounds twice daily)',
   },
   Brook: {
     letters: [

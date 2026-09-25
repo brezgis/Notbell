@@ -1349,5 +1349,10 @@ export function createHouses(animals, obstacles = []) {
     applySchedules(true);
   }
 
-  return { group, update, forceHome };
+  // where the carrier drops and collects (mail.js): each neighbor's box,
+  // and yours. (Ruth's letters go to Barb's box; Crumb's to the MouseBoat.)
+  const mailboxes = Object.fromEntries(theirBoxes.map(([n, mb]) => [n, { x: mb.position.x, z: mb.position.z }]));
+  if (mailboxes.Barb) mailboxes.Ruth = mailboxes.Barb;
+  if (MOUSEBOAT) mailboxes.Crumb = { x: MOUSEBOAT.knock.x, z: MOUSEBOAT.knock.z };
+  return { group, update, forceHome, mailboxes, myMailbox: { x: myBox.position.x, z: myBox.position.z } };
 }
