@@ -1625,6 +1625,7 @@ export function createAnimals() {
   function update(dt, t, playerPos) {
     for (const a of animals) {
       if (a.away) continue; // home for the evening — houses.js hosts them now
+      if (a.inDoorway) continue; // stepping through a door (doors.js has them)
       const g = a.g;
       const dxp = playerPos.x - g.position.x;
       const dzp = playerPos.z - g.position.z;

@@ -198,6 +198,7 @@ document.head.appendChild(style);
 
 let mapCanvas = null;
 let chartDrawn = false;
+let showIsleNow = null; // the open map's info panel (a click on the chart writes there)
 
 function worldToMap(x, z) {
   return [(x - MAP.x0) * MAP.scale, (z - MAP.z0) * MAP.scale];
@@ -266,7 +267,9 @@ function renderMap(player) {
         const d = Math.hypot(isle.x - wx, isle.z - wz);
         if (d < isle.r + 10 && d < bestD) { best = isle; bestD = d; }
       }
-      if (best) showIsle(best);
+      // (the panel is rebuilt every time the map opens; clicks used to keep
+      // writing to the first one, long gone, so nothing seemed to happen)
+      if (best) showIsleNow?.(best);
     });
   }
   mapModal.innerHTML = '';
@@ -279,7 +282,7 @@ function renderMap(player) {
   const info = document.createElement('div');
   info.className = 'info';
   info.innerHTML = `<h3>🗺️ The Notbell Archipelago</h3>
-    <div>The Notbell Archipelago — every island the volcano raised, back when she worked. The big one goes by Notbell Isle, the way the main one always does.</div>
+    <div>Every island the volcano raised, back when she worked. You live on Notbell Isle, the big one in the middle.</div>
     <div class="folk">Click an island for the gossip.</div>
     <div class="legend"><span>🔴 you</span><span>❓ not yet visited</span></div>
     <div class="fg-hint">P or Esc to close</div>`;
@@ -303,6 +306,7 @@ function renderMap(player) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  showIsleNow = showIsle;
   function showIsle(isle) {
     if (!charted(isle)) {
       info.innerHTML = `<h3>❓ ???</h3>

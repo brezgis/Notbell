@@ -39,32 +39,47 @@ function buildSkateboard() {
   return g;
 }
 
-// the bell-shaped brass helmet of Tansy's salvage divers
-function buildHelmet() {
-  const brass = new THREE.MeshStandardMaterial({ color: 0xc9962e, flatShading: true, roughness: 0.45 });
-  const h = new THREE.Group();
-  const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.56, 0.6, 9), brass);
-  h.add(bell);
-  const dome = new THREE.Mesh(new THREE.IcosahedronGeometry(0.46, 1), brass);
-  dome.scale.y = 0.65;
-  dome.position.y = 0.3;
-  h.add(dome);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.045, 6, 12), brass);
-  ring.position.set(0, 0.06, 0.45);
-  h.add(ring);
-  const glass = new THREE.Mesh(new THREE.CircleGeometry(0.19, 12),
-    new THREE.MeshStandardMaterial({
-      color: 0xbfe6f2, transparent: true, opacity: 0.45,
-      roughness: 0.2, flatShading: true, side: THREE.DoubleSide,
-    }));
-  glass.position.set(0, 0.06, 0.46);
-  h.add(glass);
-  const knob = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.03, 6, 10), brass);
-  knob.rotation.x = Math.PI / 2;
-  knob.position.y = 0.62;
-  h.add(knob);
-  h.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return h;
+// the diver's kit: swim goggles (a strap, two round lenses) and a snorkel.
+// Up on your forehead while you paddle about; down over your eyes, snorkel
+// in, only when you actually go under. (It used to be a brass bell over
+// the whole head, the moment you got your paws wet. Tansy's divers wore
+// one. It was, everyone agrees, a lot.)
+function buildGoggles() {
+  const g = new THREE.Group();
+  const rubber = new THREE.MeshStandardMaterial({ color: 0x2e4a5a, flatShading: true, roughness: 0.6 });
+  const strap = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.035, 4, 16), rubber);
+  strap.rotation.x = Math.PI / 2;
+  g.add(strap);
+  for (const sx of [-1, 1]) {
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.03, 5, 10), rubber);
+    rim.position.set(sx * 0.14, 0, 0.4);
+    g.add(rim);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.09, 10),
+      new THREE.MeshStandardMaterial({ color: 0x9fd8ef, transparent: true, opacity: 0.55, roughness: 0.1 }));
+    lens.position.set(sx * 0.14, 0, 0.415);
+    g.add(lens);
+  }
+  const snorkel = new THREE.Group();
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.55, 6), new THREE.MeshStandardMaterial({ color: 0xf2cf5b, flatShading: true, roughness: 0.5 }));
+  tube.position.y = 0.2;
+  snorkel.add(tube);
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 0.08, 6), rubber);
+  tip.position.y = 0.5;
+  snorkel.add(tip);
+  snorkel.position.set(0.32, 0, 0.18);
+  g.add(snorkel);
+  g.userData.snorkel = snorkel;
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+// a wetsuit: a snug second skin over the body, same shape, diver's colors
+function buildWetsuit(body) {
+  const suit = new THREE.Mesh(body.geometry, new THREE.MeshStandardMaterial({ color: 0x2e4a5a, flatShading: true, roughness: 0.7 }));
+  suit.scale.setScalar(1.035);
+  const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.03, 4, 14), new THREE.MeshStandardMaterial({ color: 0xf2cf5b, flatShading: true }));
+  suit.add(stripe); // round the middle
+  suit.castShadow = true;
+  return suit;
 }
 
 // the bubble helmet: a fishbowl with delusions and three patents.
@@ -140,8 +155,9 @@ export function createPlayer() {
   let skating = false;
 
   let walk = 0;
-  let helmet = null;
-  let helmetOn = false;
+  let goggles = null;
+  let gogglesMode = 'off'; // 'off' | 'up' (paddling) | 'down' (under)
+  let wetsuit = null;
   let bubble = null;
   let bubbleOn = false;
   let wasSwimming = false;
@@ -184,11 +200,33 @@ export function createPlayer() {
     }
     return false;
   }
+  // water you'd actually be IN here: swimmable, and not under a bridge deck
+  // or a pier (there the ground is the deck)
+  function inWater(x, z) {
+    return swimWater(x, z) && zones.groundHeight(x, z) <= WATER_Y + 0.12;
+  }
+  const levelAt = (x, z) => (inWater(x, z) ? WATER_Y : zones.groundHeight(x, z));
   function passable(x, z) {
     if (bumpsSomeone(x, z)) return false;
-    if (canSwim() && swimWater(x, z)) return true;
-    if (zones.canStand(x, z, BODY_R)) return true;
     const p = group.position;
+    const r = BODY_R;
+    const wet = (px, pz) => inWater(px, pz);
+    if (canSwim() && zones.current() === 'island' && (inWater(p.x, p.z) ||
+        wet(x, z) || wet(x + r, z) || wet(x - r, z) || wet(x, z + r) || wet(x, z - r))) {
+      // between land and water, a step is a step: no dropping off a bridge
+      // deck (or through its rails) into the sea, no bobbing up onto one
+      // from underneath (both used to happen, with a helmet flickering on
+      // and off)
+      if (Math.abs(levelAt(x, z) - levelAt(p.x, p.z)) > 0.8) return false;
+      // a body at the waterline: every point of its rim is either land you
+      // could stand on or water you could swim in. (The rim used to be
+      // checked for land and only the centre for water, which left a strip
+      // along every shore that no single step could cross: you froze at
+      // the water's edge.)
+      const ok = (px, pz) => inWater(px, pz) || zones.canWalk(px, pz);
+      if (ok(x, z) && ok(x + r, z) && ok(x - r, z) && ok(x, z + r) && ok(x, z - r)) return true;
+    }
+    if (zones.canStand(x, z, BODY_R)) return true;
     return zones.canWalk(x, z) && !zones.canStand(p.x, p.z, BODY_R);
   }
 
@@ -198,8 +236,7 @@ export function createPlayer() {
       return;
     }
     // swimming = standing somewhere only the sea would let you stand
-    const swimming = zones.current() === 'island' &&
-      zones.groundHeight(group.position.x, group.position.z) <= WATER_Y + 0.12;
+    const swimming = zones.current() === 'island' && inWater(group.position.x, group.position.z);
 
     let x = 0, z = 0, running = false;
     if (!ui.isBusy()) { // conversations deserve your feet's full attention
@@ -278,9 +315,10 @@ export function createPlayer() {
     }
     if (board && skating) board.position.y = -0.2;
 
-    // the bubble helmet is not optional. Dr. Hazel was very clear.
-    if ((onMoon || underwater) !== bubbleOn) {
-      bubbleOn = onMoon || underwater;
+    // the bubble helmet is not optional on the moon. Dr. Hazel was very clear.
+    // (under the sea you have goggles and a snorkel, like a person.)
+    if (onMoon !== bubbleOn) {
+      bubbleOn = onMoon;
       if (!bubble) bubble = buildBubble();
       const head = group.userData.parts.head;
       if (bubbleOn) head.add(bubble);
@@ -295,24 +333,32 @@ export function createPlayer() {
           setFlag('firstSwim');
           ui.toast(state.avatar?.kind === 'duck'
             ? 'You take to the water like the duck you are.'
-            : 'The helmet seals with a polite clonk. The sea lets you in.', '🌊');
+            : 'Goggles on your forehead, just in case. The sea lets you in.', '🌊');
         }
       }
     }
 
-    // the diver's helmet appears when (and only when) it's earning its keep
-    const wantHelmet = swimming && state.avatar?.kind !== 'duck' && countItem('scuba_suit') > 0;
-    if (wantHelmet !== helmetOn) {
-      helmetOn = wantHelmet;
-      if (!helmet) helmet = buildHelmet();
+    // the diver's kit comes out when (and only when) it's earning its keep:
+    // goggles pushed up while you paddle; goggles down, snorkel in, and the
+    // wetsuit on, only when you go under (the Dropped Crown)
+    const diver = state.avatar?.kind !== 'duck' && countItem('scuba_suit') > 0;
+    const wantMode = !diver ? 'off' : underwater ? 'down' : swimming ? 'up' : 'off';
+    if (wantMode !== gogglesMode) {
+      gogglesMode = wantMode;
+      if (!goggles) goggles = buildGoggles();
       const head = group.userData.parts.head;
-      if (helmetOn) {
-        head.add(helmet);
-        if (group.userData.hatMesh) group.userData.hatMesh.visible = false;
-      } else {
-        helmet.parent?.remove(helmet);
-        if (group.userData.hatMesh) group.userData.hatMesh.visible = true;
+      goggles.parent?.remove(goggles);
+      if (wantMode !== 'off') {
+        head.add(goggles);
+        const down = wantMode === 'down';
+        goggles.position.set(0, down ? 0.09 : 0.3, down ? 0 : -0.04);
+        goggles.rotation.x = down ? 0 : -0.5;
+        goggles.userData.snorkel.visible = down;
       }
+      const body = group.userData.parts.body;
+      if (!wetsuit) wetsuit = buildWetsuit(body);
+      if (wantMode === 'down') body.add(wetsuit); else wetsuit.parent?.remove(wetsuit);
+      if (group.userData.hatMesh) group.userData.hatMesh.visible = wantMode !== 'down';
     }
   }
 
@@ -326,7 +372,8 @@ export function createPlayer() {
     while (fresh.children.length) group.add(fresh.children[0]);
     group.userData.parts = fresh.userData.parts;
     group.userData.hatMesh = null;
-    helmetOn = false; // the old head took the helmet with it
+    gogglesMode = 'off'; // the old head took the goggles with it
+    wetsuit = null;       // (and the suit was cut to the old body)
     skating = false;  // and the board went with the old body
     bubbleOn = false; // and the bubble
     applyHat(group, state.wearing);

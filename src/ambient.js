@@ -11,6 +11,7 @@ import * as ui from './ui.js';
 import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7, ISLAND9 } from './terrain.js';
 import { rand, pick } from './utils.js';
 import { FRIENDS } from './villagers.js';
+import * as doors from './doors.js';
 
 // ---------------------------------------------------------- bubbles ----
 
@@ -310,11 +311,19 @@ export function createAmbient(animals, scene) {
       x: door.x, z: door.z, r: 1.2,
       done: () => {
         if (a.errand !== e) return;
-        e.phase = 'inside';
-        setAway(a);
-        a.g.position.set(spot.x,
-          venue.zone === 'island' ? terrainHeight(spot.x, spot.z) : (spot.y ?? 0), spot.z);
-        a.g.rotation.y = spot.rotY ?? 0;
+        const goIn = () => {
+          if (a.errand !== e) return;
+          e.phase = 'inside';
+          setAway(a);
+          a.g.position.set(spot.x,
+            venue.zone === 'island' ? terrainHeight(spot.x, spot.z) : (spot.y ?? 0), spot.z);
+          a.g.rotation.y = spot.rotY ?? 0;
+        };
+        // through the front door, if it's one that opens
+        const th = venue.zone !== 'island' && doors.threshold(venue.zone);
+        if (!th) { goIn(); return; }
+        doors.open(venue.zone, 1.8);
+        doors.through(a, a.g.position, th, goIn);
       },
       fail: () => {
         if (a.errand !== e) return;
@@ -342,10 +351,19 @@ export function createAmbient(animals, scene) {
     if (!a.home) {
       // out the same door, and an unhurried walk back to their patch
       // (or, at bedtime, houses.js points them home instead)
-      a.g.position.set(e.door.x, terrainHeight(e.door.x, e.door.z), e.door.z);
-      if (!a.bedtime) a.goal = { x: e.returnTo.x, z: e.returnTo.z, r: 1.6 };
-      a.state = 'idle';
-      a.timer = rand(1, 3);
+      const th = doors.threshold(e.venue.zone);
+      const onward = () => {
+        if (!a.bedtime) a.goal = { x: e.returnTo.x, z: e.returnTo.z, r: 1.6 };
+        a.state = 'idle';
+        a.timer = rand(1, 3);
+      };
+      if (th) {
+        doors.open(e.venue.zone, 1.8);
+        doors.through(a, { x: th.x, y: th.y, z: th.z }, { x: e.door.x, y: terrainHeight(e.door.x, e.door.z), z: e.door.z }, onward);
+      } else {
+        a.g.position.set(e.door.x, terrainHeight(e.door.x, e.door.z), e.door.z);
+        onward();
+      }
     }
   }
 

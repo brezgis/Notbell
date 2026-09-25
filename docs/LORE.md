@@ -151,7 +151,7 @@ and the causeway, or take the trains, and walk home the same way at night.
 
 Brine's grandmother said the reef was a crown a sea-queen threw away on
 purpose. All true. Dive from the reef in Pip's diver's suit (you wear the
-bubble helmet down there, like on the moon):
+goggles and a snorkel down there — the bubble helmet is for the moon):
 
 - **The Crown** — a ring of twelve candy-colored coral points tipped with
   glowing pearls. **Octavia** (octopus, costume tiara) was never a queen,
