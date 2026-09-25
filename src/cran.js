@@ -25,7 +25,9 @@ import { addIslandInfo, addZonePlace } from './fieldguide.js';
 import { glowWindow } from './nightglow.js';
 import { ITEMS } from './catalog.js';
 import { makeWindow, makeHangingLamp } from './buildings.js';
+import { mergeStatic } from './oasis.js';
 import { hourNow } from './calendar.js';
+import { waveAt } from './ocean.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -338,19 +340,24 @@ export function createCran(player) {
       for (let k = 0; k < seeds.length; k++) {
         const d = (seeds[k].off + t * 0.6) % total;
         const p = along(d);
-        tmp.position.set(p.x + seeds[k].side * 1.2, WATER_Y + 0.26 + Math.sin(t * 2 + k) * 0.02, p.z + seeds[k].side * 0.6);
+        const bx = p.x + seeds[k].side * 1.2, bz = p.z + seeds[k].side * 0.6;
+        tmp.position.set(bx, WATER_Y + Math.max(0, waveAt(bx, bz, t)) + 0.07, bz); // riding the rendered swell, never under it
         tmp.updateMatrix();
         berries.setMatrixAt(k, tmp.matrix);
       }
       berries.instanceMatrix.needsUpdate = true;
     });
     // lily pads, here and there, keeping still on principle
+    const pads = [];
     for (let k = 0; k < 14; k++) {
       const p = along((k / 14) * total + 3);
       const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.03, 7), mat(0x4a8a3a));
       pad.position.set(p.x + ((k * 13) % 7) / 7 - 0.5, WATER_Y + 0.22, p.z + ((k * 5) % 7) / 7 - 0.5);
+      pad.userData.dynamic = true;
       group.add(pad);
+      pads.push(pad);
     }
+    outdoor.push((dt, t) => { for (const pad of pads) pad.position.y = WATER_Y + Math.max(0, waveAt(pad.position.x, pad.position.z, t)) + 0.03; });
     // the good rock, by the creek, where the turtles sit
     const rock = ball(0.9, 0x7a7468);
     rock.scale.set(1.4, 0.35, 1.1);
@@ -396,7 +403,7 @@ export function createCran(player) {
         }
       }
       vines.receiveShadow = true;
-      berries.castShadow = true;
+      berries.castShadow = false; // (the vines' shadow is plenty)
       group.add(vines, berries);
     }
     // the flooded bed: the harvest. berries, floating, all the way to the edges;
@@ -744,6 +751,7 @@ export function createCran(player) {
     const blockers = [], things = [];
     build?.(B, blockers, things);
     const root = collectInteriorRoot(group, start);
+    root.userData.noMerge = true;
     zones.registerInterior(id, {
       root, floorY: 0,
       bounds: { x0: B.x - w / 2 + 0.45, x1: B.x + w / 2 - 0.45, z0: B.z - d / 2 + 0.45, z1: B.z + d / 2 - 0.1 },
@@ -836,7 +844,7 @@ export function createCran(player) {
       b.g.add(fl);
     }
     const sg = sign(['BOG INK', 'tattoos · rock & roll · no appointment'], { w: 3.6, h: 0.9, bg: '#1e1e24', fg: '#ff4fb0', border: '#ffc23a' });
-    sg.position.set(0, 2.55, INK.d / 2 + 0.1);
+    sg.position.set(0, 2.3, INK.d / 2 + 0.1); // (below the roof cap)
     b.g.add(sg);
     const guitar = new THREE.Group();
     const gbody = box(0.55, 0.7, 0.08, 0xd8342c);
@@ -942,6 +950,7 @@ export function createCran(player) {
     const label = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.07, 12), mat(0xf2cf5b));
     label.rotation.x = Math.PI / 2;
     label.position.copy(disc.position);
+    disc.userData.dynamic = label.userData.dynamic = true; // (the record turns)
     b.g.add(disc, label);
     outdoor.push((dt) => { disc.rotation.y += dt * 0.6; label.rotation.y = disc.rotation.y; });
     doorway('cran_records', ...b.door, REC.ry, 'go into Low Tide Records');
@@ -1015,8 +1024,8 @@ export function createCran(player) {
   // ------------------------------------------- the Community Center ----
   {
     const b = building(CC, { wall: 0x9ab08a, roof: 0x3d5a34, trim: 0xf3ead6 });
-    const sg = sign(['CRAN COMMUNITY CENTER', 'zumba · watercolor · chocoholics anonymous'], { w: 6.2, h: 0.9, bg: '#f3ead6', fg: '#3d5a34', border: '#8c3a3f' });
-    sg.position.set(0.8, 2.4, CC.d / 2 + 0.1);
+    const sg = sign(['CRAN COMMUNITY CENTER', 'zumba · watercolor · chocoholics anonymous'], { w: 6.2, h: 0.75, bg: '#f3ead6', fg: '#3d5a34', border: '#8c3a3f' });
+    sg.position.set(0.8, 2.35, CC.d / 2 + 0.1); // (under the eaves)
     b.g.add(sg);
     const board = sign(['THIS WEEK', 'MON zumba (goose: back row)', 'THU watercolor (bring a smudge)', 'SAT C.A. (brownies NOT allowed, Ruth)'], { w: 1.6, h: 1.4, bg: '#fffaf0', fg: '#3a3026' });
     const [bu, bv] = local(CC.u, CC.v, CC.ry, CC.w / 4 + 1.2, CC.d / 2 + 0.9);
@@ -1171,5 +1180,6 @@ export function createCran(player) {
     }
   }
   void rand; void sip; void glowWindow; void hourNow;
+  mergeStatic(group);
   return { group, update };
 }

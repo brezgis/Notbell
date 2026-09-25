@@ -875,8 +875,8 @@ export function createBulko(player) {
   group.add(buoy);
   zones.addBlocker(buoy.position.x, buoy.position.z, 0.55);
   // (boats.js wires the ferry stops — this buoy is just the landmark)
-  BULKO_DOCK.x = dock.x - dox * 1.5;
-  BULKO_DOCK.z = dock.z - doz * 1.5;
+  BULKO_DOCK.x = dock.x - dox * 0.8; // (landing clear of the buoy's footing — it used to set you down inside it)
+  BULKO_DOCK.z = dock.z - doz * 0.8;
   BULKO_DOCK.rotY = dockA + Math.PI;
   BULKO_DOCK.buoyPos = buoy.position;
 

@@ -24,6 +24,7 @@ import { glowWindow } from './nightglow.js';
 import { ITEMS } from './catalog.js';
 import { makeWindow } from './buildings.js';
 import { turnToward } from './utils.js';
+import { mergeStatic } from './oasis.js';
 
 function mat(color, rough = 0.88) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -225,12 +226,10 @@ export function createChuckee(player) {
     const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 0), mat(0xfff3d0, 0.4));
     globe.position.set(0.6, 2.75, 0);
     glowWindow(globe, { max: 0.75 });
-    const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 1.0), bannerMat);
-    banner.position.set(0, 2.1, 0.12);
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 1.0), bannerMat); // (one double-sided banner, beside the post, not through it)
+    banner.position.set(0, 2.1, 0.33);
     banner.rotation.y = Math.PI / 2;
-    const banner2 = banner.clone();
-    banner2.position.z = -0.12;
-    g.add(post, arm, globe, banner, banner2);
+    g.add(post, arm, globe, banner);
     g.traverse((o) => { if (o.isMesh && o !== globe) o.castShadow = true; });
     const p = P(u, v);
     g.position.set(p.x, y0, p.z);
@@ -359,6 +358,7 @@ export function createChuckee(player) {
       glowWindow(lights, { max: 0.9 });
       g.add(lights);
       g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+      g.userData.dynamic = true;
       group.add(g);
       return { g, d: (k / COLORS.length) * total, stop: 0, stops: k % 2 === 0, served: false, speed: 0 };
     });
@@ -442,9 +442,9 @@ export function createChuckee(player) {
     dts.rotation.y = Math.PI / 2;
     dts.position.set(SW / 2 + 0.06, 3.0, 0.6);
     g.add(dts);
-    const front = sign(['CHUCKEE’S', 'travel stop · brisket · fudge · restrooms'], { w: 5.2, h: 0.9, bg: '#f2cf5b', fg: '#b3202c', border: '#b3202c' });
+    const front = sign(['CHUCKEE’S', 'travel stop · brisket · fudge · restrooms'], { w: 5.2, h: 0.8, bg: '#f2cf5b', fg: '#b3202c', border: '#b3202c' });
     front.rotation.y = -Math.PI / 2;
-    front.position.set(-SW / 2 - 0.08, 3.4, 0);
+    front.position.set(-SW / 2 - 0.08, 3.2, 0); // (under the roof's overhang, clear of the door)
     g.add(front);
     g.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     put(g, SU, 0, 0, RY);
@@ -583,6 +583,7 @@ export function createChuckee(player) {
     rrs.rotation.y = Math.PI / 2;
     group.add(rrs);
     const root = collectInteriorRoot(group, start);
+    root.userData.noMerge = true;
     zones.registerInterior('chuckee', {
       root, floorY: 0,
       bounds: { x0: B.x - 8.5, x1: B.x + 8.5, z0: B.z - 5.5, z1: B.z + 5.9 },
@@ -637,5 +638,6 @@ export function createChuckee(player) {
       for (const f of inStore) f(dt, t, playerPos);
     }
   }
+  mergeStatic(group);
   return { group, update };
 }

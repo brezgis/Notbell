@@ -255,6 +255,19 @@ player.group.name = 'player';
 camera.position.copy(player.group.position).add(camOffset);
 ui.updateHUD();
 
+// ---- tiny things don't cast shadows: a pebble's shadow on a 1024 shadow map
+// is a smudge, and each caster is another draw in the shadow pass
+{
+  const sc = new THREE.Vector3();
+  scene.traverse((o) => {
+    if (!o.isMesh || !o.castShadow || o.isInstancedMesh || !o.geometry) return;
+    if (o.material?.emissive && o.material.emissive.getHex() !== 0) { o.castShadow = false; return; } // glowing things cast no shadow (rule 9)
+    o.geometry.computeBoundingSphere?.();
+    o.getWorldScale(sc);
+    if ((o.geometry.boundingSphere?.radius || 0) * Math.max(sc.x, sc.y, sc.z) < 0.2) o.castShadow = false;
+  });
+}
+
 // ---- dynamic wall fading: anything wall-sized between you and the camera
 // turns politely translucent (and recovers the instant it isn't)
 const occluders = [];

@@ -112,6 +112,81 @@ function sign(lines, { w = 3.4, h = 0.8, d = 0.08, bg = '#fffaf0', fg = '#5b4a32
   return m;
 }
 
+// ------------------------------------------------------ static merging ----
+// A whole island of one-off meshes costs a draw call each (and another in
+// the shadow pass). Once an island is built, mergeStatic bakes everything
+// that never moves into one mesh per look (color, roughness, shadow flags),
+// and stops tiny things casting shadows the 1024 shadow map can't show.
+// Left alone: anything under a node marked userData.dynamic (it moves) or
+// userData.noMerge (an interior room), anyone built by buildAnimal, glowing
+// panes (they own an emissive material), textures, transparency, instanced
+// meshes, and wall-sized boxes (main.js fades those when they're between
+// you and the camera — they have to stay their own mesh). Cran and the
+// strait import this too.
+export function mergeStatic(root) {
+  if (globalThis.__NOTBELL_NO_MERGE) return; // (the clip audit wants every mesh as built)
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const buckets = new Map();
+  const take = [];
+  const walk = (o, frozen) => {
+    if (o.userData.dynamic || o.userData.noMerge || o.userData.parts) frozen = true;
+    if (o.isMesh && !o.isInstancedMesh) {
+      const g = o.geometry;
+      g.computeBoundingSphere?.();
+      const sc = o.getWorldScale(new THREE.Vector3());
+      const r = (g.boundingSphere?.radius || 0) * Math.max(sc.x, sc.y, sc.z);
+      if (r < 0.25) o.castShadow = false; // too small to cast a readable shadow
+      const m = o.material;
+      const wall = g.type === 'BoxGeometry' && g.parameters.height >= 2.2 && Math.max(g.parameters.width, g.parameters.depth) * g.parameters.height >= 12;
+      const plain = m && m.isMeshStandardMaterial && !m.map && !m.transparent && m.opacity >= 1 &&
+        (!m.emissive || m.emissive.getHex() === 0) && g.attributes.position && g.attributes.normal;
+      if (!frozen && plain && !wall && !o.userData.occlude) {
+        const key = `${m.color.getHex()}|${m.roughness}|${m.flatShading}|${m.side}|${o.castShadow}|${o.receiveShadow}`;
+        if (!buckets.has(key)) buckets.set(key, { mat: m, cast: o.castShadow, recv: o.receiveShadow, parts: [] });
+        buckets.get(key).parts.push(o);
+        take.push(o);
+      }
+    }
+    for (const c of o.children) walk(c, frozen);
+  };
+  walk(root, false);
+  const mtx = new THREE.Matrix4(), nm = new THREE.Matrix3();
+  for (const b of buckets.values()) {
+    if (b.parts.length < 2) continue;
+    let count = 0;
+    const geos = b.parts.map((o) => {
+      const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry;
+      count += g.attributes.position.count;
+      return { g, o };
+    });
+    const pos = new Float32Array(count * 3), nor = new Float32Array(count * 3);
+    let at = 0;
+    const v = new THREE.Vector3();
+    for (const { g, o } of geos) {
+      mtx.multiplyMatrices(inv, o.matrixWorld);
+      nm.getNormalMatrix(mtx);
+      const P = g.attributes.position, N = g.attributes.normal;
+      for (let i = 0; i < P.count; i++, at++) {
+        v.fromBufferAttribute(P, i).applyMatrix4(mtx);
+        pos[at * 3] = v.x; pos[at * 3 + 1] = v.y; pos[at * 3 + 2] = v.z;
+        v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize();
+        nor[at * 3] = v.x; nor[at * 3 + 1] = v.y; nor[at * 3 + 2] = v.z;
+      }
+      o.parent.remove(o);
+    }
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    merged.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    merged.computeBoundingSphere();
+    const mesh = new THREE.Mesh(merged, b.mat);
+    mesh.castShadow = b.cast;
+    mesh.receiveShadow = b.recv;
+    mesh.userData.merged = b.parts.length;
+    root.add(mesh);
+  }
+}
+
 // ------------------------------------------------------------ the layout ----
 const O = OASIS_PAD;
 const GY = O.h; // the pad's height: everything here stands on the same lawn
@@ -743,6 +818,7 @@ export function createOasis(player) {
       seats.push(pivot);
     }
     swing.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+    swing.userData.dynamic = true; // (the seats swing)
     put(swing, P.u - 1.8, P.v - 2, 0, 0.2);
     solidBox(P.u - 1.8, P.v - 2, 2.9, 1.2, 0.2);
     h0Swings = seats;
@@ -776,6 +852,7 @@ export function createOasis(player) {
     plank.position.y = 0.48;
     see.add(fulcrum, plank);
     see.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+    see.userData.dynamic = true;
     put(see, P.u + 0.5, P.v + 2.6, 0, 0.1);
     solidBox(P.u + 0.5, P.v + 2.6, 2.6, 0.4, 0.1);
     h0Seesaw = plank;
@@ -837,6 +914,7 @@ export function createOasis(player) {
     const things = [];
     build?.(B, blockers, things);
     const root = collectInteriorRoot(group, start);
+    root.userData.noMerge = true;
     zones.registerInterior(id, {
       root, floorY: 0,
       bounds: { x0: B.x - w / 2 + 0.45, x1: B.x + w / 2 - 0.45, z0: B.z - d / 2 + 0.45, z1: B.z + d / 2 - 0.1 },
@@ -2069,6 +2147,7 @@ export function createOasis(player) {
       const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 1), mat([0xf28fb0, 0xffffff, 0xf2cf5b][k], 0.4));
       b.scale.y = 1.2;
       b.castShadow = true;
+      b.userData.dynamic = true; // (balloons bob)
       put(b, bu, bv, 1.7 + k * 0.2);
       const str = box(0.01, 1.6 + k * 0.2, 0.01, 0xffffff);
       put(str, bu, bv, 0.85 + k * 0.1);
@@ -2096,6 +2175,7 @@ export function createOasis(player) {
     beak.position.set(0, 1.6, 0.4);
     fl.add(body, leg, neck, head, beak);
     fl.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+    fl.userData.dynamic = true; // (Dolores turns to watch Beverly)
     put(fl, fu, fv, 0, H.ry + 0.6);
     solidDisc(fu, fv, 0.25);
     register({
@@ -2235,6 +2315,7 @@ export function createOasis(player) {
       cstand.position.set(0.45, 0.55, 0.35);
       kit.add(bass, snare, cym, cstand);
       kit.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+      kit.userData.dynamic = true; // (the cymbal crashes)
       kit.position.set(x, GY + floorY, z);
       kit.rotation.y = H.ry;
       group.add(kit);
@@ -2415,6 +2496,7 @@ export function createOasis(player) {
     todd.scale.setScalar(0.7);
     todd.position.set(0, 0.2, -0.35);
     mower.add(todd);
+    mower.userData.dynamic = true;
     group.add(mower);
     zones.addMover({ zone: 'island', obj: mower, r: 0.85 });
     // stripes, north–south, back and forth, forever, on the lawn south of
@@ -3424,5 +3506,6 @@ export function createOasis(player) {
     }
   }
 
+  mergeStatic(group); // (everything that doesn't move, baked into a few meshes)
   return { group, update };
 }

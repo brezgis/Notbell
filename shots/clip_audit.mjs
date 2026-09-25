@@ -9,6 +9,7 @@
 // and icosahedra, so a hit on a round thing may be a near miss.
 import fs from 'node:fs';
 import path from 'node:path';
+process.env.NO_MERGE = '1'; // measure the meshes as built, not the baked island batches
 import { boot, OUT } from './lib.mjs';
 
 const { browser, page } = await boot();

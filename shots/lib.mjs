@@ -50,6 +50,7 @@ export async function boot({
   page.on('dialog', (d) => d.accept(name)); // the native name prompt
   page.on('pageerror', (e) => console.log('PAGE ERROR:', e.message));
 
+  if (process.env.NO_MERGE) await page.evaluateOnNewDocument(() => { window.__NOTBELL_NO_MERGE = true; }); // (clip_audit: every mesh as built)
   await page.evaluateOnNewDocument((h, nm, doSeed) => {
     // pin the clock so shots don't depend on when they're taken
     const RealDate = Date;

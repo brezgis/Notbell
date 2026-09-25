@@ -418,8 +418,12 @@ export function createBoats(player) {
     const a = Math.atan2(lx - cx, lz - cz);
     const ax = Math.sin(a), az = Math.cos(a);
     for (let t = 2; t < 30; t += 0.5) {
-      if (terrainHeight(lx + ax * t, lz + az * t) < WATER_Y - 0.7) {
-        return { x: lx + ax * (t + 1.5), z: lz + az * (t + 1.5) };
+      const x = lx + ax * (t + 1.5), z = lz + az * (t + 1.5);
+      // deep water, and clear of every wall a hull could overlap (the North
+      // anchorage used to sit with the tug half inside the arch's rock)
+      if (terrainHeight(lx + ax * t, lz + az * t) < WATER_Y - 0.7 &&
+        [[0, 0], [3, 0], [-3, 0], [0, 3], [0, -3]].every(([ox, oz]) => !zones.seaBlocked(x + ox, z + oz))) {
+        return { x, z };
       }
     }
     return { x: lx + ax * 10, z: lz + az * 10 };
@@ -512,7 +516,12 @@ export function createBoats(player) {
   function shallowAhead(ang, dist) {
     const a = tug.rotation.y + ang;
     const x = tug.position.x + Math.sin(a) * dist, z = tug.position.z + Math.cos(a) * dist;
-    return terrainHeight(x, z) > WATER_Y - 0.55 || (!voyage?.via?.length && zones.seaBlocked(x, z));
+    if (terrainHeight(x, z) > WATER_Y - 0.55) return true;
+    if (!zones.seaBlocked(x, z)) return false;
+    // threading a gate (the arch's tunnel)? only that gate's own wall is let
+    // off — every other wall still counts
+    const g = voyage?.via?.[0]?.gate;
+    return !(g && Math.hypot(x - g.x, z - g.z) < 16);
   }
 
   // solid things in the sea (the North Isle arch) have gates — a tunnel, a
@@ -524,11 +533,19 @@ export function createBoats(player) {
   }
   function routeVia(from, to) {
     const via = [];
+    // a line that passes NEAR a gate's wall counts too (it used to slip just
+    // past the arch's end, then dodge round and round the rock)
+    const segDist = (p, q, a, b) => {
+      const d = (u, v, w) => { const dx = w.x - v.x, dz = w.z - v.z, l2 = dx * dx + dz * dz || 1; const t = Math.max(0, Math.min(1, ((u.x - v.x) * dx + (u.z - v.z) * dz) / l2)); return Math.hypot(u.x - (v.x + dx * t), u.z - (v.z + dz * t)); };
+      return crosses(p, q, a, b) ? 0 : Math.min(d(p, a, b), d(q, a, b), d(a, p, q), d(b, p, q));
+    };
     for (const g of zones.getSeaGates()) {
-      if (!crosses(from, to, g.a, g.b)) continue;
+      if (segDist(from, to, g.a, g.b) > 12) continue;
       const side = Math.sign((from.x - g.x) * g.nx + (from.z - g.z) * g.nz) || 1;
-      via.push({ x: g.x + g.nx * side * 10, z: g.z + g.nz * side * 10, k: Math.hypot(from.x - g.x, from.z - g.z) });
-      via.push({ x: g.x - g.nx * side * 10, z: g.z - g.nz * side * 10, k: Math.hypot(from.x - g.x, from.z - g.z) + 0.1 });
+      if (Math.sign((to.x - g.x) * g.nx + (to.z - g.z) * g.nz) === side) continue; // both ends on one side: no need to go through
+      const gate = { x: g.x, z: g.z };
+      via.push({ x: g.x + g.nx * side * 10, z: g.z + g.nz * side * 10, k: Math.hypot(from.x - g.x, from.z - g.z), gate });
+      via.push({ x: g.x - g.nx * side * 10, z: g.z - g.nz * side * 10, k: Math.hypot(from.x - g.x, from.z - g.z) + 0.1, gate });
     }
     return via.sort((u, v) => u.k - v.k);
   }
@@ -822,6 +839,10 @@ export function createBoats(player) {
           dodging = true;
           want = tug.rotation.y + 0.5;
         }
+      } else if (shallowAhead(0, 4)) {
+        // close in, still mind the bottom (she used to scrape a sandbar or two on the way to the anchorage)
+        dodging = true;
+        want = tug.rotation.y + (shallowAhead(0.6, 4) && !shallowAhead(-0.6, 4) ? -0.8 : 0.8);
       }
       // (close in, she turns gently — she used to pirouette round the
       // anchorage, sweeping her stern through the dock)
