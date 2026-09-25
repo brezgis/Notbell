@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { register } from './interact.js';
 import * as zones from './zones.js';
 import * as ui from './ui.js';
-import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7 } from './terrain.js';
+import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7, ISLAND9 } from './terrain.js';
 import { rand, pick } from './utils.js';
 import { FRIENDS } from './villagers.js';
 
@@ -85,6 +85,27 @@ function bubbleSprite(text) {
 // guest: where a visitor stands/sits · keeper: who they chat with
 
 const VENUES = [
+  // the Isle of Cran (rooms at x -300, z 1600/1680/1760 — cran.js)
+  {
+    id: 'cran_records', zone: 'cran_records',
+    guest: { x: -299.6, z: 1682.6, rotY: Math.PI },
+    keeper: { x: -303.1, z: 1676.5 },
+    guestLine: 'Shh. Side B.',
+    chats: [
+      [['g', 'Anything new?'], ['k', '…Define… new.'], ['g', 'Since last week.'], ['k', 'I’m… still… shelving last week.']],
+      [['g', 'Can I use the booth?'], ['k', 'Take… your time.'], ['g', 'I will.'], ['k', 'I… know.']],
+    ],
+  },
+  {
+    id: 'cran_cc', zone: 'cran_cc',
+    guest: { x: -293, z: 1762.4, rotY: 0 },
+    keeper: { x: -300, z: 1755.6 },
+    guestLine: 'I’m here for the group. Emotionally.',
+    chats: [
+      [['g', 'Is it zumba today?'], ['k', 'It’s always zumba somewhere in this building.']],
+      [['g', 'Hi. It’s been four days.'], ['k', 'Four days is four days.']],
+    ],
+  },
   {
     id: 'cafe', zone: 'cafe',
     guest: { x: 305.1, z: 81.2, rotY: -2.0 },
@@ -479,6 +500,7 @@ export function createAmbient(animals, scene) {
     labs: { x: SITES.labsYard.x, z: SITES.labsYard.z, R: 12 },
     grove: { x: ISLAND5.x, z: ISLAND5.z, R: ISLAND5.r - 5 },
     farther: { x: ISLAND7.x, z: ISLAND7.z, R: ISLAND7.r - 5 },
+    cran: { x: ISLAND9.x - 8, z: ISLAND9.z + 3, R: 11 }, // the village side of the creek
   };
   let roamT = 30;
   function updateRoaming(dt) {

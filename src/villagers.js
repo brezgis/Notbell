@@ -12,7 +12,7 @@ import { ITEMS } from './catalog.js';
 
 // characters who belong to one place (the MouseBoat, the springs, the cave,
 // the duck nest) — they never wander off to other islands or take trains
-const ANCHORED = new Set(['Crumb', 'Mochi', 'Pondo', 'Sol', 'Brook', 'Ember', 'Admiral Greenbean', 'Puddle']);
+const ANCHORED = new Set(['Crumb', 'Mochi', 'Pondo', 'Sol', 'Brook', 'Ember', 'Admiral Greenbean', 'Puddle', 'Barb', 'Ruth']);
 
 // what anyone says when you catch them mid-hobby (ambient.js pastimes)
 const FISHING_LINES = [
@@ -35,6 +35,7 @@ export const BIRTHDAYS = {
   Bramble: [7, 19], Puddle: [4, 14], 'Admiral Greenbean': [2, 8],
   Marigold: [8, 30], Ember: [1, 17], Tusk: [12, 1], Butterpat: [6, 3],
   Crumb: [9, 9], Mochi: [1, 2], Pondo: [1, 3], Sol: [7, 7], Brook: [3, 20],
+  Barb: [10, 14], Ruth: [3, 1], Null: [1, 1], Mabel: [4, 1],
 };
 
 export function birthdayToday(name, d = new Date()) {
@@ -219,6 +220,56 @@ const IDENTITIES = [
       'Swim with us sometime. We mostly float and think about lunch we already had.',
     ],
   },
+  // ----- the Isle of Cran (index order matches animals.js ROSTER)
+  {
+    name: 'Barb', voice: 170, hat: null, // snapping turtle. the moss on her shell is the hat.
+    lines: [
+      'Hrm. You’re standing on my good rock. … No. Stay. It’s a good rock. Somebody should enjoy it.',
+      'I snap. It’s in the name. I don’t snap at friends. I snap at weather. I snap at the IDEA of Tuesdays.',
+      'Ruth and I have sat by this creek forty years. Said maybe a hundred words. Ninety of them were “look.”',
+      'Cranberries float. Little pockets of nothing inside. Everything that floats has a little nothing in it. Remember that, next time you’re sinking.',
+      'The creek goes to the sea. Everything goes to the sea. I’m in no hurry. The sea keeps.',
+      'Don’t tell anyone. I go to zumba. Back row. I don’t do the arms.',
+      'Got a tattoo once. On the shell. “RUTH,” in a heart. She says it’s silly. She stops by to look at it every day.',
+      'The cat’s always on her laptop. The goose is always on something she shouldn’t be. I’m on this rock. We all have our places.',
+    ],
+  },
+  {
+    name: 'Ruth', voice: 300, hat: 'knit_cap', // box turtle. knits. for the creek, mostly.
+    lines: [
+      'Oh, hello, dear. Sit, sit. Barb won’t mind. Barb minds everything, which means she doesn’t mind anything in particular.',
+      'I’m knitting a scarf for the creek. For winter. It’ll be very long. The creek is very long.',
+      'Watercolor on Thursdays. I paint the bog. Every week it comes out a pink smudge. In autumn, the bog IS a pink smudge. I’m very accurate.',
+      'Barb had my name tattooed on her shell. I pretend it’s silly. I visit it every day.',
+      'Moss grows about an inch a year. I’ve watched a whole yard of it grow. It was lovely the entire way.',
+      'I go to the chocolate group at the community center. To support them. I bring brownies. They’ve asked me to stop. I’m supporting that, too.',
+    ],
+  },
+  {
+    name: 'Null', voice: 560, hat: 'headphones', // black cat. hacker. "like the value, not like nothing."
+    lines: [
+      'I’m in. … Sorry. I say that when I walk into places. It’s a habit.',
+      'I hacked the Labs once. Their password was “bell.” I changed it to “notbell.” That was two years ago. Nobody’s noticed.',
+      'The whole island runs on one router. The router lives in a hollow log. The log is mossy. The signal is excellent.',
+      'Black cat, crossing your path. That’s seven years of good uptime. People get the superstition backwards.',
+      'I wrote a program to count the cranberries. It crashed. There are more cranberries than numbers. I’m looking into it.',
+      'The goose keeps stealing my USB sticks. I stopped fighting it. Everything’s backed up. In the goose.',
+      '“Hacker” is a strong word. I’m more of a person who knows where the settings are.',
+      'Null. Like the value. Not like nothing. There’s a difference, and I’m it.',
+    ],
+  },
+  {
+    name: 'Mabel', voice: 470, hat: 'party_cone', // goose. the hat was on a birthday. the birthday wasn't using it.
+    lines: [
+      'HONK. … That’s hello. It’s also a warning. Mostly hello.',
+      'I don’t steal. I RELOCATE. Things end up where they’re supposed to be, which is near me.',
+      'This hat? It was on a birthday. The birthday wasn’t using it. HONK.',
+      'Barb snapped at me once. I honked at her. Best enemies ever since. She saves me the good rock when it rains.',
+      'I found a key today. Don’t know what it opens. That’s the fun part. That’s ALWAYS the fun part.',
+      'The cat thinks I don’t know she backs things up into me. I know. I’m a very secure goose.',
+      'Zumba is just running around honking, with rules. I’m very good at it. I’m banned from the front row.',
+    ],
+  },
 ];
 
 // ------------------------------------------------------------ friendships ----
@@ -353,6 +404,38 @@ export const MAIL_REPLIES = {
     postcard: 'A postcard from farther away. Sssplendid. I shall bask on it.',
     sign: 'Sol',
   },
+  Barb: {
+    letters: [
+      'Hrm. Got your letter. Read it on the rock. Read it twice. Ruth says that means I liked it. Ruth is right. Don’t tell her.',
+      'Letter received. The creek says hello. The creek doesn’t talk. I’m saying it for the creek. Hrm.',
+    ],
+    postcard: 'A postcard from Farther. I don’t go farther. Farther can come here. It’s welcome to the rock.',
+    sign: 'Barb (on the rock)',
+  },
+  Ruth: {
+    letters: [
+      'Your letter came, dear! I’ve tucked it into my knitting basket so it stays warm. Barb read it over my shoulder and said “hrm,” which from Barb is a sonnet.',
+      'Thank you for writing. I’m knitting you something. It will take a while. I knit at the speed of moss.',
+    ],
+    postcard: 'Oh, Farther! I painted it from your postcard. It came out a pink smudge. It’s lovely there.',
+    sign: 'Ruth (and a scarf, in progress)',
+  },
+  Null: {
+    letters: [
+      '> letter received. > parsed. > sentiment: warm. > replying… hi. that’s the reply. hi. it took me four drafts.',
+      'Got your letter. It came on paper. Real paper. I held it for a while. Nobody sends me anything that doesn’t have a password.',
+    ],
+    postcard: 'Farther Isle. No signal out there. I checked. I’m jealous.',
+    sign: '— Null (like the value)',
+  },
+  Mabel: {
+    letters: [
+      'HONK! Your letter! It’s mine now. It was always going to be mine. That’s how letters work. HONK.',
+      'Thanks for writing! Enclosed: one (1) button I found. It was on someone’s coat. They weren’t using the whole coat. HONK.',
+    ],
+    postcard: 'A postcard! I’m keeping it forever. I keep EVERYTHING forever. Ask the cat.',
+    sign: 'Mabel 🪿 (HONK)',
+  },
   Brook: {
     letters: [
       'Sol said to say thank you. I say thank you. Between us, a complete thank-you.',
@@ -470,6 +553,30 @@ export const FRIENDS = [
       Pondo: '…Were we talking? Good. Good.',
     },
   },
+  {
+    a: 'Barb', b: 'Ruth',
+    chats: [
+      [['a', 'Look.'], ['b', 'Oh. Look.'], ['a', 'Hrm.']],
+      [['b', 'I brought brownies.'], ['a', 'For the chocolate group?'], ['b', 'For us. The chocolate group asked me to stop.'], ['a', 'Good. More for the rock.']],
+      [['a', 'Creek’s high today.'], ['b', 'Is it?'], ['a', 'No. I just like saying things to you.']],
+    ],
+    meetLines: {
+      Barb: 'Hrm. We’re sitting. It’s a whole thing. Forty years of it.',
+      Ruth: 'We’re watching the creek, dear. It does the same thing every day. That’s the charm.',
+    },
+  },
+  {
+    a: 'Null', b: 'Mabel',
+    chats: [
+      [['b', 'HONK.'], ['a', 'That’s my USB stick.'], ['b', 'It WAS your USB stick.'], ['a', '…Keep it safe.']],
+      [['a', 'I’m in.'], ['b', 'In what?'], ['a', 'The conversation. I’m in the conversation.'], ['b', 'HONK.']],
+      [['b', 'Found a key.'], ['a', 'What does it open?'], ['b', 'Don’t know yet. That’s the fun part.'], ['a', 'I could find out.'], ['b', 'DON’T.']],
+    ],
+    meetLines: {
+      Null: 'We’re in a meeting. It’s encrypted. It’s mostly honking.',
+      Mabel: 'We’re planning something. I don’t know what. She does. HONK.',
+    },
+  },
 ];
 
 export const FRIEND_OF = {};
@@ -492,10 +599,18 @@ const ERRAND_ASKS = {
   Crumb: 'Run this to Butterpat? Crackers from three harbors over. She’s never had a cracker. This is an EVENT.',
   Mochi: 'Mm. For Pondo. (It is an orange. You may not ask further.)',
   Pondo: 'For Mochi, when the current takes you that way. Mm. No rush. There is never any rush.',
+  Barb: 'Hrm. Take this to Ruth. A flat stone. The flattest. Don’t say it’s from me. She’ll know it’s from me.',
+  Ruth: 'Would you bring this to Barb, dear? It’s a scarf. For her neck. She says she doesn’t need one. Her neck is very long, when she lets it out.',
+  Null: 'Take this to Mabel? It’s a USB stick. She’s going to take it anyway. This way it’s a gift.',
+  Mabel: 'HONK. Give this to the cat. It’s her other USB stick. I’m giving it back. Don’t make it weird.',
 };
 
 // what the recipient says when the parcel arrives
 const DELIVERY_THANKS = {
+  Barb: 'From Ruth? A scarf. Hrm. … It’s very long. It’s the right length. Tell her — no. I’ll tell her.',
+  Ruth: 'A flat stone. The flattest one. This is from Barb. It doesn’t say so. It doesn’t need to.',
+  Null: 'My other USB stick. From the goose. Returned. … Something is wrong. I’m checking the backups.',
+  Mabel: 'A USB stick! From the cat! She GAVE it to me? … That’s no fun. I love it. HONK.',
   Howell: 'From Saffron? A WOLF STICK. …Tell her the wolf is extremely pleased. Use those words. EXTREMELY.',
   Saffron: 'A bell-shaped rock! That’s the fourth one. I keep them on the windowsill where he can see I keep them. Don’t tell him. He knows.',
   Clover: 'Oh, it smells SO lucky! Biscuit found this? Today really is a good day. I counted.',

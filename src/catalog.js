@@ -525,6 +525,39 @@ export const ITEMS = {
     kind: 'keepsake', name: 'Sahara Sand Scrub', emoji: '🫙', price: 0,
     blurb: 'A luxury exfoliant. The ingredients list says “sand.” The ingredients list is honest, and that is its own luxury.',
   },
+  // the Isle of Cran — Bog Ink (tattoos), Low Tide Records, the Community Center
+  tattoo_cranberry: {
+    kind: 'keepsake', name: 'Tattoo: A Cranberry', emoji: '🍒', price: 0,
+    blurb: 'Small, red, on the shoulder. Spike says you’ll float now. Metaphorically. Possibly literally. Nobody has tested it.',
+  },
+  tattoo_mom: {
+    kind: 'keepsake', name: 'Tattoo: Anchor, “MOM”', emoji: '⚓', price: 0,
+    blurb: 'Timeless. Whose mom? All moms. Rock and roll.',
+  },
+  tattoo_turtle: {
+    kind: 'keepsake', name: 'Tattoo: “SLOW & STEADY & METAL”', emoji: '🐢', price: 0,
+    blurb: 'A turtle, with a banner. Barb has the same one, under the moss. She will deny it with her whole shell.',
+  },
+  tattoo_lighthouse: {
+    kind: 'keepsake', name: 'Tattoo: A Lighthouse', emoji: '🗼', price: 0,
+    blurb: 'With the light on. People always want the light on.',
+  },
+  record_slowjams: {
+    kind: 'keepsake', name: 'LP: “Slow Jams for Snapping Turtles”', emoji: '💿', price: 0,
+    blurb: 'Side A: slow. Side B: longer. Sloane recommends Side B, eventually.',
+  },
+  record_honk: {
+    kind: 'keepsake', name: 'LP: “HONK” (Mabel, bootleg)', emoji: '📀', price: 0,
+    blurb: 'Recorded in the listening booth, without asking. It is, against every expectation, very good.',
+  },
+  record_lofi: {
+    kind: 'keepsake', name: 'LP: “Lo-fi Beats to Hack the Labs To”', emoji: '💽', price: 0,
+    blurb: 'Soft keys, rain, a cat purring into a microphone. The title is a coincidence, says Null.',
+  },
+  watercolor_bog: {
+    kind: 'keepsake', name: 'A Watercolor of the Bog', emoji: '🎨', price: 0,
+    blurb: 'You painted the bog. It came out a pink smudge. Miss Dabble says that’s it exactly, and she’s right.',
+  },
   hoa_notice: {
     kind: 'keepsake', name: 'Notice of Violation', emoji: '📋', price: 0,
     blurb: 'A pink carbon copy from the Oasis Estates HOA, filled out in a very neat hand. Under “VIOLATION” it says “see attached.” There is nothing attached. That is also a violation.',

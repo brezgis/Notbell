@@ -55,6 +55,9 @@ const KNOCKS = {
   Ember: 'A low round hut, warm to the touch even from outside. A sign: “IF NOT HERE, AT THE CAVE. IF NOT AT THE CAVE, IT IS RAINING AND I AM EVERYWHERE.”',
   Butterpat: 'A wide, calm house smelling of butter and cut grass. A note: “GRAZING. IT’S ALL GRAZING, REALLY, IF YOU THINK ABOUT IT.”',
   Crumb: 'The MouseBoat rocks gently at its mooring. A tiny sign: “CAPTAIN OUT. CRUMBS ACCEPTED IN THE TIN.” There is, indeed, a tin.',
+  Barb: 'A low mossy house with a door you have to duck for, and a basket of yarn on the step (Ruth’s; she lives here too, forty years). A hand-lettered sign: “AT THE CREEK. IF NOT AT THE CREEK, ALSO AT THE CREEK.”',
+  Null: 'A black door with a keypad beside it. The keypad is decorative. The door is unlocked. A sticky note: “not home. or am i. (not home.)”',
+  Mabel: 'The doorstep is piled with things that are not Mabel’s: a trowel, a single glove, a garden gnome looking resigned. A note: “OUT RELOCATING. HONK.”',
 };
 
 // when each villager is home, [start, end) on the real clock — wet weather
@@ -69,6 +72,9 @@ const SCHEDULE = {
   Butterpat: [19, 6],
   Crumb: [22, 6],   // sleeps on deck, under whatever the sky is doing
   Ember: [21, 7],   // nights in her hut on the Far Isle…
+  Barb: [20, 6],
+  Null: [6, 14],    // up all night; sleeps through the morning, like a server
+  Mabel: [22, 6],
 };
 const EMBER_CAVE_HOURS = [11, 16]; // …middays in the cave, rain permitting (she prefers it not to permit)
 
@@ -93,6 +99,9 @@ const COME_INS = {
   Marigold: 'A bright whinny: “It’s open! Duck under the beam!”',
   Ember: 'A happy hiss: “Yesss, come in! Pick a rock! They’re all warm!”',
   Butterpat: 'A slow, pleased voice: “Come in, dear. Mind the churn. The churn minds back.”',
+  Barb: 'From inside, a gravel voice: “Hrm. It’s open.”',
+  Null: 'The keypad beeps. A voice from inside: “You’re in.”',
+  Mabel: 'A voice: “HONK.” (Come in.)',
 };
 
 const HOME_LINES = {
@@ -128,6 +137,18 @@ const HOME_LINES = {
     'Evenings are for butter and thinking about grass in the abstract.',
     'Vesper lent me a book about meadows. I live in a meadow. I read it anyway. Wonderful twist at the end: more meadow.',
   ],
+  Barb: [
+    'Hrm. Sit anywhere. Not the rocking chair. That’s Ruth’s. Forty years. Anywhere else.',
+    'I keep a jar of creek water on the sill. Changes color with the seasons. Better than a calendar. Doesn’t argue.',
+  ],
+  Null: [
+    'Don’t touch the blue cable. Or the green one. Actually just stand in the middle. Perfect. You’re in.',
+    'Six monitors. One of them is just a picture of the creek. For my eyes. The other five are also mostly the creek.',
+  ],
+  Mabel: [
+    'Welcome to my collection. Everything here belongs to me now. Some of it belonged to other people first. That’s their business.',
+    'That gnome? Todd’s. Oasis Todd. I went all the way to Oasis for it. HONK. Worth it.',
+  ],
   Crumb: [
     'Deck’s the best room of the house. Ceiling’s a bit far away, but you can’t have everything.',
     'Hear that? Water on the hull. Best lullaby there is, and it knows every verse.',
@@ -142,6 +163,9 @@ const HOME_PROPS = {
   Bramble: { label: 'peek at the honey pots', text: 'Three pots: “BREAKFAST,” “EMERGENCY,” and “DO NOT (SPRING ONLY).”' },
   Marigold: { label: 'look at the ribbon wall', text: 'Ribbons from races with one participant. All firsts. The discipline is what counts.' },
   Ember: { label: 'touch the hearth stones', text: 'Flat stones in a ring, numbered 1 through 9 in scratched tally marks. Rock four has a small crown drawn on it.' },
+  Barb: { label: 'look at the jar of creek water', text: 'A jar of creek water on the windowsill, a little green, a little gold. A label in careful claws: “CREEK. THIS YEAR.” Behind it, older jars, all labeled. Forty of them. In the corner, Ruth’s yarn basket, and a scarf going out the window.' },
+  Null: { label: 'read the screens', text: 'Green text scrolling on black. One screen says “> cranberries.count() … still counting.” Another says “> labs.password = notbell ✓.” The last one is a live feed of the creek, and a turtle, on a rock, being content.' },
+  Mabel: { label: 'inspect the collection', text: 'A trowel, a garden gnome, eleven single gloves, a USB stick labeled “NULL — DO NOT,” and one polished brass doorknob with no door. Everything neatly shelved. The shelving was also relocated.' },
   Butterpat: { label: 'admire the butter churn', text: 'Polished from years of patient work. A ribbon on the handle reads “BEST BUTTER — ONLY ENTRANT — STILL EARNED IT.”' },
 };
 
@@ -154,6 +178,9 @@ const HOUSE_STYLES = {
   Marigold: { wall: 0xf5ecd8, roof: 0xd9a440, door: 0xb05a4a },
   Ember: { wall: 0xd9a08a, roof: 0x6e5048, door: 0xe8743a },
   Butterpat: { wall: 0xfdf6e8, roof: 0x6e5a44, door: 0x8a5a3a },
+  Barb: { wall: 0x8a9a7a, roof: 0x3d5a34, door: 0x55483a },
+  Null: { wall: 0x3a3a44, roof: 0x1e1e24, door: 0x5aff8a },
+  Mabel: { wall: 0xf5f2e9, roof: 0xf28a2e, door: 0x3a7dd8 },
 };
 
 function makeCottage({ wall, roof, door }, scale = 1) {
@@ -451,6 +478,80 @@ function buildVillagerInterior(group, B, name, style) {
     embers.rotation.x = -Math.PI / 2;
     embers.position.set(B.x + 1, 0.26, B.z - 1);
     group.add(embers);
+  } else if (name === 'Barb') {
+    // a flat rock indoors, for rainy days, and the jars of creek water
+    const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 0), mat(0x7a7468, 0.95));
+    rock.scale.set(1.3, 0.35, 1.0);
+    rock.position.set(B.x + 2.6, 0.2, B.z - 2.8);
+    group.add(rock);
+    for (let i = 0; i < 8; i++) {
+      const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 7), mat([0x7aa87a, 0x9ab86a, 0xb8a86a][i % 3], 0.3));
+      jar.position.set(B.x - 1.8 + i * 0.36, 1.35, B.z - 4.3);
+      group.add(jar);
+    }
+    const sill = box(3.2, 0.1, 0.4, 0x6b4a2e);
+    sill.position.set(B.x - 0.54, 1.15, B.z - 4.3);
+    group.add(sill);
+    // …and Ruth’s corner (she lives here too): yarn in baskets, and a scarf that goes on and on
+    for (let i = 0; i < 6; i++) {
+      const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 1), mat([0x3d6b38, 0x8c3a3f, 0x6e5a44, 0xf28fb0][i % 4], 0.95));
+      ball.position.set(B.x + 3.9 + (i % 3) * 0.4, 0.2 + Math.floor(i / 3) * 0.3, B.z - 3.9);
+      group.add(ball);
+    }
+    const scarf = box(0.4, 0.04, 7.5, 0x8c3a3f);
+    scarf.position.set(B.x + 4.2, 0.03, B.z - 0.5);
+    group.add(scarf);
+    const rocker = box(1.0, 0.5, 0.9, 0x8a5a3a);
+    rocker.position.set(B.x + 1.2, 0.25, B.z - 1.6);
+    const rback = box(1.0, 0.9, 0.15, 0x8a5a3a);
+    rback.position.set(B.x + 1.2, 0.85, B.z - 2.0);
+    group.add(rocker, rback);
+    HOME_SOLIDS[name] = [{ x: B.x + 2.6, z: B.z - 2.8, r: 0.9 }, { x: B.x + 1.2, z: B.z - 1.7, w: 1.0, d: 1.0 }];
+  } else if (name === 'Null') {
+    // the desk, six screens of green text, cables, and one that's just the creek
+    const desk = box(3.4, 0.9, 1.0, 0x2a2a30);
+    desk.position.set(B.x + 1.2, 0.45, B.z - 3.6);
+    group.add(desk);
+    HOME_SOLIDS[name] = [{ x: B.x + 1.2, z: B.z - 3.6, w: 3.4, d: 1.0 }];
+    for (let i = 0; i < 6; i++) {
+      const scr = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.6, 0.06), new THREE.MeshBasicMaterial({ color: i === 5 ? 0x5a8a6a : 0x0e2a18 }));
+      scr.position.set(B.x - 0.1 + (i % 3) * 1.05, 1.3 + Math.floor(i / 3) * 0.66, B.z - 3.95);
+      group.add(scr);
+      for (let k = 0; k < 4 && i !== 5; k++) {
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.3 + (k * 0.17) % 0.5, 0.05), new THREE.MeshBasicMaterial({ color: 0x5aff8a }));
+        line.position.set(scr.position.x - 0.2, scr.position.y + 0.18 - k * 0.12, B.z - 3.91);
+        group.add(line);
+      }
+    }
+    for (let i = 0; i < 4; i++) {
+      const cable = box(0.05, 0.03, 2.2 + i * 0.4, [0x3a7dd8, 0x5aff8a, 0xd8342c, 0xf2cf5b][i]);
+      cable.position.set(B.x - 0.8 + i * 0.3, 0.02, B.z - 2.4 + i * 0.2);
+      cable.rotation.y = 0.2 * (i - 1.5);
+      group.add(cable);
+    }
+  } else if (name === 'Mabel') {
+    // the collection, shelved: gloves, gnomes, a doorknob with no door
+    const shelf = box(3.0, 2.2, 0.5, 0x8a5a3a);
+    shelf.position.set(B.x + 2.0, 1.1, B.z - 4.1);
+    group.add(shelf);
+    HOME_SOLIDS[name] = [{ x: B.x + 2.0, z: B.z - 4.0, w: 3.0, d: 0.6 }];
+    for (let i = 0; i < 9; i++) {
+      const thing = i % 3 === 0
+        ? new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 5), mat(0xd8342c))
+        : new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.18), mat([0xf2cf5b, 0x3a7dd8, 0xf5f2e9][i % 3]));
+      thing.position.set(B.x + 1.0 + (i % 3) * 1.0, 0.6 + Math.floor(i / 3) * 0.6, B.z - 3.8);
+      group.add(thing);
+    }
+    const gnome = new THREE.Group();
+    const gb = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.5, 6), mat(0x3a7dd8));
+    gb.position.y = 0.25;
+    const gh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 0), mat(0xf2d8b8));
+    gh.position.y = 0.58;
+    const gc = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.35, 6), mat(0xd8342c));
+    gc.position.y = 0.82;
+    gnome.add(gb, gh, gc);
+    gnome.position.set(B.x - 1.2, 0, B.z - 2.4);
+    group.add(gnome);
   } else if (name === 'Butterpat') {
     // the churn, the pails, and a portrait of a truly excellent field
     const churn = new THREE.Group();

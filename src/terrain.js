@@ -80,6 +80,34 @@ export function oasisE(x, z) {
   return Math.hypot((x - OASIS_PAD.x) / OASIS_PAD.rx, (z - OASIS_PAD.z) / OASIS_PAD.rz);
 }
 
+// The Isle of Cran: south-east of Notbell, over a footbridge from Grove Isle
+// (north-east of it). A cranberry bog. Low, flat and wet: a mossy village
+// on the west bank, the bog beds east of the creek (one of them flooded for
+// the harvest), and the creek itself, cutting through from north to south.
+// Pad-local (u east, v south) from the center.
+export const ISLAND9 = { x: 146, z: 54, r: 27 };
+export const CRAN_CREEK = [[3, -30], [2, -17], [7, -9], [4, -1], [10, 7], [8, 15], [13, 30]];
+export const CRAN_BEDS = [
+  { u0: 9, u1: 17, v0: -17, v1: -10 },
+  { u0: 12, u1: 20, v0: -6, v1: 2, flooded: true }, // harvest: the bed is under water and the berries float
+  { u0: 13, u1: 20, v0: 5, v1: 12 },
+];
+export function cranCreekDist(x, z) {
+  const u = x - ISLAND9.x, v = z - ISLAND9.z;
+  let best = Infinity;
+  for (let i = 0; i < CRAN_CREEK.length - 1; i++) {
+    const [ax, az] = CRAN_CREEK[i], [bx, bz] = CRAN_CREEK[i + 1];
+    const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz;
+    const t = Math.max(0, Math.min(1, ((u - ax) * dx + (v - az) * dz) / l2));
+    best = Math.min(best, Math.hypot(u - (ax + dx * t), v - (az + dz * t)));
+  }
+  return best;
+}
+export function cranBedAt(x, z, pad = 0) {
+  const u = x - ISLAND9.x, v = z - ISLAND9.z;
+  return CRAN_BEDS.find((b) => u > b.u0 - pad && u < b.u1 + pad && v > b.v0 - pad && v < b.v1 + pad) || null;
+}
+
 const TERRACE = 2.4; // height of each AC-style terrace step
 
 function maskAt(x, z, cx, cz, R, wobbleAmp) {
@@ -141,6 +169,27 @@ function baseHeight(x, z) {
   const sd = Math.hypot(x - VOLCANO_SHELF.x, z - VOLCANO_SHELF.z);
   if (sd < VOLCANO_SHELF.r + 4) {
     h = Math.max(h, smoothstep(VOLCANO_SHELF.r + 4, VOLCANO_SHELF.r, sd) * 1.1 - 0.6);
+  }
+  // the Isle of Cran: land a hand above the tide, the creek cut through it,
+  // the bog beds sunk into it (one of them flooded to the brim)
+  {
+    const d = Math.hypot(x - ISLAND9.x, z - ISLAND9.z);
+    if (d < ISLAND9.r + 10) {
+      const R = ISLAND9.r + (vnoise(x * 0.08 + 1.3, z * 0.08 + 7.7) - 0.5) * 6;
+      let hh = d < R - 5 ? 1.0 : d < R - 1 ? 1.0 + (0.3 - 1.0) * smoothstep(R - 5, R - 1, d) : 0.3 + (-1.6 - 0.3) * smoothstep(R - 1, R + 7, d);
+      hh += (vnoise(x * 0.3 + 4.1, z * 0.3 - 2.2) - 0.5) * 0.12 * (d < R - 5 ? 1 : 0); // a little lumpy, like moss is
+      if (d < R - 3) {
+        const bed = cranBedAt(x, z, 0.6);
+        if (bed) {
+          const inner = cranBedAt(x, z, -0.4);
+          const k = inner ? 1 : 0.5;
+          hh += ((bed.flooded ? -1.0 : 0.45) - hh) * k;
+        }
+      }
+      const cd = cranCreekDist(x, z);
+      if (cd < 3.2) hh = Math.min(hh, -1.15 + (hh + 1.15) * smoothstep(1.3, 3.2, cd));
+      h = d < R - 3 ? hh : Math.max(h, hh);
+    }
   }
   // Oasis Estates: graded. the lawn is dead flat, the berm is a tidy slope,
   // the beach is the only part of the island nobody's filed a form about
@@ -430,6 +479,11 @@ const COL_MUD = new THREE.Color(0x9a8365);
 // Oasis Estates ignores the seasons too. The lawn is two and a half inches,
 // green, and mown in stripes, by covenant.
 const COL_LAWN_A = new THREE.Color(0x58c04a);
+// the Isle of Cran: dark moss that ignores the seasons (it is older than them),
+// and the bog beds, which are cranberry-red all year
+const COL_CRANMOSS_A = new THREE.Color(0x3d6b38);
+const COL_CRANMOSS_B = new THREE.Color(0x4a7a42);
+const COL_BOG = new THREE.Color(0x6e2f35);
 const COL_LAWN_B = new THREE.Color(0x6cce5a); // the mangrove flats, honest tidal mud
 const COL_MUD_WET = new THREE.Color(0x7d6b52);
 const COL_ROCK_TOP = new THREE.Color(0x9a948a);
@@ -498,6 +552,10 @@ export function createTerrain() {
       color.copy(COL_CONCRETE); // poured by the Boring Department, proudly
     } else if (Math.hypot(va.x - foldFields.x, va.z - foldFields.z) < foldFields.r - 1) {
       color.copy(COL_TILLED); // turned earth, in rows, on purpose
+    } else if (Math.hypot(va.x - ISLAND9.x, va.z - ISLAND9.z) < ISLAND9.r + 2 && y > 0.3) {
+      const bed = cranBedAt((va.x + vb.x + vc.x) / 3, (va.z + vb.z + vc.z) / 3);
+      if (bed && !bed.flooded) color.copy(COL_BOG);
+      else color.copy(vnoise(va.x * 0.5 + 3, va.z * 0.5 - 1) > 0.5 ? COL_CRANMOSS_A : COL_CRANMOSS_B);
     } else if (oasisE(va.x, va.z) < 1.16) {
       color.copy(Math.floor((va.x - OASIS_PAD.x) / 1.68 + 0.5) % 2 ? COL_LAWN_A : COL_LAWN_B); // the stripes
     } else if (Math.hypot(va.x - ISLAND3.x, va.z - ISLAND3.z) < ISLAND3.r + 6) {

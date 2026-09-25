@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { terrainHeight, clearOfSites, SITES, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND5, VOLCANO_SHELF, WATER_Y } from './terrain.js';
+import { terrainHeight, clearOfSites, SITES, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND5, ISLAND9, VOLCANO_SHELF, WATER_Y } from './terrain.js';
 import { islandCanWalk, islandCanStand, islandGroundHeight, solidAt, islandOf, findRoute } from './zones.js';
 import { rand, pick, turnToward } from './utils.js';
 
@@ -1179,6 +1179,110 @@ export function buildAnimal(kind, colors = {}) {
       spot.userData.notFace = true;
       g.add(spot);
     }
+  } else if (kind === 'turtle') {
+    // the Isle of Cran's creek-sitters. colors.snapper: a snapping turtle —
+    // a ridged dark shell with moss on it, a hooked beak, a long spiky tail.
+    // otherwise a box turtle: a high domed shell with a gold pattern.
+    const snap = !!colors.snapper;
+    parts.body.scale.set(1.1, 0.75, 1.2);
+    parts.bodyY = 0.52;
+    parts.body.position.y = parts.bodyY;
+    parts.legs.forEach((leg, i) => { leg.scale.set(1.3, 0.8, 1.3); leg.position.set((i % 2 ? 1 : -1) * 0.36, 0.36, i < 2 ? 0.34 : -0.34); });
+    const shellMat = mat(colors.shell ?? (snap ? 0x3f4a2a : 0x6a4a2a));
+    const shell = new THREE.Mesh(ico(0.66), shellMat);
+    shell.scale.set(1.0, snap ? 0.5 : 0.7, 1.12);
+    shell.position.set(0, 0.72, -0.1);
+    shell.userData.notFace = true;
+    g.add(shell);
+    const rim = new THREE.Mesh(ico(0.66), mat(colors.rim ?? (snap ? 0x2f3a22 : 0x4a321c)));
+    rim.scale.set(1.08, 0.22, 1.18);
+    rim.position.set(0, 0.6, -0.1);
+    rim.userData.notFace = true;
+    g.add(rim);
+    if (snap) {
+      // three rows of ridges, and moss on top (it's a hat, in a way)
+      for (const sx of [-0.28, 0, 0.28]) {
+        for (let i = 0; i < 3; i++) {
+          const ridge = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.16, 4), shellMat);
+          ridge.position.set(sx, 1.0 - Math.abs(sx) * 0.4, -0.45 + i * 0.3);
+          ridge.userData.notFace = true;
+          g.add(ridge);
+        }
+      }
+      for (let i = 0; i < 4; i++) {
+        const moss = new THREE.Mesh(ico(0.12, 0), mat(0x5a8a3a));
+        moss.scale.set(1.4, 0.4, 1.2);
+        moss.position.set((i % 2 ? 0.2 : -0.18), 1.02, -0.5 + i * 0.25);
+        moss.userData.notFace = true;
+        g.add(moss);
+      }
+      const beak = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.2, 4), mat(0x3a3426));
+      beak.rotation.x = Math.PI / 2 + 0.9;
+      beak.position.set(0, 1.02, 0.74);
+      g.add(beak);
+      for (let i = 0; i < 3; i++) {
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 4), shellMat);
+        spike.position.set(0, 0.6, -0.95 - i * 0.15);
+        spike.userData.notFace = true;
+        g.add(spike);
+      }
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.8, 5), bodyMat);
+      tail.rotation.x = -Math.PI / 2;
+      tail.position.set(0, 0.45, -1.1);
+      tail.userData.notFace = true;
+      g.add(tail);
+    } else {
+      for (let i = 0; i < 6; i++) {
+        const dot = new THREE.Mesh(ico(0.08, 0), mat(0xd9a440));
+        const a = (i / 6) * Math.PI * 2;
+        dot.scale.set(1, 0.4, 1);
+        dot.position.set(Math.cos(a) * 0.36, 0.95, -0.1 + Math.sin(a) * 0.4);
+        dot.userData.notFace = true;
+        g.add(dot);
+      }
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.3, 5), bodyMat);
+      tail.rotation.x = -Math.PI / 2;
+      tail.position.set(0, 0.45, -0.85);
+      g.add(tail);
+    }
+    parts.headY = 1.0;
+    parts.head.scale.setScalar(0.72);
+    parts.head.position.set(0, parts.headY, 0.52);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.16, 1.1, 0.76));
+  } else if (kind === 'goose') {
+    // a goose: a duck that has decided to be taller about it. long neck, a
+    // big orange beak with a knob, and a look in the eye that says it has
+    // already taken something of yours
+    parts.body.scale.set(1.0, 0.95, 1.3);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.19, 0.7, 7), headMat);
+    neck.position.set(0, 1.3, 0.38);
+    neck.rotation.x = 0.25;
+    neck.userData.notFace = true;
+    g.add(neck);
+    parts.headY = 1.78;
+    parts.head.scale.setScalar(0.78);
+    parts.head.position.set(0, parts.headY, 0.52);
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.17, 1.88, 0.76));
+    const beakMat = mat(colors.beak ?? 0xf28a2e, 0.6);
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.36, 4), beakMat);
+    beak.rotation.x = Math.PI / 2;
+    beak.scale.set(1.3, 1, 0.6);
+    beak.position.set(0, 1.74, 0.98);
+    g.add(beak);
+    const knob = new THREE.Mesh(ico(0.07, 0), beakMat);
+    knob.position.set(0, 1.84, 0.84);
+    g.add(knob);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.36, 5), bodyMat);
+    tail.rotation.x = -2.1;
+    tail.position.set(0, 0.8, -0.7);
+    g.add(tail);
+    for (const sx of [-1, 1]) {
+      const wing = new THREE.Mesh(ico(0.34, 0), mat(colors.wing ?? 0xe0dcd2));
+      wing.scale.set(0.3, 0.7, 1.1);
+      wing.position.set(sx * 0.46, 0.7, -0.08);
+      wing.userData.notFace = true;
+      g.add(wing);
+    }
   } else if (kind === 'worm') {
     // an earthworm. with legs. six, in little white sneakers. nobody asks.
     // long and low: the head is just the front of the worm
@@ -1361,6 +1465,13 @@ const ROSTER = [
   { kind: 'capybara', body: 0x9a7448, head: 0x9a7448, range: 'grove' }, // Pondo
   { kind: 'croc', body: 0x55772f, head: 0x55772f, range: 'grove' },     // Sol
   { kind: 'croc', body: 0x4a6a2a, head: 0x4a6a2a, range: 'grove' },     // Brook
+  // the Isle of Cran. (fixed spawns: they take nothing from the seeded
+  // random stream, so nobody else's world moved when they arrived — their
+  // houses go up just east of where they start)
+  { kind: 'turtle', body: 0x5a5a3a, head: 0x5a5a3a, snapper: true, range: 'creek', spawn: [-5, 6] },  // Barb
+  { kind: 'turtle', body: 0x8a6a3a, head: 0x8a6a3a, range: 'creek', spawn: [-1, -3] },               // Ruth (lives at Barb's; forty years)
+  { kind: 'cat', body: 0x1e1e24, head: 0x1e1e24, range: 'cran', spawn: [-18, 15] },                  // Null
+  { kind: 'goose', body: 0xf5f2e9, head: 0xf5f2e9, range: 'cran', spawn: [-8, 14] },                 // Mabel
 ];
 
 function rangeOf(spec) {
@@ -1369,6 +1480,8 @@ function rangeOf(spec) {
   if (spec.range === 'volcano') return { x: VOLCANO_SHELF.x + 1, z: VOLCANO_SHELF.z + 1, R: VOLCANO_SHELF.r };
   if (spec.range === 'cave') return { x: SITES.cave.x, z: SITES.cave.z, R: 11 };
   if (spec.range === 'grove') return { x: ISLAND5.x, z: ISLAND5.z + 10, R: ISLAND5.r + 12 };
+  if (spec.range === 'creek') return { x: ISLAND9.x + 0.5, z: ISLAND9.z + 1, R: 6 }; // the turtles like it by the water
+  if (spec.range === 'cran') return { x: ISLAND9.x - 7, z: ISLAND9.z + 2, R: 15 };
   // Crumb claims every shore, but a sailor of naps stays near his bunk —
   // he keeps to the North Isle, within sight of the MouseBoat
   if (spec.range === 'everywhere') return { x: ISLAND3.x, z: ISLAND3.z, R: ISLAND3.r + 1 };
@@ -1380,7 +1493,23 @@ export function createAnimals() {
   const animals = [];
 
   for (const spec of ROSTER) {
-    const g = buildAnimal(spec.kind, { body: spec.body, head: spec.head });
+    const g = buildAnimal(spec.kind, { body: spec.body, head: spec.head, snapper: spec.snapper });
+    if (spec.spawn) {
+      // a fixed start, no dice rolled (see the ROSTER note)
+      const x = ISLAND9.x + spec.spawn[0], z = ISLAND9.z + spec.spawn[1];
+      g.position.set(x, terrainHeight(x, z), z);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: emoteTexture('❗'), transparent: true, depthWrite: false }));
+      sprite.scale.set(0.8, 0.8, 1);
+      sprite.position.y = 2.1;
+      sprite.visible = false;
+      g.add(sprite);
+      group.add(g);
+      animals.push({
+        g, swims: false, long: false, sprite, range: rangeOf(spec), state: 'idle', timer: 1 + animals.length % 3,
+        target: new THREE.Vector3(), speed: spec.kind === 'turtle' ? 1.0 : 1.9, walk: 0, hopT: 1, emoteT: 0, phase: animals.length * 1.7,
+      });
+      continue;
+    }
     // ducks float; crocodiles cruise low with just the eyes showing
     const swims = spec.kind === 'duck' || spec.kind === 'croc';
 

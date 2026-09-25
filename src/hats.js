@@ -93,6 +93,24 @@ const builders = {
     g.add(bill);
     return g;
   },
+  // Null's: over-ear headphones, a green light on one cup (she's listening
+  // to something you'd need a password for)
+  headphones() {
+    const g = new THREE.Group();
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.04, 5, 12, Math.PI), mat(0x2a2a30, 0.5));
+    band.position.y = -0.05;
+    g.add(band);
+    for (const sx of [-1, 1]) {
+      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.1, 10), mat(0x2a2a30, 0.5));
+      cup.rotation.z = Math.PI / 2;
+      cup.position.set(sx * 0.36, -0.08, 0);
+      g.add(cup);
+    }
+    const led = new THREE.Mesh(new THREE.IcosahedronGeometry(0.03, 0), new THREE.MeshBasicMaterial({ color: 0x5aff8a }));
+    led.position.set(0.42, -0.02, 0.05);
+    g.add(led);
+    return g;
+  },
   leaf_hat() {
     const g = new THREE.Group();
     const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 0), mat(0x55b055, 0.8));
