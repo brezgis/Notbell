@@ -11,6 +11,7 @@ import * as S from './state.js';
 import { ITEMS, COFFEE_PRICE, COFFEE_BOOST_SECS, FERN_LORE, GROWTH, SHOP_HATS, SONGS } from './catalog.js';
 import { kaching, sip, jingle, requestSong } from './audio.js';
 import { buildAnimal } from './animals.js';
+import * as mail from './mail.js';
 import { rand, turnToward } from './utils.js';
 import { HOLIDAY } from './calendar.js';
 import { hangCafeArt, artPiece, makeFramed } from './art.js';
@@ -642,14 +643,17 @@ export function createBuildings() {
     pos: new THREE.Vector3(spots.post.x - 2.7, 0, spots.post.z - 1.9), r: 1.8,
     label: 'read the notice',
     use: () => ui.say([
-      'A card in the window, in careful pawwriting: “NOTBELL POST — SORTING IN PROGRESS. Visitors welcome. Mind the pace.”',
-      'Smaller, underneath: “Bottle deliveries continue as usual. Thank the tide.”',
+      'A card in the window, in careful pawwriting: “NOTBELL POST — NOW OPEN. The sorting is complete. It was thorough.”',
+      '“Letters to anyone on the islands, one stamp. Replies to your own mailbox. Bottle deliveries continue as usual. Thank the tide.”',
     ]),
   });
   register({
     pos: new THREE.Vector3(spots.post.x - 3.4, 0, spots.post.z + 1.9), r: 2.0,
     label: 'inspect the pillar box',
-    use: () => ui.say('A red pillar box with a slot exactly the width of a folded letter, or one very determined button. The paint is new. The idea is older than the paint.'),
+    use: () => ui.say([
+      'A red pillar box with a slot exactly the width of a folded letter, or one very determined button. The paint is new. The idea is older than the paint.',
+      'A little plate: “LETTERS — INSIDE, AT THE COUNTER, WITH A STAMP. THE BOX IS FOR ADMIRING.”',
+    ]),
   });
 
   // café smoke drifts up and fades, forever
@@ -1471,22 +1475,25 @@ export function createBuildings() {
     const MOSS_LINES = [
       '“People say the mail is slow.” He turns a letter over, reads the back, and nods at it, satisfied. “The mail is thorough.”',
       '“Everything here came out of the sea. Salt-cured. Bottle-aged. You don’t rush a vintage, and you don’t rush a postcard.”',
-      '“There will be stamps, when we open.” A pause, in which he clearly pictures the stamps. “Good ones. Buttons on some.”',
+      '“The stamps are good ones.” A pause, in which he clearly admires the stamps. “Buttons on some.”',
       '“One envelope has no address. Just a drawing of a bell.” He files it, gently, under B. “Everything finds where it’s going eventually. I’m proof.”',
     ];
     let mossIdx = 0;
     register({
       pos: new THREE.Vector3(B.x - 0.5, 0, B.z - 2.3), r: 3.2, zone: 'post',
-      label: 'talk to Moss',
+      label: 'visit the counter',
       use: async () => {
         if (!S.hasFlag('metMoss')) {
           S.setFlag('metMoss');
           await ui.say([
             'The sloth turns toward you. It takes a while. It is worth the wait.',
-            '“Moss,” he says. “Postmaster. Counter service begins when the sorting ends. The sorting ends when it stops being thorough.”',
+            '“Moss,” he says. “Postmaster. The sorting has ended. It stopped being thorough, so it stopped.”',
+            '“The counter is open. Letters to anyone on the islands. One stamp.”',
           ], { speaker: 'Moss', voice: 200 });
           return;
         }
+        // the counter first; a little chat if you're just visiting
+        if (await mail.counter()) return;
         await ui.say(MOSS_LINES[mossIdx++ % MOSS_LINES.length], { speaker: 'Moss', voice: 200 });
       },
     });

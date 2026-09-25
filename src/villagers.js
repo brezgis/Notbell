@@ -226,6 +226,147 @@ const IDENTITIES = [
 // little scripts, alternating speakers 'a' and 'b'. meetLines is what you
 // get for walking up mid-conversation.
 
+// everybody who lives on the islands, for the Post's address book
+export const VILLAGER_NAMES = IDENTITIES.map((i) => i.name);
+
+// Letters back, when you write (mail.js). Each neighbor answers in their
+// own voice — a different letter each time you write, round and round.
+// `postcard` is the line they add when what you sent was the Farther card.
+export const MAIL_REPLIES = {
+  Clover: {
+    letters: [
+      'Your letter came! I read it in the flowers so the butterflies could hear. They were very moved. One of them landed on the part about me.',
+      'I put your letter under my pillow for luck. Then I napped on it. Twice. It’s the luckiest nap I’ve ever had.',
+    ],
+    postcard: 'A postcard from FARTHER! I didn’t know you could get farther than here. Now I have to go. I’m packing a snack.',
+    sign: 'Clover (a lucky rabbit, now luckier)',
+  },
+  Biscuit: {
+    letters: [
+      'Got your letter. I buried it for safekeeping. Then I dug it up to read it again. Then I buried it again. It’s in a very good spot. I think.',
+      'Thanks for writing! I found a great pebble today and I thought: who else would understand this pebble? You. It’s in the envelope. (It didn’t fit. Imagine it.)',
+    ],
+    postcard: 'The postcard is on my wall next to my treasure map. The map is of my own garden. It’s very detailed.',
+    sign: 'Biscuit',
+  },
+  Saffron: {
+    letters: [
+      'I got your letter and I smelled it first, obviously. Paper, a little salt, and Moss. Moss smells like a library that took up swimming.',
+      'You write the way the tide pools gossip — lots of little news, all of it important. Write again. I want to know EVERYTHING.',
+    ],
+    postcard: 'Farther Isle! I hear the mangroves out there are extremely nosy. I respect them already.',
+    sign: 'Saffron (professionally curious, unprofessionally)',
+  },
+  Howell: {
+    letters: [
+      'I received your correspondence. I read it aloud. To the moon. As wolves do. It went very well. The moon had no notes.',
+      'Thank you for your letter. I will keep it in my den. My den is a house. A wolf’s house. Which is a den. AwoOOo. (That was a sign-off. Wolves sign off like that.)',
+    ],
+    postcard: 'A postcard from the far places. Wolves roam, you know. I have roamed. I have roamed as far as the bridge.',
+    sign: 'Howell (a wolf)',
+  },
+  Bramble: {
+    letters: [
+      'Your letter came on a good day: a berry, a sit, and one (1) excellent cloud. Then your letter. That’s four. I didn’t know a day could hold four.',
+      'I read your letter slowly, the way you eat the last berry. It was a very good last berry. Write again when you have another.',
+    ],
+    postcard: 'Farther. I like a place that says what it is. I’ll look at the card instead of going. That’s nearly as good, for a bear.',
+    sign: 'Bramble',
+  },
+  Puddle: {
+    letters: [
+      'YOUR LETTER!! I read it swimming. It got a bit wet. It’s fine! Now it’s a bit of a puddle, which is my NAME, so it’s basically mine now!!',
+      'The Admiral says letters should be short and to the point. HERE IS MY POINT: hi!!! I miss you!!! Come to the beach!!!',
+    ],
+    postcard: 'A postcard!! From somewhere I haven’t swum to YET!!',
+    sign: 'Puddle 💧',
+  },
+  'Admiral Greenbean': {
+    letters: [
+      'Your dispatch was received at 0900 and read at 0901. A crisp report. Well done, sailor. Nothing further. (Carry on.)',
+      'Correspondence acknowledged. The shoreline remains tidy. Puddle remains Puddle. All is as it should be. At ease.',
+    ],
+    postcard: 'A postcard from a forward position. Farther. Noted in the log. The log is proud of you.',
+    sign: 'Adm. Greenbean, retired (not retired)',
+  },
+  Marigold: {
+    letters: [
+      'I carried your letter across the bridge this morning so the planks could hear it. They applauded. They applaud everything, but this time they meant it.',
+      'Your letter was a quiet kind of letter. The best kind. You have to lean in to hear it showing off.',
+    ],
+    postcard: 'Farther! Past the Far Isle. I didn’t think there was a past-the-Far-Isle. I’ll trot a little farther tomorrow, in your honor.',
+    sign: 'Marigold',
+  },
+  Ember: {
+    letters: [
+      'I read your letter in the cave. The cave hums in B-flat and so, it turns out, does your handwriting. We harmonized. It was lovely.',
+      'Thank you for writing! I told the Old Light about it. It didn’t say anything. It went a little warmer. That’s how you know.',
+    ],
+    postcard: 'A postcard! I pinned it up near the glow worms. They’re very polite about it. They glow at it now.',
+    sign: 'Ember',
+  },
+  Tusk: {
+    letters: [
+      '*snrrrf.* (A muddy hoofprint. Beside it, very carefully, a second, smaller hoofprint. It is, unmistakably, a thank-you.)',
+      'Hrmf. (A mushroom, pressed flat and mailed. It is a gift. It is also slightly eaten. Both are how Tusk says you matter.)',
+    ],
+    postcard: '(The postcard has come back with a mushroom tucked into the corner. Tusk approves of Farther.)',
+    sign: '(a hoofprint)',
+  },
+  Butterpat: {
+    letters: [
+      'I got your letter and I read it three times, slowly, the way I eat moss. It was delicious. Letters are like moss. They are best in company.',
+      'Vesper helped me with the long words in your letter. There weren’t any. Vesper stayed anyway. That’s how good your letter was.',
+    ],
+    postcard: 'A postcard from a whole other island. I will stand very still and imagine the grass there. I bet it’s grassy.',
+    sign: 'Butterpat (of the north moss)',
+  },
+  Crumb: {
+    letters: [
+      'Ahoy! Your letter arrived just as I woke from a nap and just before I started another. Perfect timing. Very seaworthy of you.',
+      'Filed your letter in the cheese storage for safekeeping. It’s the safest place aboard. It smells a bit of cheddar now. You’re welcome.',
+    ],
+    postcard: 'Farther Isle! I’ve moored there. Ranked it for crumbs. Excellent crumbs. Your postcard is fourth. That’s very high.',
+    sign: 'Crumb, Master of the MouseBoat',
+  },
+  Mochi: {
+    letters: [
+      'Mm. Your letter. I read it in the hot spring. It is now slightly steamed. It is very relaxed. So am I.',
+      'Thank you. That is the whole letter. (It took me a long time. Done properly.)',
+    ],
+    postcard: 'Mm. Farther. We will soak about it.',
+    sign: 'Mochi (and the orange)',
+  },
+  Pondo: {
+    letters: [
+      'Mochi read me your letter. I agreed with all of it. Mm.',
+      'I am writing back myself this time. Mochi is helping. Mochi says to say: we liked it. Mm.',
+    ],
+    postcard: 'Mm. A postcard. We agreed it was a good one.',
+    sign: 'Pondo',
+  },
+  Sol: {
+    letters: [
+      'Sssalutations. Your letter arrived. Pick read it to me over breakfast while she did my teeth. We agreed it was the best part of the morning.',
+      'Thank you for writing. People rarely write to a crocodile. They assume we bite letters. We only bite fish, and only on weekdays.',
+    ],
+    postcard: 'A postcard from farther away. Sssplendid. I shall bask on it.',
+    sign: 'Sol',
+  },
+  Brook: {
+    letters: [
+      'Sol said to say thank you. I say thank you. Between us, a complete thank-you.',
+      'I held your letter very still for a long time so I could read it properly. Personal best. The moss got ideas again.',
+    ],
+    postcard: 'A postcard. I smiled at it. That is my review. Five stars.',
+    sign: 'Brook',
+  },
+  _default: {
+    letters: ['Thank you for your letter. It found me, which is the whole trick of letters.'],
+    postcard: 'A postcard from farther away. How lovely.',
+  },
+};
+
 export const FRIENDS = [
   {
     a: 'Howell', b: 'Saffron',

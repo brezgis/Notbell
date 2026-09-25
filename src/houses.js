@@ -15,6 +15,7 @@ import { MOUSEBOAT } from './island3.js';
 import { makeWindow, makeHangingLamp } from './buildings.js';
 import { currentWeather } from './almanac.js';
 import { BIRTHDAYS, birthdayTalk } from './villagers.js';
+import * as mail from './mail.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -199,12 +200,18 @@ function makeMailbox(color) {
   lid.position.y = 1.2;
   lid.castShadow = true;
   g.add(lid);
+  // the flag, on a pivot at the side: up (standing) means mail
+  const flagPivot = new THREE.Group();
+  flagPivot.position.set(0.19, 1.08, -0.1);
   const flagPole = box(0.03, 0.3, 0.03, 0xb0453a);
-  flagPole.position.set(0.19, 1.2, -0.1);
-  g.add(flagPole);
+  flagPole.position.set(0, 0.12, 0);
+  flagPivot.add(flagPole);
   const flag = box(0.03, 0.1, 0.16, 0xb0453a);
-  flag.position.set(0.19, 1.32, -0.02);
-  g.add(flag);
+  flag.position.set(0, 0.24, 0.08);
+  flagPivot.add(flag);
+  g.add(flagPivot);
+  g.userData.setFlag = (up) => { flagPivot.rotation.x = up ? 0 : Math.PI / 2; };
+  g.userData.setFlag(false);
   g.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
   return g;
 }
@@ -557,11 +564,18 @@ export function createHouses(animals, obstacles = []) {
   zones.addBlockerBox(home.x, home.z - 1.5, 4.9 * 1.15, 4.3 * 1.15, 0, 0.05); // the footing's footprint
 
   // your mailbox, by the garden path
-  placeMailbox(group, home.x + 3.6, home.z + 2.2, 0, 0x5b8bc9);
+  const myBox = placeMailbox(group, home.x + 3.6, home.z + 2.2, 0, 0x5b8bc9);
   register({
     pos: new THREE.Vector3(home.x + 3.6, 0, home.z + 2.2), r: 1.6,
-    label: 'check your mailbox',
-    use: () => ui.say('Empty, but freshly swept. A note inside, in careful pawwriting: “Mail service begins once sorting is complete. —Moss, Postmaster. P.S. Sorting is going well.”'),
+    label: () => (mail.unread() ? 'check your mailbox (the flag is up!)' : 'check your mailbox'),
+    use: () => mail.checkMailbox(),
+  });
+  // the mail keeps its own clock; your flag is up when there's something new
+  const theirBoxes = [];
+  updates.push((dt) => {
+    mail.poll(dt);
+    myBox.userData.setFlag(mail.unread() > 0);
+    for (const [name, mb] of theirBoxes) mb.userData.setFlag(mail.flagUp(name));
   });
 
   // window boxes, because it is YOUR house
@@ -984,11 +998,13 @@ export function createHouses(animals, obstacles = []) {
       const lx = 2.4, lz = 2.9;
       const mx = spot.x + lx * c + lz * sn, mz = spot.z - lx * sn + lz * c;
       if (zones.islandCanWalk(mx, mz)) {
-        placeMailbox(group, mx, mz, ry, style.roof);
+        theirBoxes.push([name, placeMailbox(group, mx, mz, ry, style.roof)]);
         register({
           pos: new THREE.Vector3(mx, 0, mz), r: 1.4,
           label: `look at ${name}’s mailbox`,
-          use: () => ui.say(`${name}’s mailbox. It is not your mail, and you are not that kind of neighbor. The little flag is down.`),
+          use: () => ui.say(mail.flagUp(name)
+            ? `${name}’s mailbox. The little flag is up: your letter is in there, waiting. It is theirs now. You leave it be.`
+            : `${name}’s mailbox. It is not your mail, and you are not that kind of neighbor. The little flag is down.`),
         });
       }
     }

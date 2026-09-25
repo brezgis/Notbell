@@ -30,6 +30,7 @@ export const state = {
   where: null,        // { zone, x, z, rotY, camYaw, camPitch, camDist }
   rowboats: [],       // per rowboat: { x, z, rotY } where you last left it (null = at the pier)
   rowing: null,       // index of the rowboat you're out in, if any
+  mail: { out: [], inbox: [] }, // letters you've sent ({to, text, kind, at, delivered, replied}) and answers ({from, pages, at, read})
 };
 
 let saveTimer = 0;
@@ -82,6 +83,10 @@ export function load() {
         errands: { day: '', n: 0, ...(data.errands || {}) },
         rowboats: Array.isArray(data.rowboats) ? data.rowboats : [],
         rowing: Number.isInteger(data.rowing) ? data.rowing : null,
+        mail: {
+          out: Array.isArray(data.mail?.out) ? data.mail.out.filter((l) => l && typeof l.to === 'string') : [],
+          inbox: Array.isArray(data.mail?.inbox) ? data.mail.inbox.filter((l) => l && Array.isArray(l.pages)) : [],
+        },
       });
     }
   } catch { /* corrupted save: start fresh */ }

@@ -9,11 +9,14 @@ fixes, the "new" rounds, routines, and the ambitious ideas)._
 
 ## Open — worth doing
 
-- **Mail system (C8).** Mailboxes stand at every house and the post office
-  has Moss behind the counter, but no mail moves yet. Next: send/receive
-  letters at the counter, a letter landing in a villager's box (flag up),
-  and a postal carrier who walks a real route (the `a.goal` walk + door
-  registry in `zones.setDoor` are the building blocks).
+- **Mail system (C8) — the rest.** The Post is open (`mail.js`): a stamp at
+  Moss's counter sends a letter (or the Farther postcard) to anyone; it
+  lands in their box a few minutes later (flag up), and their answer, in
+  their own voice (`MAIL_REPLIES`, villagers.js), comes to yours. Still to
+  do: a postal carrier who walks a real route and actually carries the
+  letters (the `a.goal` walk + door registry in `zones.setDoor` are the
+  building blocks), villagers who write first, and letters about the
+  things you've done (a first fish, a donation, a birthday).
 - **Bulletin board (C10).** Paginated cork board (holidays, flyers, a Labs
   paper, BULKO is hiring, player-posted notes). Wants a home — the plaza or
   the post office porch.
