@@ -3,7 +3,7 @@
 // built far away from the island and you teleport between them behind a
 // fade; each zone brings its own lighting mood.
 
-import { terrainHeight, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2, ISLAND2_EAST, ISLAND3, ISLAND4, ISLAND5, ISLAND5_HAND, ISLAND5_SOUTH, ISLAND6, ISLAND6_WEST, ISLAND6_BEACH, ISLAND7, ISLAND7_FLATS, ISLAND7_BACK, ISLAND7_NECK, TEXAS, VOLCANO, VOLCANO_SHELF, WATER_Y } from './terrain.js';
+import { terrainHeight, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2, ISLAND2_EAST, ISLAND3, ISLAND4, ISLAND5, ISLAND5_HAND, ISLAND5_SOUTH, ISLAND6, ISLAND6_WEST, ISLAND6_BEACH, ISLAND7, ISLAND7_FLATS, ISLAND7_BACK, ISLAND7_NECK, ISLAND8, oasisE, TEXAS, VOLCANO, VOLCANO_SHELF, WATER_Y } from './terrain.js';
 import { fadeSwap } from './ui.js';
 import { doorChime } from './audio.js';
 
@@ -118,7 +118,8 @@ const zones = {
         Math.hypot(x - ISLAND6_WEST.x, z - ISLAND6_WEST.z) < ISLAND6_WEST.r + 12;
       const onFarther = Math.hypot(x - ISLAND7.x, z - ISLAND7.z) < ISLAND7.r + 12 ||
         Math.hypot(x - ISLAND7_FLATS.x, z - ISLAND7_FLATS.z) < ISLAND7_FLATS.r + 10;
-      if (!onHome && !onFar && !onNorth && !onVolcano && !onTexas && !onBulko && !onGrove && !onLabs && !onFarther) return false;
+      const onOasis = oasisE(x, z) < 1.5;
+      if (!onHome && !onFar && !onNorth && !onVolcano && !onTexas && !onBulko && !onGrove && !onLabs && !onFarther && !onOasis) return false;
       return !blocked(x, z);
     },
   },
@@ -326,11 +327,28 @@ export function islandCanStand(x, z, r = 0.3) {
   return w(x, z) && w(x + r, z) && w(x - r, z) && w(x, z + r) && w(x, z - r);
 }
 
+// Folk who walk about but aren't villagers (Oasis Estates: Beverly on her
+// rounds, Todd on the mower, the mall walkers) register here: { zone, obj,
+// r }. They're solid to your body test. Stepping away from one you already
+// overlap always works — the player's escape rule covers that for free.
+const movers = [];
+export function addMover(m) {
+  movers.push(m);
+}
+function moverAt(x, z, r) {
+  for (const m of movers) {
+    if (m.zone !== currentZone || !m.obj.visible) continue;
+    const p = m.obj.position;
+    if (Math.hypot(x - p.x, z - p.z) < m.r + r) return true;
+  }
+  return false;
+}
+
 // Can a body of radius r stand here? The center plus four points around the
 // rim — so a walker's shoulders stop at the wall, not their nose.
 export function canStand(x, z, r = 0.3) {
   const w = zones[currentZone].canWalk;
-  return w(x, z) && w(x + r, z) && w(x - r, z) && w(x, z + r) && w(x, z - r);
+  return w(x, z) && w(x + r, z) && w(x - r, z) && w(x, z + r) && w(x, z - r) && !moverAt(x, z, r);
 }
 
 function applyLighting(l) {
@@ -406,6 +424,7 @@ const ISLES = [
   ['bulko', [ISLAND4]],
   ['grove', [ISLAND5, ISLAND5_SOUTH, ...ISLAND5_HAND]],
   ['labs', [ISLAND6, ISLAND6_WEST, { ...ISLAND6_BEACH, r: 17 }]],
+  ['oasis', [ISLAND8]],
   ['farther', [{ ...ISLAND7, r: ISLAND7.r + 3 }, ISLAND7_FLATS, ISLAND7_NECK, { ...ISLAND7_BACK, r: ISLAND7_BACK.r + 3 }]],
 ];
 export function islandOf(x, z) {

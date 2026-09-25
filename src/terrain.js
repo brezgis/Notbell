@@ -67,6 +67,19 @@ export const TRAIL7 = [
   [-6, 4], [-1, 2], [4, 2.5], [10, 0], [4, -4], [0, -7], [5, -11], [8, -10],
 ].map(([dx, dz]) => ({ x: ISLAND7.x + dx, z: ISLAND7.z + dz }));
 
+// Oasis Estates: south-west, out past the chart's western edge, a planned
+// community on a planned island. Not an island that happened — an island
+// that was APPROVED: a flat oval pad of lawn (the PAD), a tidy grass berm,
+// a ring of beach. The HOA would like you to know it is not round. It is
+// an oval. There were meetings. (x east, z south; rx/rz are the pad's radii)
+export const ISLAND8 = { x: -180, z: 64, r: 44 };
+export const OASIS_PAD = { x: ISLAND8.x, z: ISLAND8.z, rx: 29, rz: 36, h: 1.4 };
+// the pad's "radius" in pad units: 1 at the lawn's edge (the berm and the
+// beach run on out to ~1.42)
+export function oasisE(x, z) {
+  return Math.hypot((x - OASIS_PAD.x) / OASIS_PAD.rx, (z - OASIS_PAD.z) / OASIS_PAD.rz);
+}
+
 const TERRACE = 2.4; // height of each AC-style terrace step
 
 function maskAt(x, z, cx, cz, R, wobbleAmp) {
@@ -128,6 +141,18 @@ function baseHeight(x, z) {
   const sd = Math.hypot(x - VOLCANO_SHELF.x, z - VOLCANO_SHELF.z);
   if (sd < VOLCANO_SHELF.r + 4) {
     h = Math.max(h, smoothstep(VOLCANO_SHELF.r + 4, VOLCANO_SHELF.r, sd) * 1.1 - 0.6);
+  }
+  // Oasis Estates: graded. the lawn is dead flat, the berm is a tidy slope,
+  // the beach is the only part of the island nobody's filed a form about
+  {
+    let e = oasisE(x, z);
+    if (e < 1.6) {
+      if (e > 1) e += (vnoise(x * 0.09 + 5.5, z * 0.09 - 2.2) - 0.5) * 0.12; // (the sea doesn't take direction)
+      const planned = e <= 1 ? OASIS_PAD.h
+        : e < 1.14 ? OASIS_PAD.h + (0.3 - OASIS_PAD.h) * smoothstep(1, 1.14, e)
+        : 0.3 + (-1.6 - 0.3) * smoothstep(1.14, 1.5, e);
+      h = e <= 1.02 ? planned : Math.max(h, planned);
+    }
   }
   // Farther's mountain: a soft grassy peak that terraces like everything else
   const md = Math.hypot(x - MOUNT7.x, z - MOUNT7.z);
@@ -401,7 +426,11 @@ const COL_MOSS_B = new THREE.Color(0x5e975e);
 const COL_ASPHALT = new THREE.Color(0x595a5e);
 const COL_CONCRETE = new THREE.Color(0xb6b1a4);
 const COL_TILLED = new THREE.Color(0x9a7b52);
-const COL_MUD = new THREE.Color(0x9a8365); // the mangrove flats, honest tidal mud
+const COL_MUD = new THREE.Color(0x9a8365);
+// Oasis Estates ignores the seasons too. The lawn is two and a half inches,
+// green, and mown in stripes, by covenant.
+const COL_LAWN_A = new THREE.Color(0x58c04a);
+const COL_LAWN_B = new THREE.Color(0x6cce5a); // the mangrove flats, honest tidal mud
 const COL_MUD_WET = new THREE.Color(0x7d6b52);
 const COL_ROCK_TOP = new THREE.Color(0x9a948a);
 
@@ -469,6 +498,8 @@ export function createTerrain() {
       color.copy(COL_CONCRETE); // poured by the Boring Department, proudly
     } else if (Math.hypot(va.x - foldFields.x, va.z - foldFields.z) < foldFields.r - 1) {
       color.copy(COL_TILLED); // turned earth, in rows, on purpose
+    } else if (oasisE(va.x, va.z) < 1.16) {
+      color.copy(Math.floor((va.x - OASIS_PAD.x) / 1.68 + 0.5) % 2 ? COL_LAWN_A : COL_LAWN_B); // the stripes
     } else if (Math.hypot(va.x - ISLAND3.x, va.z - ISLAND3.z) < ISLAND3.r + 6) {
       const patch = vnoise(va.x * 0.6 + 11, va.z * 0.6 - 5) > 0.5;
       color.copy(patch ? COL_MOSS_A : COL_MOSS_B);
