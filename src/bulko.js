@@ -809,9 +809,15 @@ export function createBulko(player) {
     cw.position.set(sx, 0.1, sz);
     cart.add(cw);
   }
+  for (const [sx, sz] of [[-0.35, 0.5], [0.35, 0.5], [-0.35, -0.5], [0.35, -0.5]]) {
+    const leg = box(0.05, 0.5, 0.05, 0x9aa0a6); // (the basket used to float over its wheels)
+    leg.position.set(sx, 0.35, sz);
+    cart.add(leg);
+  }
   cart.position.set(C.x + 7, terrainHeight(C.x + 7, C.z + 7), C.z + 7);
   cart.rotation.y = 2.2; // abandoned mid-thought
   group.add(cart);
+  zones.addBlockerBox(C.x + 7, C.z + 7, 0.9, 1.2, 2.2, 0, 'tree'); // solid to walkers, invisible to the planners
 
   // ---------------------------------------------------------- ferry dock ----
   // every other pier points home — but home is BEHIND the warehouse here, and

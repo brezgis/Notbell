@@ -119,7 +119,7 @@ export function createFarther() {
       bench.position.set(bx, terrainHeight(bx, bz) + 0.26, bz);
       bench.castShadow = bench.receiveShadow = true;
       group.add(bench);
-      zones.addBlocker(bx, bz, 0.7);
+      zones.addBlockerBox(bx, bz, 2.2, 0.55, ry, 0, 'tree'); // the whole log, not just its middle ('tree': the planners placed round the old circle; don't reshuffle them)
     }
     register({
       pos: new THREE.Vector3(FIRE.x, 0, FIRE.z + 1.6), r: 1.9,
@@ -1248,11 +1248,12 @@ export function createFarther() {
       hammockPines.push(pine);
     }
     const hy = terrainHeight(HM.x, HM.z);
-    const sling = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 2.6, 8, 1, true, Math.PI * 0.6, Math.PI * 0.8),
+    const sling = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 2.6, 8, 1, true, Math.PI * 1.1, Math.PI * 0.8), // (the arc hangs down: it used to stand up sideways like a wall)
       new THREE.MeshStandardMaterial({ color: 0x5b8bc9, roughness: 0.9, side: THREE.DoubleSide, flatShading: true }));
     sling.rotation.z = Math.PI / 2;
     sling.position.set(HM.x, hy + 0.95, HM.z);
     group.add(sling);
+    zones.addBlockerBox(HM.x, HM.z, 2.6, 0.9, 0, 0, 'tree');
     for (const sx of [-1, 1]) {
       const rope = box(0.35, 0.03, 0.03, 0xd9c08f);
       rope.position.set(HM.x + sx * 1.45, hy + 1.2, HM.z);
@@ -1461,6 +1462,19 @@ export function createFarther() {
     return pts.filter((p) => zones.islandCanStand(p.x, p.z, 0.4));
   };
   let poiCache = null;
+  // the nearest spot a body can actually stand, near p (a spot that lands
+  // inside something — the trail spot was inside Huck's RV — slides clear)
+  function standable(p) {
+    if (p.lie || zones.islandCanStand(p.x, p.z, 0.4)) return p;
+    for (let r = 0.5; r <= 4; r += 0.5) {
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        const x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r;
+        if (zones.islandCanStand(x, z, 0.4)) return { ...p, x, z };
+      }
+    }
+    return p;
+  }
   function makeWanderer(a, { home, lie = false, trail = false, stay = 15 }) {
     return { a, home, lie, trail, mode: 'stay', timer: stay, target: null, stuck: 0, restY: a.rotation.y, sideT: 0, best: Infinity, stall: 0 };
   }
@@ -1544,7 +1558,7 @@ export function createFarther() {
   // the year picks who), each in their favorite spot doing their favorite
   // thing. talk to them; they'll be gone by next week and someone else here.
   const SPOTS = {
-    fire: { x: FIRE.x - 2.3, z: FIRE.z + 1.4, face: FIRE },
+    fire: { x: FIRE.x - 2.53, z: FIRE.z - 0.19, face: FIRE }, // (behind the log bench, not inside it)
     table: { x: C.x - 10, z: C.z + 7.2, face: { x: C.x - 10, z: C.z + 6 } },
     blanket: { x: BL.x - 0.2, z: BL.z - 0.3, face: { x: BL.x + 3, z: BL.z + 3 } },
     hammock: { x: HM.x, z: HM.z, y: 0.55, face: { x: HM.x, z: HM.z + 5 }, lie: true },
@@ -1658,7 +1672,7 @@ export function createFarther() {
       if (!spotKey) continue;
     }
     taken.add(spotKey);
-    const sp = SPOTS[spotKey];
+    const sp = standable(SPOTS[spotKey]);
     const a = buildAnimal(c.kind, c.colors);
     const prop = c.prop ? propFor(c.prop, a) : null;
     if (prop) a.add(prop);
@@ -1835,6 +1849,9 @@ export function createFarther() {
       return;
     }
     if (zone !== 'island') return;
+    // (this list was built and never run: the campers never walked, the
+    // pennant never flew, the kayaker sat parked under the Notbell plaza)
+    for (const fn of updates) fn(dt, t, playerPos);
 
     // the fire, gently alive
     campfire.update(dt, t);

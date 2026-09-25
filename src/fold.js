@@ -1309,8 +1309,9 @@ export function createFold() {
   });
 
   addFolk('Obed', 'sheep', { head: 0x3a3630, wool: 0xece4d0 }, [
-    { x: -180.8, z: -62 }, { x: -185.5, z: -62.4 }, { x: -191, z: -55 },
-    { x: -185.5, z: -53.5 },
+    // (round the cottage's east end, not through it; and starting clear of Patience)
+    { x: -179.6, z: -63.6 }, { x: -185.5, z: -62.4 }, { x: -184.3, z: -57.5 }, { x: -186.5, z: -53.6 },
+    { x: -191, z: -54.4 }, { x: -185.5, z: -53.5 },
   ], OBED_CHAT, VOICE.obed, {
     hat: flatBrimHat(), speed: 1.2,
   });
@@ -1365,6 +1366,12 @@ export function createFold() {
       }
       const step = Math.min(w.speed * dt, d);
       const nx = w.g.position.x + (dx / d) * step, nz = w.g.position.z + (dz / d) * step;
+      // after you: two folk meeting on a path wait rather than walk through each other
+      if (walkers.some((o) => o !== w && Math.hypot(o.g.position.x - nx, o.g.position.z - nz) < 1.1 &&
+          Math.hypot(o.g.position.x - nx, o.g.position.z - nz) < Math.hypot(o.g.position.x - w.g.position.x, o.g.position.z - w.g.position.z))) {
+        animateGait(w.g, t, 0);
+        continue;
+      }
       if (playerPos && Math.hypot(playerPos.x - nx, playerPos.z - nz) < 1.0 &&
           Math.hypot(playerPos.x - nx, playerPos.z - nz) < Math.hypot(playerPos.x - w.g.position.x, playerPos.z - w.g.position.z)) {
         animateGait(w.g, t, 0); // you're in the way; they wait, politely
@@ -1372,7 +1379,7 @@ export function createFold() {
       }
       w.g.position.x = nx;
       w.g.position.z = nz;
-      w.g.position.y = terrainHeight(w.g.position.x, w.g.position.z);
+      w.g.position.y = zones.islandGroundHeight(w.g.position.x, w.g.position.z);
       w.g.rotation.y = turnToward(w.g.rotation.y, Math.atan2(dx, dz), dt, 6);
       animateGait(w.g, t, 1);
     }

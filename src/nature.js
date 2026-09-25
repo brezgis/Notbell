@@ -453,6 +453,7 @@ export function scatterNature() {
   const signSpot = { x: PLAYER_SPAWN.x + 1.8, z: PLAYER_SPAWN.z - 1.4 };
   signSpot.h = terrainHeight(signSpot.x, signSpot.z);
   add(makeSign(), signSpot);
+  zones.addBlocker(signSpot.x, signSpot.z, 0.35, 'tree'); // (you used to walk into the board; 'tree' so the planners don't reshuffle round it)
   register({
     pos: { x: signSpot.x, z: signSpot.z },
     r: 2,

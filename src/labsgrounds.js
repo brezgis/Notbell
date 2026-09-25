@@ -482,7 +482,7 @@ export function createLabsGrounds() {
       'On shift! Can’t talk! …Okay I can talk a little. Hi! Bye!',
       'The Queen likes her nectar from the pink ones. Only the pink ones. We have a system.',
       'Waggle’s dance says there are GREAT flowers to the south. Waggle’s dance always says that.',
-    ], 840, 1.5, (t) => 0.3 + Math.abs(Math.sin(t * 5.5)) * 0.12, { pickTarget: hiveTarget, scale: 0.7, start: { x: HV.x + 3, z: HV.z + 2 } });
+    ], 840, 1.5, (t) => 0.3 + Math.abs(Math.sin(t * 5.5)) * 0.12, { pickTarget: hiveTarget, scale: 0.7, start: { x: HV.x + 3, z: HV.z + 4 } }); // (clear of the Queen's throne — she used to start wedged into it)
     flier('bee', { body: 0xe8a82a, head: 0xe8a82a }, 'Waggle', [
       '*does a little dance* …That meant “the flowers are that way.” All flowers are that way. It’s a good dance.',
       'Buzz is my supervisor. She gave me a hexagon for Employee of the Month. I keep it in the hive. In a hexagon.',

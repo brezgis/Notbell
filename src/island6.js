@@ -249,7 +249,9 @@ export function createIsland6(player) {
   });
   zones.addCrossing({
     contains(x, z) {
-      return x >= stairX0 && x <= fx + 7.2 && Math.abs(z - fz) < CATWALK_HALF_W;
+      // (less the telescope's footing: the catwalk is a crossing, and
+      // crossings beat blockers, so its footprint has to be carved out)
+      return x >= stairX0 && x <= fx + 7.2 && Math.abs(z - fz) < CATWALK_HALF_W && Math.hypot(x - (fx + 6.4), z - fz) > 0.55;
     },
     height: () => ROOF_Y,
   });
@@ -1047,7 +1049,7 @@ export function createIsland6(player) {
     return w;
   }
   addWalker('Gantry', [
-    { x: fx - 6.5, z: fz, y: ROOF_Y }, { x: fx + 7, z: fz, y: ROOF_Y },
+    { x: fx - 6.5, z: fz, y: ROOF_Y }, { x: fx + 5.4, z: fz, y: ROOF_Y }, // (turns back before the telescope, not through it)
   ], [
     'Gantry. Boring Department, rooftop division. The catwalk is the best part of the facility. Management agrees. Management is also up here.',
     'From up here you can see the pad, the sea, and whether Pots is carrying the soup pot. Critical infrastructure, this view.',
@@ -1061,7 +1063,7 @@ export function createIsland6(player) {
     'Crates in, science out. That’s the whole job. The science weighs less. Nobody can explain where the weight goes.',
   ]);
   addWalker('Doppler', [
-    { x: P.x + 6.5, z: P.z + 2 }, { x: P.x + 2, z: P.z + 6.5 }, { x: P.x - 2, z: P.z - 6.5 }, { x: P.x + 6, z: P.z - 3 },
+    { x: P.x + 6.5, z: P.z + 2 }, { x: P.x + 2, z: P.z + 6.5 }, { x: P.x - 4.5, z: P.z + 3.5 }, { x: P.x - 2, z: P.z - 6.5 }, { x: P.x + 6, z: P.z - 3 }, // (round the rocket, not through it)
   ], [
     'Doppler. Pad safety. We test on Tuesdays. We also define Tuesday experimentally.',
     'Stand anywhere you like. The rocket is OFF. Being off is its best-tested feature.',

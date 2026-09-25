@@ -180,7 +180,9 @@ export function defineLine({ points, stops, sides = [] }) {
       doorSpot: (car) => {
         const d = dockC + (car === 0 ? 1.25 : -1.25);
         const p = pointAt(d);
-        return { x: p.x + px * side * (PLAT_OFF - 0.55), z: p.z + pz * side * (PLAT_OFF - 0.55) };
+        // (back from the edge: a tall rider — a horse — at 0.55 had its head
+        // through the canopy and its body against the train)
+        return { x: p.x + px * side * (PLAT_OFF - 0.95), z: p.z + pz * side * (PLAT_OFF - 0.95) };
       },
       // where passengers step off the ramp onto the island proper
       landing: {

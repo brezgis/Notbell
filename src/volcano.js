@@ -332,7 +332,7 @@ export function createVolcano() {
 
     if (cinderPause > 0) {
       cinderPause -= dt;
-      cinder.position.y = terrainHeight(cinder.position.x, cinder.position.z) + 0.55;
+      cinder.position.y = zones.islandGroundHeight(cinder.position.x, cinder.position.z); // (on the sand, not 0.55 over it)
       animateGait(cinder, t, 0);
       return;
     }
@@ -343,7 +343,7 @@ export function createVolcano() {
     if (dist < 0.08) {
       cinder.position.x = target.x;
       cinder.position.z = target.z;
-      cinder.position.y = terrainHeight(target.x, target.z) + 0.55;
+      cinder.position.y = zones.islandGroundHeight(target.x, target.z);
       cinderPause = cinderRoute[cinderRouteStep] === 0 ? 5.5 : 2.4;
       cinderRouteStep = (cinderRouteStep + 1) % cinderRoute.length;
       animateGait(cinder, t, 0);
@@ -354,7 +354,7 @@ export function createVolcano() {
     cinder.rotation.y = Math.atan2(dx, dz);
     cinder.position.x += (dx / dist) * step;
     cinder.position.z += (dz / dist) * step;
-    cinder.position.y = terrainHeight(cinder.position.x, cinder.position.z) + 0.55;
+    cinder.position.y = zones.islandGroundHeight(cinder.position.x, cinder.position.z); // (on the sand, not 0.55 over it)
     animateGait(cinder, t, 1);
   });
 
