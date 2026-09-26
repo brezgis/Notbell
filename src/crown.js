@@ -126,6 +126,7 @@ export function createCrown(player) {
   const updates = []; // (dt, t, playerPos) — crown zone only
 
   zones.registerWorld('crown', {
+    root: group,
     groundHeight: crownHeight,
     canWalk(x, z) {
       if (Math.hypot(x - MID.x, z - MID.z) > CROWN.r) return false;

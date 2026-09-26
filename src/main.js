@@ -326,6 +326,44 @@ function updateOcclusion() {
   for (const m of nowFaded) fadedWalls.add(m);
 }
 
+// ---- matrices only for what moved. three recomposes every object's matrix
+// every frame (~19k of them, a quarter of the frame), and almost all of the
+// archipelago never moves. Same result as scene.updateMatrixWorld(): an
+// object recomputes when its position/rotation/scale or its parent changed,
+// and hidden branches wait until they're shown.
+scene.matrixWorldAutoUpdate = false; // the loop calls updateMoved() instead
+function updateMoved(o, parentMoved) {
+  // hidden branches (closed interiors, far worlds) wait: forgetting their
+  // parent makes the whole branch recompute the frame it's shown again
+  if (!o.visible) { o._lastParent = undefined; return; }
+  // (not matrixWorldNeedsUpdate: every getWorldPosition() sets it all the
+  // way up to the scene, which would re-multiply the whole world each frame.
+  // For auto-matrix objects a real change shows up in the TRS check below.)
+  let moved = parentMoved || o._lastParent !== o.parent || (!o.matrixAutoUpdate && o.matrixWorldNeedsUpdate);
+  if (o.matrixAutoUpdate) {
+    const p = o.position, q = o.quaternion, sc = o.scale;
+    const c = o._last || (o._last = new Float64Array(10).fill(NaN));
+    if (c[0] !== p.x || c[1] !== p.y || c[2] !== p.z || c[3] !== q.x || c[4] !== q.y
+      || c[5] !== q.z || c[6] !== q.w || c[7] !== sc.x || c[8] !== sc.y || c[9] !== sc.z) {
+      c[0] = p.x; c[1] = p.y; c[2] = p.z; c[3] = q.x; c[4] = q.y;
+      c[5] = q.z; c[6] = q.w; c[7] = sc.x; c[8] = sc.y; c[9] = sc.z;
+      o.matrix.compose(p, q, sc);
+      moved = true;
+    }
+  }
+  if (moved) {
+    o._lastParent = o.parent;
+    if (o.matrixWorldAutoUpdate) {
+      if (o.parent === null) o.matrixWorld.copy(o.matrix);
+      else o.matrixWorld.multiplyMatrices(o.parent.matrixWorld, o.matrix);
+      if (o.isCamera) o.matrixWorldInverse.copy(o.matrixWorld).invert();
+    }
+    o.matrixWorldNeedsUpdate = false;
+  }
+  const ch = o.children;
+  for (let i = 0; i < ch.length; i++) updateMoved(ch[i], moved);
+}
+
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
@@ -516,6 +554,7 @@ renderer.setAnimationLoop(() => {
   camera.lookAt(lookGoal);
   updateOcclusion();
 
+  updateMoved(scene, false);
   renderer.render(scene, camera);
 });
 

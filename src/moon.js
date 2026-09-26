@@ -73,6 +73,7 @@ export function createMoon(player) {
   const updates = []; // (dt, t, playerPos), moon zone only
 
   zones.registerWorld('moon', {
+    root: group,
     groundHeight: moonHeight,
     canWalk(x, z) {
       if (Math.hypot(x - MOON.x, z - MOON.z) > MOON.r) return false;

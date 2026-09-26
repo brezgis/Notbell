@@ -251,9 +251,16 @@ function syncInteriorRoots() {
 }
 
 // For whole other worlds (the moon) — bring your own ground and physics.
-// opts: { groundHeight(x,z), canWalk(x,z), lighting, spawn }
+// opts: { root?, groundHeight(x,z), canWalk(x,z), lighting, spawn }
+// A root shows only while you're in that world, like an interior's: out of
+// sight it's still thousands of meshes to cull and re-matrix every frame.
 export function registerWorld(name, opts) {
-  zones[name] = opts;
+  const { root, ...worldOpts } = opts;
+  if (root) {
+    interiorRoots.set(name, [...(interiorRoots.get(name) || []), root]);
+    syncInteriorRoots();
+  }
+  zones[name] = worldOpts;
 }
 
 // opts: { root, floorY, bounds: {x0, z0, x1, z1}, blockers: [{x,z,r}],
