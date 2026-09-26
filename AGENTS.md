@@ -109,7 +109,7 @@ tour, and the clip audit afterward):
 - `src/calendar.js` — **must keep zero imports** (everything consults it at
   module load; a cycle here bricks the boot)
 - `src/utils.js` — the seeded PRNG; changing it reshuffles every world
-- `index.html` — the inline importmap is hashed into the production CSP
+- `index.html` — the inline importmap is hashed into the CSP meta tag
 - `vendor/` — vendored three.js, never edit
 
 ## Workflow
@@ -121,17 +121,20 @@ tour, and the clip audit afterward):
   If you do run parallel worktrees, give each its own server port.)
 - The open-ideas list lives in `docs/BACKLOG.md` (tracked). The old
   `FIXES_PLAN.md` / `CODEX_TASKS.md` trackers are local-only history.
-- Deploy (Anna only, exact bare form — it's permission-matched):
+- Deploy: GitHub Pages serves `main` straight from the repo root (no
+  workflow, no build; `.nojekyll` keeps GitHub from processing the files,
+  `CNAME` holds the domain). Merging to `main` IS the deploy — Anna merges.
+  Everything tracked is publicly reachable on the site, so nothing private
+  goes in the repo.
+
+  The strict CSP is a `<meta http-equiv>` in `index.html` (Pages can't send
+  headers). Its `script-src` includes the sha256 of the inline importmap —
+  if any inline script changes, recompute the hash and update the meta tag,
+  or the game is a white screen (locally too, so you'll see it first):
 
   ```sh
-  rsync -az --exclude shots --exclude .git --exclude serve.py index.html src vendor README.md package.json favicon.svg your-server:/var/www/notbell/
+  python3 -c "import re,hashlib,base64;s=open('index.html').read();m=re.search(r'<script type=\"importmap\">(.*?)</script>',s,re.S);print(base64.b64encode(hashlib.sha256(m.group(1).encode()).digest()).decode())"
   ```
-
-  Production nginx (on your-server) serves a strict CSP whose `script-src`
-  includes the sha256 of the inline importmap in `index.html` — if any inline
-  script changes, recompute the hash and update
-  `/etc/nginx/snippets/notbell-headers.conf` on the server, or the site ships
-  a white screen.
 - Never commit screenshots (`shots/*.png` is git-ignored). One-off probe
   scripts belong in `shots/archive/`, also ignored; only the harness lib and
   canonical probes are tracked.

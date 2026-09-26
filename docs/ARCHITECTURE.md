@@ -10,7 +10,7 @@ collision/railway cleanup (railway.js, the zones blocker/surface API).
 `index.html` (shell, UI styles, an inline import map `three →
 vendor/three.module.js`) loads `src/main.js` as a module. No build step —
 what's in the tree is what ships. The inline import map is sha256-hashed into
-the production CSP (see AGENTS.md → Workflow).
+the CSP `<meta>` tag at the top of the file (see AGENTS.md → Workflow).
 
 `main.js` then: loads the save → builds renderer/lights/camera → constructs
 every feature module (order matters, see below) → adds their groups to the
@@ -217,7 +217,7 @@ without moving the player — `shots/views.mjs` is built on it).
    time (`zones.syncInteriorRoots`).
 6. Save-shape changes go through the defaults+merge pattern in `state.load()`
    and never rename keys (see AGENTS.md rule 11).
-7. The inline import map in `index.html` is CSP-hashed in production.
+7. The inline import map in `index.html` is CSP-hashed (the meta tag above it).
 8. Prism/wedge roofs: build `CylinderGeometry(r, r, len, 3, 1, false,
    Math.PI/2)` **before** `rotateZ` — other phase values skew the ridge
    (this has bitten twice).
