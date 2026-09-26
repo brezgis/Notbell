@@ -41,10 +41,14 @@ export async function boot({
 } = {}) {
   const browser = await puppeteer.launch({
     executablePath: '/usr/bin/google-chrome', headless: 'new',
+    protocolTimeout: 900_000, // probe_reach's one long in-page flood fill outlasts the 180s default
     args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader',
       '--enable-unsafe-swiftshader', '--window-size=1280,720', '--mute-audio'],
   });
   const page = await browser.newPage();
+  // index.html's CSP (rightly) refuses inline scripts; probes that inject one
+  // to reach three.js (roof_audit, probe_studio, views SHOW=1) need it waived
+  await page.setBypassCSP(true);
   if (mobile) await page.emulate(KnownDevices['iPhone 13']);
   else await page.setViewport({ width: 1280, height: 720 });
   page.on('dialog', (d) => d.accept(name)); // the native name prompt

@@ -54,7 +54,8 @@ everything may consult it at module-eval time).
   `registerInterior` (bounds + blockers + floorY + lighting + spawn/exit) and
   live far off-island (x≈±300, moon at x≈1000); `zones.go(name)` teleports
   behind `fadeSwap` and applies the zone's lighting profile. Whole other
-  worlds (the moon) use `registerWorld` with their own ground/physics.
+  worlds (the moon) use `registerWorld` with their own ground/physics, and
+  pass `root: group` so the world only shows while you're in it.
   `onChange` fires after a zone swap settles (HUD listens). The island's
   collision vocabulary:
   - **blockers** — solid footprints. `addBlocker(x, z, r, kind)` circles,
@@ -210,9 +211,11 @@ without moving the player — `shots/views.mjs` is built on it).
 3. `terrainHeight` stays deterministic and analytic — same answer for the
    same (x,z), no scene queries.
 4. `camera.far` is 600 and the moon sits at x=1000 (the Dropped Crown at
-   x=−1150): no world can ever render another, with no toggling. New
-   far-off worlds must stay >1000 from the archipelago (the terrain mesh
-   now spans x −230..230; the ocean plane ends ±400 and hides indoors).
+   x=−1150): no world can ever render another. New far-off worlds must stay
+   >1000 from the archipelago (the terrain mesh now spans x −230..230; the
+   ocean plane ends ±400 and hides indoors). They're still hidden when you're
+   elsewhere (`registerWorld({ root })`) — not to be unseen, but because
+   thousands of out-of-sight meshes cost CPU every frame.
 5. Interiors live far off-island and only one interior root is visible at a
    time (`zones.syncInteriorRoots`).
 6. Save-shape changes go through the defaults+merge pattern in `state.load()`
@@ -221,7 +224,15 @@ without moving the player — `shots/views.mjs` is built on it).
 8. Prism/wedge roofs: build `CylinderGeometry(r, r, len, 3, 1, false,
    Math.PI/2)` **before** `rotateZ` — other phase values skew the ridge
    (this has bitten twice).
-9. Touch controls dispatch **real synthetic KeyboardEvents** (controls.js) —
+9. Matrices: main.js's `updateMoved()` replaces three's per-frame
+   `scene.updateMatrixWorld()`. An object's matrix is recomputed only when its
+   position/rotation/quaternion/scale or its parent changed, and hidden
+   branches are skipped until shown. So: move things through those
+   properties (as everything does); if you ever write `.matrix` by hand, set
+   `matrixAutoUpdate = false` and `matrixWorldNeedsUpdate = true`; and to
+   read where a hidden thing is, use `getWorldPosition()` (it updates the
+   chain) rather than its `matrixWorld`.
+10. Touch controls dispatch **real synthetic KeyboardEvents** (controls.js) —
    new features that listen for keys inherit mobile support for free; don't
    add pointer-only input paths.
 
@@ -247,7 +258,8 @@ without moving the player — `shots/views.mjs` is built on it).
 ## Performance budget
 
 pixelRatio ≤ 1.5 (≤ 1.25 on touch) · shadows: one 1024px PCF map in a box
-that follows the sun target · outdoor point lights were culled 17→~6 once and
+that follows the sun target, re-rendered every frame only where that box
+covers you (`zones.sunShadowsHere()`; rooms draw it once on arrival) · outdoor point lights were culled 17→~6 once and
 must not creep back (interiors get brightness from their zone hemisphere
 profile; glow is emissive, `nightglow.js`) · outdoor updates gate by zone ·
 occlusion fade is one raycast per frame against tagged occluders.
