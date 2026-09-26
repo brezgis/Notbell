@@ -304,6 +304,14 @@ export function current() {
   return currentZone;
 }
 
+// Does the sun's shadow box cover where you are? Outdoors it follows you;
+// worlds that bring their own sun aim it at themselves. Interiors leave it
+// parked over Notbell, far away — rendering it there is wasted work.
+export function sunShadowsHere() {
+  if (currentZone === 'island' || currentZone === 'sea') return true;
+  return !!zones[currentZone]?.lighting?.sunTarget;
+}
+
 // Fired after a zone change settles (player already at the new spot). The HUD
 // listens so the place name + clock refresh the moment you step through a door.
 const changeListeners = [];

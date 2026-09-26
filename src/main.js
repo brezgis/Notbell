@@ -371,6 +371,7 @@ addEventListener('resize', () => {
 });
 
 const clock = new THREE.Clock();
+let shadowZone = null;
 let moodT = 0;
 let whereT = 6;
 
@@ -552,9 +553,16 @@ renderer.setAnimationLoop(() => {
   lookGoal.copy(focus);
   lookGoal.y += 1.2;
   camera.lookAt(lookGoal);
+  updateMoved(scene, false); // (before the occlusion ray: a room just shown needs its walls placed)
   updateOcclusion();
 
-  updateMoved(scene, false);
+  // indoors the sun's shadow box is parked over Notbell, nowhere near you:
+  // draw it once on arrival (the same map rooms always had), then let it be
+  renderer.shadowMap.autoUpdate = zones.sunShadowsHere();
+  if (zone !== shadowZone) {
+    shadowZone = zone;
+    renderer.shadowMap.needsUpdate = true;
+  }
   renderer.render(scene, camera);
 });
 
