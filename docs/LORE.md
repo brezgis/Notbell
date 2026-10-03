@@ -409,6 +409,61 @@ west bank.
   sea, until you choose to get up. Sometimes something glints far off on
   the water. You let it be a glint. (A bell hook — do not resolve.)
 
+## The North End of Cran, and the Famiglia — `northend.js`
+
+A round lobe on Cran's north shore, where the creek starts: a cobbled piazza
+under strings of lights (they come on with the windows), **the Olive Burrow**
+("family dining · unlimited breadsticks · **not a front**"), **Zio Orso's**
+pasticceria (a cannoli the size of a rowboat on the roof; "NO LOBSTERS in the
+lobster tails" — the BULKO tank asked), **Caffè Bandito** (espresso, standing
+up; Gufo the owl will not make a cappuccino after eleven), a bocce court with
+two old-timers in flat caps, the **Alley of the Saints**, and at the head of
+the creek a **grotto**: Nonno Aldo, in stone, in his diving helmet, holding up
+one button. Toss a button in the spring.
+
+**The Famiglia**, who live underneath: **Don Rocco** (a big grey raccoon; a
+white carnation; strokes a small wheel of parm on a velvet cushion like a
+cat), **Valentina** (his fabulous daughter: pink sunglasses indoors, a tiara,
+a boa, pearl buttons; by day she holds court at the caffè's table; she is
+not getting married — her father announces her wedding anyway), **Nonna**
+(runs the kitchen, and the Don), **Benny** and **Sal Ferretti** (ferret twins;
+Benny waits tables, Sal rolls parm; each is the handsome one), **Eddie** (a
+possum; the lookout; plays dead the moment anyone looks at him), **Vinnie**
+(lives in the trash can at the end of the alley; the hat was a banana), and
+**Consigliere Rospo** (a very large toad in little round glasses; keeps the
+books; "the books are mostly about cheese").
+
+- **The bell thread.** Nonno Aldo dove forty times for Old Tansy's bell and
+  was paid each time from her button jar. He never found it and never spent
+  one: the first forty sit in a jar under glass in the vault, with a card —
+  he said he could hear it ringing on the heavy tides, from the bottom.
+  (Moledecai's grandfather billed by the hour; the Don's father said thank
+  you. Nobody is unkind about this.) The vault is full of buttons. Do not
+  resolve anything here; it only points.
+- **The heist.** Between midnight and four, behind BULKO's staff door: Sal
+  rolls a wheel down to Vinnie's rowboat, Eddie keeps lookout (and falls
+  over when you come near). They leave three hundred buttons on the counter.
+  Exact change. "It's not a crime, it's a heist. One of 'em has style."
+  BULKO's parm wheels carry a note: "TO WHOEVER KEEPS BUYING THESE AT 2 A.M.:
+  THANK YOU FOR THE EXACT CHANGE. THE DOORS WERE LOCKED. HOW. —MGMT"
+- **The way in** (flags): `famigliaInvite` — at the Olive Burrow, let Benny
+  grate parm and *never say when* (or catch Sal on the night shift): a
+  matchbook, "out back. ask for Vinnie." → the trash can (or the **hollow
+  oak** on Cran's west side, password "I never said when") → `metDon` /
+  `famiglia` — "You come to me, on the day of my daughter's wedding…" — a
+  slice of his parm and the **Famiglia Fedora** → `heistDone` — help roll a
+  wheel; a Polaroid. Once a day you may dive into the buttons (+1: interest).
+- **The Alley of the Saints**: on the North End you can be a saint while
+  you're still around, if you're nice enough. San Aldo the diver, Santa Tansy
+  of the jar, **San Gus of the doors** (he doesn't know; don't tell him),
+  San Brine the persistent, Santa Murmur of the hook, Santa Formaggia of the
+  wheel — and at the end, on her own pillar, **Santa Campana**: a halo with
+  nothing under it, patron of things not found yet. Her candle is the only
+  one nobody has ever let go out. (A bell hook. Leave it be.)
+- Standing gags: the restaurant is not a front · the mural of Tuscany has a
+  gondola in it · the reserved booth's espresso is always still warm · the
+  freezer is a freezer · Eddie is not dead · nobody never says when.
+
 ## The mail — `mail.js`
 
 **Penny** (a pigeon in a postal cap, with a blue satchel) carries it. Moss

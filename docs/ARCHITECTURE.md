@@ -30,6 +30,7 @@ features    buildings houses cave fishing digging tidepools player ocean
             ambient villagers multiplayer settings
             tools (rod/net/shovel in your paws) shells starfall
             crown (the world under the reef)  burrough (the city under the islands)
+            cran → northend (Cran's North End, the Famiglia's lair, the night shift at BULKO)
 conductor   main.js
 ```
 
@@ -144,6 +145,8 @@ everything may consult it at module-eval time).
 - `createBulko()` and `createIsland6()` **before** `createBoats()` — the
   ferry consumes `BULKO_DOCK` / `LABS_DOCK` exports.
 - `nameVillagers(animals.animals)` right after `createAnimals()`.
+- `createNorthEnd()` **last** — its vault heap draws ~1,400 numbers from the
+  seeded PRNG; anything created after it would be reshuffled.
 
 If you add a module with a similar dependency, wire it in the same style and
 comment the reason inline — the ordering comments in main.js are the real
