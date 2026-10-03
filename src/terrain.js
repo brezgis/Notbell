@@ -85,12 +85,12 @@ export function oasisE(x, z) {
 // on the west bank, the bog beds east of the creek (one of them flooded for
 // the harvest), and the creek itself, cutting through from north to south.
 // Pad-local (u east, v south) from the center.
-export const ISLAND9 = { x: 146, z: 54, r: 27 };
+export const ISLAND9 = { x: 160, z: 58, r: 27 }; // (moved out a little in Oct '26: the strait to Grove was crowded)
 // ...and its North End, a round lobe off the north shore where the creek
 // starts: a cobbled piazza, a restaurant, a pastry shop, an espresso bar, a
 // grotto at the spring, and an alley. Nobody on Cran calls it a front.
-export const CRAN_NORTH = { x: 146, z: 15, r: 19 };
-export const CRAN_PIAZZA = { x: 145, z: 14, r: 8.5 };
+export const CRAN_NORTH = { x: ISLAND9.x, z: ISLAND9.z - 39, r: 19 };
+export const CRAN_PIAZZA = { x: ISLAND9.x - 1, z: ISLAND9.z - 40, r: 8.5 };
 export const CRAN_CREEK = [[3, -30], [2, -17], [7, -9], [4, -1], [10, 7], [8, 15], [13, 30]];
 export const CRAN_BEDS = [
   { u0: 9, u1: 17, v0: -17, v1: -10 },
@@ -198,8 +198,12 @@ function baseHeight(x, z) {
     if (d < ISLAND9.r + 10 || dn < CRAN_NORTH.r + 10) {
       const wob = vnoise(x * 0.08 + 1.3, z * 0.08 + 7.7) - 0.5;
       const R = ISLAND9.r + wob * 6, Rn = CRAN_NORTH.r + wob * 3;
-      const shore = (dd, RR) => (dd < RR - 5 ? 1.0 : dd < RR - 1 ? 1.0 + (0.3 - 1.0) * smoothstep(RR - 5, RR - 1, dd) : 0.3 + (-1.6 - 0.3) * smoothstep(RR - 1, RR + 7, dd));
-      let hh = Math.max(shore(d, R), shore(dn, Rn));
+      // one island, not two blobs: the two rounds blend into each other
+      // (a smooth union of their edges), so the waist is a gentle curve
+      const fa = d - R, fb = dn - Rn, K = 12;
+      const hk = Math.max(K - Math.abs(fa - fb), 0) / K;
+      const f = Math.min(fa, fb) - hk * hk * K * 0.25; // < 0 inside
+      let hh = f < -5 ? 1.0 : f < -1 ? 1.0 + (0.3 - 1.0) * smoothstep(-5, -1, f) : 0.3 + (-1.6 - 0.3) * smoothstep(-1, 7, f);
       hh += (vnoise(x * 0.3 + 4.1, z * 0.3 - 2.2) - 0.5) * 0.12 * (d < R - 5 && dn > CRAN_NORTH.r - 3 ? 1 : 0); // a little lumpy, like moss is (the North End is paved)
       if (d < R - 3) {
         const bed = cranBedAt(x, z, 0.6);
@@ -211,7 +215,7 @@ function baseHeight(x, z) {
       }
       const cd = cranCreekDist(x, z);
       if (cd < 3.2) hh = Math.min(hh, -1.15 + (hh + 1.15) * smoothstep(1.3, 3.2, cd));
-      h = d < R - 3 || dn < Rn - 3 ? hh : Math.max(h, hh);
+      h = f < -3 ? hh : Math.max(h, hh);
     }
   }
   // Oasis Estates: graded. the lawn is dead flat, the berm is a tidy slope,
@@ -580,7 +584,7 @@ export function createTerrain() {
       color.copy(COL_TILLED); // turned earth, in rows, on purpose
     } else if (Math.hypot(va.x - CRAN_PIAZZA.x, va.z - CRAN_PIAZZA.z) < CRAN_PIAZZA.r && y > 0.8) {
       color.copy(hash2(Math.floor(va.x / 1.7), Math.floor(va.z / 1.7)) > 0.5 ? COL_COBBLE_A : COL_COBBLE_B);
-    } else if ((Math.hypot(va.x - ISLAND9.x, va.z - ISLAND9.z) < ISLAND9.r + 2 || Math.hypot(va.x - CRAN_NORTH.x, va.z - CRAN_NORTH.z) < CRAN_NORTH.r + 2) && y > 0.3) {
+    } else if ((Math.hypot(va.x - ISLAND9.x, va.z - ISLAND9.z) < ISLAND9.r + 5 || Math.hypot(va.x - CRAN_NORTH.x, va.z - CRAN_NORTH.z) < CRAN_NORTH.r + 5) && y > 0.3) {
       const bed = cranBedAt((va.x + vb.x + vc.x) / 3, (va.z + vb.z + vc.z) / 3);
       if (bed && !bed.flooded) color.copy(COL_BOG);
       else color.copy(vnoise(va.x * 0.5 + 3, va.z * 0.5 - 1) > 0.5 ? COL_CRANMOSS_A : COL_CRANMOSS_B);

@@ -6,7 +6,8 @@ import { boot, go, view, snap, sleep, press, advance, choose, dismiss, promptTex
 const { browser, page } = await boot();
 const flag = (f) => page.evaluate((k) => window.__notbell.S.hasFlag(k), f);
 const item = (i) => page.evaluate((k) => window.__notbell.S.countItem(k), i);
-const N = { x: 146, z: 15 }, O = { x: -300, z: 1920 }, L = { x: -300, z: 2180 };
+const N = { x: 160, z: 19 }, // (CRAN_NORTH)
+  O = { x: -300, z: 1920 }, L = { x: -300, z: 2180 };
 let ok = true;
 const check = (name, v) => { console.log(`${v ? 'PASS' : 'FAIL'}  ${name}`); ok &&= !!v; };
 const talk = async (zn, x, z, rotY = Math.PI) => { await go(page, zn, { x, z, rotY }); await sleep(600); await press(page, 'KeyE', 900); };

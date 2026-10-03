@@ -157,7 +157,7 @@ const BOCCE = { u: 10.5, v: 2.5, w: 3, d: 8 };
 const SPRING = { u: CRAN_CREEK[0][0] + ISLAND9.x - N.x, v: CRAN_CREEK[0][1] + ISLAND9.z - N.z };
 const GROTTO = { u: SPRING.u, v: SPRING.v - 2.7, r: 2.5 };
 // and the hollow oak, out on Cran proper, west of the Community Center
-export const HOLLOW_OAK = { x: 130.5, z: 37 };
+export const HOLLOW_OAK = { x: ISLAND9.x - 15.5, z: ISLAND9.z - 17 };
 
 // interiors, off in the elsewhere (the x = -300 column, past Chuckee's)
 const IN = {
