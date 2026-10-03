@@ -31,6 +31,7 @@ features    buildings houses cave fishing digging tidepools player ocean
             tools (rod/net/shovel in your paws) shells starfall
             crown (the world under the reef)  burrough (the city under the islands)
             cran → northend (Cran's North End, the Famiglia's lair, the night shift at BULKO)
+            lamps (street lamps on every island; created last, they look for open ground)
 conductor   main.js
 ```
 
@@ -205,6 +206,24 @@ without moving the player — `shots/views.mjs` is built on it).
   night by the hour, rain / snow / fog by weather, plus places.
   `setAmbience({outdoors, night, weather, coast, high})` drives surf, wind,
   rain beds and bird/cricket/gull calls.
+
+## Getting about (added Oct '26)
+
+- **Errands** (`ambient.js` VENUES): a guest spot, a keeper spot, a line, a
+  few chats. Interior venues need `zones.setDoor(zone, spot)` in their
+  module — the errand walks to the door. Anyone on the venue's island may
+  go; anyone not `anchored` may cross by bridge or train (`findRoute`).
+- **Talking** stamps `a.talking` (villagers.js); animals.js stops them and
+  turns them to face you until the dialogue closes.
+- **Heads**: `idleAll(t, playerPos)` turns any `buildAnimal` head toward a
+  nearby player; `userData.noLook` (or `noFidget`) opts out.
+- **The Persistent** plans each voyage on a sea chart (boats.js
+  `buildChart`/`planPath`: depth, sea walls, low piers, a hull's margin,
+  A*, then corner-pulling; gates are threaded square). The chart is built
+  once, on the first voyage, behind the fade (~0.4 s); it also moves each
+  stop's anchorage into clean water.
+- **Lamps** (`lamps.js`) and windows light from dusk (`nightglow`:
+  `dayFactor() < 0.26 || weather`).
 
 ## Hard invariants (break one of these and distant things fail)
 

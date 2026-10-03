@@ -56,7 +56,8 @@ anywhere** (a serif sign has been reverted before).
   lights were culled from 17 to ~6 once; the budget stays there.
 - **Window glow canon** (`nightglow.js`): warm `0xffe9a0`, max intensity
   **0.55**, **steady — no pulse, no flicker**, lerped on when
-  `isNight() || weather !== 'clear'`. The Labs window band (island6.js) is
+  `dayFactor() < 0.26 || weather !== 'clear'` (from dusk; street lamps in
+  `lamps.js` ride the same ramp). The Labs window band (island6.js) is
   the reference look. Round `makeWindow` windows on every house, shop,
   café, grocery, clinic; matted rectangular `makeRectWindow` **only** on
   the museum and library. Vehicles keep their own window shapes and glow

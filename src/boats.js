@@ -568,6 +568,7 @@ export function createBoats(player) {
     return !(built > h + 0.5 && built < 2.9); // (a pier; a trestle the funnel clears is fine)
   }
   function buildChart() {
+    const t0 = performance.now();
     const { nx, nz } = CHART;
     const gates = zones.getSeaGates();
     const inGate = (i, j) => {
@@ -603,6 +604,7 @@ export function createBoats(player) {
       }
       if (best) { stop.sea.x = best.x; stop.sea.z = best.z; }
     }
+    chart.ms = performance.now() - t0; // (built once, on the first voyage, behind the fade)
   }
   const cellOf = (x, z) => [Math.floor((x - CHART.x0) / CHART.cell), Math.floor((z - CHART.z0) / CHART.cell)];
   const centerOf = (i, j) => ({ x: CHART.x0 + (i + 0.5) * CHART.cell, z: CHART.z0 + (j + 0.5) * CHART.cell });
@@ -952,7 +954,6 @@ export function createBoats(player) {
   });
 
   function update(dt, t, playerPos) {
-    if (!chart) buildChart(); // (once, on the first frame: every module's piers and walls exist by then)
     for (const u of updates) u(dt, t, playerPos);
     updateRowboatOars(dt, playerPos);
     // idle boats bob at their moorings
@@ -1113,6 +1114,7 @@ export function createBoats(player) {
   // the same run as her ghost trip home — and report where she is
   const debug = {
     stops: () => Object.keys(STOPS),
+    chartMs: () => chart?.ms,
     sail(destId, fromId) {
       const dest = STOPS[destId], from = STOPS[fromId];
       const path = planPath(from.sea, dest.sea);

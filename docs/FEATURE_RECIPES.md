@@ -56,9 +56,11 @@ Exemplars: the café (`buildings.js`), the library (`island3.js`).
    errands walk to it instead of teleporting in.
 5. Interior furniture blockers go in `registerInterior`'s `blockers` list:
    circles `{x, z, r}` or rectangles `{x, z, w, d, rot?}`.
-6. Music: add the zone to the `MOODS` map in `main.js` (sanctioned one-line
+6. Errands: add a `VENUES` entry in `ambient.js` (guest spot, keeper spot,
+   chats) so villagers visit it — walkable guest spot, facing the keeper.
+7. Music: add the zone to the `MOODS` map in `main.js` (sanctioned one-line
    main.js edit) or it falls back to 'indoors'.
-7. If the module didn't have indoor life before, make its `update` gate
+8. If the module didn't have indoor life before, make its `update` gate
    itself by zone (the bulko.js pattern) rather than moving it out of
    main's outdoor block.
 

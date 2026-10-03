@@ -54,7 +54,10 @@ Grove Line end to end), `probe_rail.mjs` (every station, both ends),
 interactable can still be walked up to), `probe_dive.mjs` (suit up, dive
 to the Dropped Crown, ride a bubble to the Glow), `probe_swim.mjs` (on foot, with the suit: into the sea from the tide
 pools and back, into the footbridge's rails, and at the bridge from the water),
-`probe_famiglia.mjs` (the North End quest end to end: never say when, the
+`probe_villagers.mjs` (villager life fast-forwarded — distance walked,
+islands visited, errands, meetups, longest stuck; SIM=seconds),
+`probe_tug.mjs` (the Persistent sails every route: time, turning, scrapes,
+piers), `probe_famiglia.mjs` (the North End quest end to end: never say when, the
 can, the Don, the vault, the night shift at BULKO — PASS/FAIL per step),
 `probe_burrough.mjs` (down the Labs molehill, ride the
 Boring Line to Uptown, up into the wine cellar and back through its little door).
