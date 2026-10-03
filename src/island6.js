@@ -1847,6 +1847,7 @@ export function createIsland6(player) {
       label: 'step outside',
       use: () => zones.leaveTo({ x: fx, z: fz + 5.2, rotY: 0 }),
     });
+    zones.setDoor('labs', { x: fx, z: fz + 5.2 });
   }
 
   // ----------------------------------------------------- the launch ride ----

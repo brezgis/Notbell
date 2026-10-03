@@ -204,6 +204,7 @@ export function createIsland2() {
       label: 'step outside',
       use: () => zones.leaveTo({ x: gSpot.x, z: gSpot.z + 4.4, rotY: 0 }),
     });
+    zones.setDoor('grocery', { x: gSpot.x, z: gSpot.z + 4.4 }); // (villagers on errands walk here)
     register({
       pos: new THREE.Vector3(B.x - 2.5, 0, B.z - 2.8), r: 3, zone: 'grocery',
       label: 'talk to Barnaby',

@@ -423,6 +423,7 @@ export function createFold() {
       label: 'step outside',
       use: () => zones.leaveTo({ x: KX + 5.8, z: KZ, rotY: Math.PI / 2 }),
     });
+    zones.setDoor('kirk', { x: KX + 5.8, z: KZ });
     register({
       getPos: () => amos.position, r: 3.0, zone: 'kirk',
       label: 'talk to Elder Amos',

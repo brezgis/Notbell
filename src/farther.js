@@ -892,6 +892,7 @@ export function createFarther() {
         rotY: rotY + Math.PI,
       }),
     });
+    zones.setDoor('general', { x: doorWorld.x + Math.sin(rotY) * 1.2, z: doorWorld.z + Math.cos(rotY) * 1.2 });
     register({
       getPos: () => cypress.position, r: 3.4, zone: 'general',
       label: 'shop with Cypress',

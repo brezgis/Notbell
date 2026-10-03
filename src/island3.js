@@ -574,6 +574,7 @@ export function createIsland3() {
       label: 'step outside',
       use: () => zones.leaveTo({ x: libSpot.x, z: libSpot.z + 4.6, rotY: 0 }),
     });
+    zones.setDoor('library', { x: libSpot.x, z: libSpot.z + 4.6 });
 
     let loreIdx = 0;
     register({
@@ -769,6 +770,7 @@ export function createIsland3() {
       label: 'step outside',
       use: () => zones.leaveTo({ x: clinSpot.x, z: clinSpot.z + 4.2, rotY: 0 }),
     });
+    zones.setDoor('clinic', { x: clinSpot.x, z: clinSpot.z + 4.2 });
 
     let chatIdx = 0;
     register({

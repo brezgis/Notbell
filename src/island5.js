@@ -616,6 +616,7 @@ export function createIsland5(player) {
       label: 'step outside',
       use: () => zones.leaveTo({ x: M.x, z: M.z + 3.2, rotY: 0 }),
     });
+    zones.setDoor('manor', { x: M.x, z: M.z + 3.2 });
 
     let mIdx = 0, pIdx = 0, tIdx = 0;
     register({
