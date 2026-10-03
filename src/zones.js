@@ -3,7 +3,7 @@
 // built far away from the island and you teleport between them behind a
 // fade; each zone brings its own lighting mood.
 
-import { terrainHeight, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2, ISLAND2_EAST, ISLAND3, ISLAND4, ISLAND5, ISLAND5_HAND, ISLAND5_SOUTH, ISLAND6, ISLAND6_WEST, ISLAND6_BEACH, ISLAND7, ISLAND7_FLATS, ISLAND7_BACK, ISLAND7_NECK, ISLAND8, ISLAND9, ISLET_CH, oasisE, TEXAS, VOLCANO, VOLCANO_SHELF, WATER_Y } from './terrain.js';
+import { terrainHeight, PLAYER_SPAWN, ISLAND_RADIUS, ISLAND2, ISLAND2_EAST, ISLAND3, ISLAND4, ISLAND5, ISLAND5_HAND, ISLAND5_SOUTH, ISLAND6, ISLAND6_WEST, ISLAND6_BEACH, ISLAND7, ISLAND7_FLATS, ISLAND7_BACK, ISLAND7_NECK, ISLAND8, ISLAND9, CRAN_NORTH, ISLET_CH, oasisE, TEXAS, VOLCANO, VOLCANO_SHELF, WATER_Y } from './terrain.js';
 import { fadeSwap } from './ui.js';
 import { doorChime } from './audio.js';
 
@@ -119,7 +119,7 @@ const zones = {
       const onFarther = Math.hypot(x - ISLAND7.x, z - ISLAND7.z) < ISLAND7.r + 12 ||
         Math.hypot(x - ISLAND7_FLATS.x, z - ISLAND7_FLATS.z) < ISLAND7_FLATS.r + 10;
       const onOasis = oasisE(x, z) < 1.5;
-      const onCran = Math.hypot(x - ISLAND9.x, z - ISLAND9.z) < ISLAND9.r + 9;
+      const onCran = Math.hypot(x - ISLAND9.x, z - ISLAND9.z) < ISLAND9.r + 9 || Math.hypot(x - CRAN_NORTH.x, z - CRAN_NORTH.z) < CRAN_NORTH.r + 8;
       const onIslet = Math.hypot(x - ISLET_CH.x, z - ISLET_CH.z) < ISLET_CH.r + 3;
       if (!onHome && !onFar && !onNorth && !onVolcano && !onTexas && !onBulko && !onGrove && !onLabs && !onFarther && !onOasis && !onCran && !onIslet) return false;
       return !blocked(x, z);
@@ -442,7 +442,7 @@ const ISLES = [
   ['grove', [ISLAND5, ISLAND5_SOUTH, ...ISLAND5_HAND]],
   ['labs', [ISLAND6, ISLAND6_WEST, { ...ISLAND6_BEACH, r: 17 }]],
   ['oasis', [ISLAND8]],
-  ['cran', [{ ...ISLAND9, r: ISLAND9.r + 3 }]],
+  ['cran', [{ ...ISLAND9, r: ISLAND9.r + 3 }, { ...CRAN_NORTH, r: CRAN_NORTH.r + 2 }]],
   ['chuckee', [ISLET_CH]],
   ['farther', [{ ...ISLAND7, r: ISLAND7.r + 3 }, ISLAND7_FLATS, ISLAND7_NECK, { ...ISLAND7_BACK, r: ISLAND7_BACK.r + 3 }]],
 ];

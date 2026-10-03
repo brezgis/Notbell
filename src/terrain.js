@@ -86,6 +86,11 @@ export function oasisE(x, z) {
 // the harvest), and the creek itself, cutting through from north to south.
 // Pad-local (u east, v south) from the center.
 export const ISLAND9 = { x: 146, z: 54, r: 27 };
+// ...and its North End, a round lobe off the north shore where the creek
+// starts: a cobbled piazza, a restaurant, a pastry shop, an espresso bar, a
+// grotto at the spring, and an alley. Nobody on Cran calls it a front.
+export const CRAN_NORTH = { x: 146, z: 15, r: 19 };
+export const CRAN_PIAZZA = { x: 145, z: 14, r: 8.5 };
 export const CRAN_CREEK = [[3, -30], [2, -17], [7, -9], [4, -1], [10, 7], [8, 15], [13, 30]];
 export const CRAN_BEDS = [
   { u0: 9, u1: 17, v0: -17, v1: -10 },
@@ -185,13 +190,17 @@ function baseHeight(x, z) {
     }
   }
   // the Isle of Cran: land a hand above the tide, the creek cut through it,
-  // the bog beds sunk into it (one of them flooded to the brim)
+  // the bog beds sunk into it (one of them flooded to the brim) — and the
+  // North End, joined on at the top, paved flat where the piazza is
   {
     const d = Math.hypot(x - ISLAND9.x, z - ISLAND9.z);
-    if (d < ISLAND9.r + 10) {
-      const R = ISLAND9.r + (vnoise(x * 0.08 + 1.3, z * 0.08 + 7.7) - 0.5) * 6;
-      let hh = d < R - 5 ? 1.0 : d < R - 1 ? 1.0 + (0.3 - 1.0) * smoothstep(R - 5, R - 1, d) : 0.3 + (-1.6 - 0.3) * smoothstep(R - 1, R + 7, d);
-      hh += (vnoise(x * 0.3 + 4.1, z * 0.3 - 2.2) - 0.5) * 0.12 * (d < R - 5 ? 1 : 0); // a little lumpy, like moss is
+    const dn = Math.hypot(x - CRAN_NORTH.x, z - CRAN_NORTH.z);
+    if (d < ISLAND9.r + 10 || dn < CRAN_NORTH.r + 10) {
+      const wob = vnoise(x * 0.08 + 1.3, z * 0.08 + 7.7) - 0.5;
+      const R = ISLAND9.r + wob * 6, Rn = CRAN_NORTH.r + wob * 3;
+      const shore = (dd, RR) => (dd < RR - 5 ? 1.0 : dd < RR - 1 ? 1.0 + (0.3 - 1.0) * smoothstep(RR - 5, RR - 1, dd) : 0.3 + (-1.6 - 0.3) * smoothstep(RR - 1, RR + 7, dd));
+      let hh = Math.max(shore(d, R), shore(dn, Rn));
+      hh += (vnoise(x * 0.3 + 4.1, z * 0.3 - 2.2) - 0.5) * 0.12 * (d < R - 5 && dn > CRAN_NORTH.r - 3 ? 1 : 0); // a little lumpy, like moss is (the North End is paved)
       if (d < R - 3) {
         const bed = cranBedAt(x, z, 0.6);
         if (bed) {
@@ -202,7 +211,7 @@ function baseHeight(x, z) {
       }
       const cd = cranCreekDist(x, z);
       if (cd < 3.2) hh = Math.min(hh, -1.15 + (hh + 1.15) * smoothstep(1.3, 3.2, cd));
-      h = d < R - 3 ? hh : Math.max(h, hh);
+      h = d < R - 3 || dn < Rn - 3 ? hh : Math.max(h, hh);
     }
   }
   // Oasis Estates: graded. the lawn is dead flat, the berm is a tidy slope,
@@ -498,6 +507,9 @@ const COL_LAWN_A = new THREE.Color(0x58c04a);
 const COL_CRANMOSS_A = new THREE.Color(0x3d6b38);
 const COL_CRANMOSS_B = new THREE.Color(0x4a7a42);
 const COL_BOG = new THREE.Color(0x6e2f35);
+// the North End's piazza: warm old cobbles, two shades, laid by somebody's nonno
+const COL_COBBLE_A = new THREE.Color(0xc9b08c);
+const COL_COBBLE_B = new THREE.Color(0xb89c7a);
 const COL_LAWN_B = new THREE.Color(0x6cce5a); // the mangrove flats, honest tidal mud
 const COL_MUD_WET = new THREE.Color(0x7d6b52);
 const COL_ROCK_TOP = new THREE.Color(0x9a948a);
@@ -566,7 +578,9 @@ export function createTerrain() {
       color.copy(COL_CONCRETE); // poured by the Boring Department, proudly
     } else if (Math.hypot(va.x - foldFields.x, va.z - foldFields.z) < foldFields.r - 1) {
       color.copy(COL_TILLED); // turned earth, in rows, on purpose
-    } else if (Math.hypot(va.x - ISLAND9.x, va.z - ISLAND9.z) < ISLAND9.r + 2 && y > 0.3) {
+    } else if (Math.hypot(va.x - CRAN_PIAZZA.x, va.z - CRAN_PIAZZA.z) < CRAN_PIAZZA.r && y > 0.8) {
+      color.copy(hash2(Math.floor(va.x / 1.7), Math.floor(va.z / 1.7)) > 0.5 ? COL_COBBLE_A : COL_COBBLE_B);
+    } else if ((Math.hypot(va.x - ISLAND9.x, va.z - ISLAND9.z) < ISLAND9.r + 2 || Math.hypot(va.x - CRAN_NORTH.x, va.z - CRAN_NORTH.z) < CRAN_NORTH.r + 2) && y > 0.3) {
       const bed = cranBedAt((va.x + vb.x + vc.x) / 3, (va.z + vb.z + vc.z) / 3);
       if (bed && !bed.flooded) color.copy(COL_BOG);
       else color.copy(vnoise(va.x * 0.5 + 3, va.z * 0.5 - 1) > 0.5 ? COL_CRANMOSS_A : COL_CRANMOSS_B);
