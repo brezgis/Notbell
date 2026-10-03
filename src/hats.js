@@ -119,6 +119,23 @@ const builders = {
     g.add(led);
     return g;
   },
+  // the Famiglia's: a charcoal fedora, a black band, a pinch in the crown.
+  // you get one by never saying when.
+  fedora() {
+    const g = new THREE.Group();
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.55, 0.04, 12), mat(0x3a3a42, 0.7));
+    g.add(brim);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.34, 0.3, 10), mat(0x3a3a42, 0.7));
+    crown.position.y = 0.16;
+    g.add(crown);
+    const pinch = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.4), mat(0x2e2e36, 0.7));
+    pinch.position.y = 0.3;
+    g.add(pinch);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.315, 0.335, 0.07, 10), mat(0x16161a, 0.5));
+    band.position.y = 0.06;
+    g.add(band);
+    return g;
+  },
   leaf_hat() {
     const g = new THREE.Group();
     const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 0), mat(0x55b055, 0.8));
@@ -147,7 +164,7 @@ function capWithBrim(color) {
   return g;
 }
 
-const COVERS_EARS = new Set(['knit_cap', 'straw_hat', 'keepers_cap', 'captains_cap']);
+const COVERS_EARS = new Set(['knit_cap', 'straw_hat', 'keepers_cap', 'captains_cap', 'fedora']);
 
 // Put a hat on any buildAnimal() group (or null to go bare-headed).
 export function applyHat(animal, hatId) {

@@ -276,6 +276,7 @@ const SCALES = {
   minor: [0, 3, 5, 7, 10],
   lydian: [0, 2, 4, 6, 7, 9, 11],
   dorian: [0, 2, 3, 5, 7, 9, 10],
+  harmonic: [0, 2, 3, 5, 7, 8, 11], // the raised seventh: an accordion in a back room
 };
 
 // chords as [root offset from key, quality]; key is a MIDI note
@@ -315,6 +316,12 @@ const MTRACKS = {
   // the Burrough: dorian, a little swing, a streetcar bell somewhere
   burrough: { bpm: 96, key: 55, scale: 'dorian', density: 0.38, lead: 'triangle', vol: 0.018,
     chords: [[2, 'min7'], [7, 'maj'], [0, 'maj7'], [9, 'min7']] },
+  // the North End of Cran: a bouncy little tarantella for the trattoria,
+  // and something slower and minor for the room under it
+  trattoria: { bpm: 112, key: 57, scale: 'harmonic', density: 0.55, lead: 'triangle', vol: 0.018,
+    chords: [[0, 'min'], [5, 'min'], [7, 'maj'], [0, 'min']] },
+  famiglia: { bpm: 58, key: 55, scale: 'harmonic', density: 0.25, lead: 'sine', vol: 0.02,
+    chords: [[0, 'min'], [5, 'min'], [3, 'maj'], [7, 'maj']] },
   indoors: { bpm: 68, key: 60, scale: 'major', density: 0.2, lead: 'sine', vol: 0.016,
     chords: [[0, 'maj'], [9, 'min']] },
 };

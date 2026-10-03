@@ -558,6 +558,50 @@ export const ITEMS = {
     kind: 'keepsake', name: 'A Watercolor of the Bog', emoji: '🎨', price: 0,
     blurb: 'You painted the bog. It came out a pink smudge. Miss Dabble says that’s it exactly, and she’s right.',
   },
+  // the North End of Cran — the Olive Burrow, Zio Orso's, Caffè Bandito, and
+  // the Famiglia (who are not a front; the restaurant is a front)
+  fettuccine: {
+    kind: 'keepsake', name: 'Fettuccine Alfredo', emoji: '🍝', price: 0,
+    blurb: 'A plate of noodles in a sauce that is, as far as anyone can tell, mostly parm and confidence. Benny grated until you said when. Or didn’t.',
+  },
+  meatballs: {
+    kind: 'keepsake', name: 'Spaghetti & One Enormous Meatball', emoji: '🍝', price: 0,
+    blurb: 'Nonna makes them the size of a fist. Whose fist, she won’t say. There is one. It is enough. It is too much. It is exactly right.',
+  },
+  nonna_gnocchi: {
+    kind: 'keepsake', name: 'Nonna’s Gnocchi', emoji: '🥟', price: 0,
+    blurb: 'Little pillows, still warm, from the kitchen out back. Not on the menu. Nobody leaves Nonna’s kitchen hungry. Nobody has ever been allowed to try.',
+  },
+  breadstick: {
+    kind: 'keepsake', name: 'One More Breadstick', emoji: '🥖', price: 0,
+    blurb: 'Unlimited, the menu says. They mean it. They have a guy. You took this one “for later,” which is what everybody says about the last one.',
+  },
+  cannoli: {
+    kind: 'keepsake', name: 'Cannoli (in a Box, with String)', emoji: '🥡', price: 0,
+    blurb: 'Filled to order by Zio Orso, a dusting of sugar, a cherry on each end. The white box is tied with red-and-white string, and you will carry it like it’s a baby bird.',
+  },
+  sfogliatella: {
+    kind: 'keepsake', name: 'Sfogliatella', emoji: '🥐', price: 0,
+    blurb: 'A pastry shaped like a seashell, made of a hundred layers that shatter when you look at them. You will be finding flakes for a week. Worth it.',
+  },
+  lobster_tail_pastry: {
+    kind: 'keepsake', name: 'Lobster Tail (a Pastry)', emoji: '🥮', price: 0,
+    blurb: 'Flaky, cream-filled, shaped like a lobster’s tail. NO LOBSTERS, says a card in Zio Orso’s window, underlined twice. The BULKO tank asked him to clarify.',
+  },
+  matchbook: {
+    kind: 'keepsake', name: 'Olive Burrow Matchbook', emoji: '📕', price: 0,
+    blurb: 'Green and red, a little raccoon on the front. There are no matches inside. There is a note, in pencil: “out back. ask for Vinnie.”',
+  },
+  parm_slice: {
+    kind: 'keepsake', name: 'A Slice of the Don’s Parm', emoji: '🧀', price: 0,
+    blurb: 'You came to him on a day very near his daughter’s someday wedding, and he gave you a slice of his parm. It crumbles just right. A parm that doesn’t crumble can’t be trusted.',
+  },
+  heist_photo: {
+    kind: 'keepsake', name: 'Polaroid: Operazione Formaggio', emoji: '📸', price: 0,
+    blurb: 'Two in the morning behind BULKO: you, Sal and Benny, and a wheel of parm, everybody grinning. In the corner, lying very still, Eddie. The exact change is out of frame, on the counter, where it belongs.',
+  },
+  fedora: { kind: 'hat', name: 'The Famiglia Fedora', emoji: '🎩', price: 0,
+    blurb: 'Charcoal, a black band, a pinch in the crown. Given, never sold. The Don says it suits you. The Don says that about everyone in the family, and he means it every time.' },
   // Chuckee's (the travel stop in the strait)
   chuckee_nuggets: {
     kind: 'keepsake', name: 'Chuckee Nuggets', emoji: '🌽', price: 0,

@@ -1283,6 +1283,121 @@ export function buildAnimal(kind, colors = {}) {
       wing.userData.notFace = true;
       g.add(wing);
     }
+  } else if (kind === 'raccoon') {
+    // a raccoon: round, grey, a bandit's mask it was born in and a ringed
+    // tail it is very proud of. colors: body, mask, light (muzzle, brows,
+    // ear tips), ring (the tail's dark bands)
+    parts.body.scale.set(1.12, 0.96, 1.2);
+    const dark = mat(colors.mask ?? 0x2e2c30);
+    const light = mat(colors.light ?? 0xf2eee6);
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.24, 4), headMat);
+      ear.position.set(sx * 0.24, 1.6, 0.24);
+      ear.rotation.z = -sx * 0.25;
+      g.add(ear);
+      (parts.ears ??= []).push(ear);
+      const tip = new THREE.Mesh(ico(0.05, 0), light);
+      tip.position.set(sx * 0.27, 1.71, 0.24);
+      g.add(tip);
+      parts.ears.push(tip);
+    }
+    // the mask: one dark band across both eyes, white brows over it
+    const mask = new THREE.Mesh(ico(0.2, 0), dark);
+    mask.scale.set(2.05, 0.6, 0.75);
+    mask.position.set(0, 1.26, 0.6);
+    g.add(mask);
+    parts.eyes.forEach((e, i) => { e.position.set((i ? 1 : -1) * 0.17, 1.27, 0.76); e.scale.setScalar(1.1); });
+    for (const sx of [-1, 1]) {
+      const rim = new THREE.Mesh(ico(0.075, 0), light); // a glint of white round each eye, or they'd vanish into the mask
+      rim.position.set(sx * 0.17, 1.27, 0.73);
+      g.add(rim);
+      const brow = new THREE.Mesh(ico(0.08, 0), light);
+      brow.scale.set(1.4, 0.55, 0.8);
+      brow.position.set(sx * 0.17, 1.4, 0.63);
+      g.add(brow);
+    }
+    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.3, 6), light);
+    snout.rotation.x = Math.PI / 2;
+    snout.position.set(0, 1.08, 0.8);
+    g.add(snout);
+    const nose = new THREE.Mesh(ico(0.055, 0), NOSE_MAT);
+    nose.position.set(0, 1.09, 0.96);
+    g.add(nose);
+    // the tail: fat, ringed, held up off the ground like a good coat
+    const ring = mat(colors.ring ?? 0x3a383c);
+    for (let i = 0; i < 6; i++) {
+      const seg = new THREE.Mesh(ico(0.2 - i * 0.012, 0), i % 2 ? ring : bodyMat);
+      seg.scale.set(1, 1, 0.8);
+      seg.position.set(0, 0.72 + i * 0.07, -0.68 - i * 0.15);
+      seg.userData.notFace = true;
+      g.add(seg);
+    }
+  } else if (kind === 'ferret') {
+    // a ferret: a long, low, very busy noodle with a little mask of its own.
+    // colors: body (sable), head (cream face), mask
+    parts.body.scale.set(0.82, 0.8, 1.65);
+    parts.bodyY = 0.56;
+    parts.body.position.y = parts.bodyY;
+    parts.headY = 1.02;
+    parts.head.scale.setScalar(0.86);
+    parts.head.position.set(0, parts.headY, 0.62);
+    parts.legs.forEach((leg, i) => { leg.scale.set(0.85, 0.85, 0.85); leg.position.set((i % 2 ? 1 : -1) * 0.2, 0.36, i < 2 ? 0.42 : -0.42); });
+    parts.eyes.forEach((e, i) => e.position.set((i ? 1 : -1) * 0.15, 1.1, 0.95));
+    const mask = new THREE.Mesh(ico(0.18, 0), mat(colors.mask ?? 0x5a4030));
+    mask.scale.set(1.9, 0.55, 0.7);
+    mask.position.set(0, 1.09, 0.84);
+    g.add(mask);
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(ico(0.085, 0), mat(colors.ear ?? 0xe8d8bc));
+      ear.position.set(sx * 0.26, 1.31, 0.56);
+      g.add(ear);
+    }
+    const muzzle = new THREE.Mesh(ico(0.13), headMat);
+    muzzle.scale.set(1.1, 0.8, 1);
+    muzzle.position.set(0, 0.98, 0.97);
+    g.add(muzzle);
+    const nose = new THREE.Mesh(ico(0.045, 0), mat(0xe8a0a8, 0.5));
+    nose.position.set(0, 1.01, 1.09);
+    g.add(nose);
+    const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.55, 4, 6), bodyMat);
+    tail.rotation.x = Math.PI / 2 - 0.35;
+    tail.position.set(0, 0.62, -1.05);
+    g.add(tail);
+  } else if (kind === 'possum') {
+    // an opossum: a white face on a grey shag coat, a long pink nose, round
+    // black ears like two coins, a bare pink tail — and, under pressure, a
+    // remarkable talent for lying down. colors: body, head, ears, tail
+    parts.body.scale.set(1.05, 0.92, 1.25);
+    const pink = mat(colors.tail ?? 0xe8b4b4, 0.7);
+    const black = mat(colors.ears ?? 0x2a2628);
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.04, 9), black);
+      ear.rotation.x = Math.PI / 2;
+      ear.rotation.z = sx * 0.3;
+      ear.position.set(sx * 0.27, 1.55, 0.24);
+      g.add(ear);
+      const patch = new THREE.Mesh(ico(0.07, 0), black); // dark round the eyes
+      patch.position.set(sx * 0.17, 1.27, 0.66);
+      g.add(patch);
+    }
+    parts.eyes.forEach((e) => { e.position.z = 0.71; });
+    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.46, 6), headMat);
+    snout.rotation.x = Math.PI / 2;
+    snout.position.set(0, 1.08, 0.86);
+    g.add(snout);
+    const nose = new THREE.Mesh(ico(0.06, 0), pink);
+    nose.position.set(0, 1.08, 1.1);
+    g.add(nose);
+    const legDark = mat(0x3a3634);
+    parts.legs.forEach((leg) => { leg.material = legDark; });
+    for (let i = 0; i < 5; i++) {
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.06 - i * 0.008, 0.07 - i * 0.008, 0.24, 5), pink);
+      const a = i * 0.45;
+      seg.position.set(0, 0.62 + Math.sin(a) * 0.16, -0.72 - Math.cos(a * 0.6) * i * 0.18);
+      seg.rotation.x = Math.PI / 2 - a;
+      seg.userData.notFace = true;
+      g.add(seg);
+    }
   } else if (kind === 'worm') {
     // an earthworm. with legs. six, in little white sneakers. nobody asks.
     // long and low: the head is just the front of the worm
