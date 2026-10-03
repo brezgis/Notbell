@@ -38,6 +38,7 @@ import { createBurrough } from './burrough.js';
 import { createOasis } from './oasis.js';
 import * as mail from './mail.js';
 import { createCran } from './cran.js';
+import { createNorthEnd } from './northend.js';
 import { createChuckee } from './chuckee.js';
 import { wireHatKey } from './hats.js';
 import { initTools, updateTools, play as playTool } from './tools.js';
@@ -227,6 +228,7 @@ const burrough = createBurrough(player, { molehill: labsGrounds.molehill }); // 
 const oasis = createOasis(player); // Oasis Estates came last, by appointment, and touches nothing
 const chuckee = createChuckee(player); // the strait: footbridge, highway, travel stop
 const cran = createCran(player); // the Isle of Cran (its village reserved its ground at module load, before the houses went up)
+const northEnd = createNorthEnd(player); // ...and its North End, and what's under it (last: its vault draws on the PRNG)
 wireHatKey(player.group);
 initTools(player); // rod, net, shovel — in your paws when you use them
 initFieldGuide(player);
@@ -240,7 +242,7 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, shells.group, starfall.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group, crown.group, labsGrounds.group, burrough.group, oasis.group, cran.group, chuckee.group
+  island5.group, shells.group, starfall.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group, crown.group, labsGrounds.group, burrough.group, oasis.group, cran.group, chuckee.group, northEnd.group
 );
 
 // name each module's root so debug probes (shots/clip_audit.mjs) can say
@@ -248,7 +250,7 @@ scene.add(
 for (const [k, g] of Object.entries({
   ocean, sky, nature, animals, buildings, cave, fishing, digging, tidePools,
   houses, bridge, island2, oceanLife, boats, volcano, island3, ghost, beachBall, shells, starfall,
-  texas, bulko, island5, northline, farline, island6, fold, farther, moon, crown, oasis, cran, chuckee,
+  texas, bulko, island5, northline, farline, island6, fold, farther, moon, crown, oasis, cran, chuckee, northEnd,
 })) if (g.group && !g.group.name) g.group.name = k;
 player.group.name = 'player';
 
@@ -480,6 +482,7 @@ renderer.setAnimationLoop(() => {
   farther.update(dt, t, playerPos); // ditto — the General keeps store hours (all of them)
   oasis.update(dt, t, playerPos); // ditto — the CaMall has walkers before it opens
   cran.update(dt, t, playerPos); // ditto — zumba waits for no one
+  northEnd.update(dt, t, playerPos); // ditto — and the night shift at BULKO keeps its own hours
   chuckee.update(dt, t, playerPos); // ditto — the highway never closes
   if (zone === 'moon') moon.update(dt, t, playerPos);
   if (zone === 'crown') crown.update(dt, t, playerPos);
@@ -508,6 +511,7 @@ renderer.setAnimationLoop(() => {
       burrough_local1: 'shop', burrough_mould: 'museum', burrough_arms: 'burrough', burrough_dirt: 'burrough', burrough_ritz: 'manor',
       mall: 'bulko', polly: 'shop', drom: 'bulko', mirage: 'cafe', cluck: 'shop',
       cran_ink: 'shop', cran_records: 'cafe', cran_cc: 'holiday', chuckee: 'bulko',
+      cran_olive: 'trattoria', cran_caffe: 'trattoria', cran_dolci: 'trattoria', cran_lair: 'famiglia',
     };
     const outdoors = zone === 'island' || zone === 'sea';
     const wx = currentWeather();

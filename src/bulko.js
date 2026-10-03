@@ -991,7 +991,7 @@ export function createBulko(player) {
       pos: new THREE.Vector3(B.x - 8, 0, B.z + 4.9), r: 2.6, zone: 'bulko',
       label: 'consider the parmesan wheels',
       use: async () => {
-        const choice = await ui.ask('Wheels of parmesan, stacked to shoulder height. Each one is the size of a well-fed dog.', [
+        const choice = await ui.ask('Wheels of parmesan, stacked to shoulder height. Each one is the size of a well-fed dog. Taped to the top one, a note in BULKO red: “TO WHOEVER KEEPS BUYING THESE AT 2 A.M.: THANK YOU FOR THE EXACT CHANGE. THE DOORS WERE LOCKED. HOW. —MGMT”', [
           { label: '🧀 Buy a wheel', value: 'buy', hint: '300🔘', disabled: S.state.buttons < 300 },
           { label: 'Respect them from here', value: null },
         ]);
