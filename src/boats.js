@@ -550,6 +550,154 @@ export function createBoats(player) {
     return via.sort((u, v) => u.k - v.k);
   }
 
+  // ------------------------------------------------------------ the chart ----
+  // She plans the whole trip before she leaves (Oct '26: she used to steer by
+  // whiskers — feel ahead, swerve — and so she'd circle in a cove, scrape the
+  // arch, and sail clean through the piers). A coarse chart of the sea: deep
+  // enough to float her, clear of sea walls, and nothing built low over the
+  // water (piers, low bridge spans; a trestle high enough to pass under is
+  // fine). Blocked cells grow by a hull's width; water near land costs more,
+  // so she keeps to the middle of a channel. A* over it, then the corners
+  // pulled tight, so she sails a few long legs.
+  const CHART = { x0: -236, z0: -200, cell: 2, nx: 236, nz: 212 };
+  let chart = null;
+  function openWater(x, z) {
+    const h = terrainHeight(x, z);
+    if (h > WATER_Y - 0.6 || zones.seaBlocked(x, z)) return false;
+    const built = zones.islandGroundHeight(x, z);
+    return !(built > h + 0.5 && built < 2.9); // (a pier; a trestle the funnel clears is fine)
+  }
+  function buildChart() {
+    const { nx, nz } = CHART;
+    const gates = zones.getSeaGates();
+    const inGate = (i, j) => {
+      const c = centerOf(i, j);
+      return gates.some((g) => Math.hypot(c.x - g.x, c.z - g.z) < 7);
+    };
+    const free = new Uint8Array(nx * nz);
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      free[j * nx + i] = openWater(CHART.x0 + (i + 0.5) * CHART.cell, CHART.z0 + (j + 0.5) * CHART.cell) ? 1 : 0;
+    }
+    // a hull's width of margin, and a nearness-to-land cost two cells further out
+    const ok = new Uint8Array(nx * nz), near = new Uint8Array(nx * nz);
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      let minD = 9;
+      for (let dj = -3; dj <= 3; dj++) for (let di = -3; di <= 3; di++) {
+        const ii = i + di, jj = j + dj;
+        if (ii < 0 || jj < 0 || ii >= nx || jj >= nz || !free[jj * nx + ii]) minD = Math.min(minD, Math.max(Math.abs(di), Math.abs(dj)));
+      }
+      ok[j * nx + i] = minD > 1 || (free[j * nx + i] && inGate(i, j)) ? 1 : 0; // (a gate — the arch's tunnel — is threaded, margin or no)
+      near[j * nx + i] = minD > 3 ? 0 : 4 - minD;
+    }
+    chart = { ok, near };
+    // every anchorage moves to clean water: a hull's width off its pier,
+    // not lying across it (most of them used to)
+    for (const stop of Object.values(STOPS)) {
+      const [ci, cj] = cellOf(stop.sea.x, stop.sea.z);
+      let best = null, bestD = Infinity;
+      for (let dj = -8; dj <= 8; dj++) for (let di = -8; di <= 8; di++) {
+        const i = ci + di, j = cj + dj;
+        if (!sailable(i, j) || near[j * nx + i] > 1) continue;
+        const dd = di * di + dj * dj;
+        if (dd < bestD) { bestD = dd; best = centerOf(i, j); }
+      }
+      if (best) { stop.sea.x = best.x; stop.sea.z = best.z; }
+    }
+  }
+  const cellOf = (x, z) => [Math.floor((x - CHART.x0) / CHART.cell), Math.floor((z - CHART.z0) / CHART.cell)];
+  const centerOf = (i, j) => ({ x: CHART.x0 + (i + 0.5) * CHART.cell, z: CHART.z0 + (j + 0.5) * CHART.cell });
+  function sailable(i, j) {
+    return i >= 0 && j >= 0 && i < CHART.nx && j < CHART.nz && chart.ok[j * CHART.nx + i] === 1;
+  }
+  function nearestSailable(x, z) {
+    const [ci, cj] = cellOf(x, z);
+    for (let r = 0; r < 12; r++) {
+      for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+        if (Math.max(Math.abs(di), Math.abs(dj)) === r && sailable(ci + di, cj + dj)) return [ci + di, cj + dj];
+      }
+    }
+    return null;
+  }
+  function clearLine(a, b) {
+    const L = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(L / 1);
+    for (let k = 1; k < n; k++) {
+      const [i, j] = cellOf(a.x + ((b.x - a.x) * k) / n, a.z + ((b.z - a.z) * k) / n);
+      if (!sailable(i, j) || chart.near[j * CHART.nx + i] >= 2) return false;
+    }
+    return true;
+  }
+  function planPath(from, to) {
+    if (!chart) buildChart();
+    const s0 = nearestSailable(from.x, from.z), g0 = nearestSailable(to.x, to.z);
+    if (!s0 || !g0) return null;
+    const { nx } = CHART, N = nx * CHART.nz;
+    const g = new Float32Array(N).fill(Infinity), came = new Int32Array(N).fill(-1), closed = new Uint8Array(N);
+    const heap = []; // [f, idx]
+    const push = (f, idx) => { heap.push([f, idx]); let c = heap.length - 1; while (c > 0) { const p = (c - 1) >> 1; if (heap[p][0] <= heap[c][0]) break; [heap[p], heap[c]] = [heap[c], heap[p]]; c = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let c = 0; for (;;) { const l = 2 * c + 1, r = l + 1; let m = c; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === c) break; [heap[m], heap[c]] = [heap[c], heap[m]]; c = m; } } return top; };
+    const start = s0[1] * nx + s0[0], goal = g0[1] * nx + g0[0];
+    const hEst = (i, j) => Math.hypot(i - g0[0], j - g0[1]);
+    g[start] = 0;
+    push(hEst(s0[0], s0[1]), start);
+    while (heap.length) {
+      const [, cur] = pop();
+      if (closed[cur]) continue;
+      closed[cur] = 1;
+      if (cur === goal) break;
+      const ci = cur % nx, cj = (cur / nx) | 0;
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+        if (!di && !dj) continue;
+        const ni = ci + di, nj = cj + dj;
+        if (!sailable(ni, nj)) continue;
+        if (di && dj && (!sailable(ci + di, cj) || !sailable(ci, cj + dj))) continue; // no squeezing past a corner
+        const nIdx = nj * nx + ni;
+        const step = (di && dj ? 1.414 : 1) * (1 + chart.near[nIdx] * 0.8);
+        if (g[cur] + step < g[nIdx]) {
+          g[nIdx] = g[cur] + step;
+          came[nIdx] = cur;
+          push(g[nIdx] + hEst(ni, nj), nIdx);
+        }
+      }
+    }
+    if (came[goal] < 0 && goal !== start) return null;
+    let cells = [];
+    for (let c = goal; c !== -1; c = came[c]) cells.unshift(centerOf(c % nx, (c / nx) | 0));
+    // a gate (the arch's tunnel) is threaded square: line up on its near
+    // side, through the middle, out the far side — pinned, so the corner-
+    // pulling below can't cut across its walls
+    const pins = new Set();
+    for (const gt of zones.getSeaGates()) {
+      const inside = cells.map((c) => Math.hypot(c.x - gt.x, c.z - gt.z) < 9);
+      const k0 = inside.indexOf(true), k1 = inside.lastIndexOf(true);
+      if (k0 < 0) continue;
+      const prev = cells[Math.max(0, k0 - 1)];
+      const side = Math.sign((prev.x - gt.x) * gt.nx + (prev.z - gt.z) * gt.nz) || 1;
+      const thread = [
+        { x: gt.x + gt.nx * side * 9, z: gt.z + gt.nz * side * 9 },
+        { x: gt.x, z: gt.z },
+        { x: gt.x - gt.nx * side * 9, z: gt.z - gt.nz * side * 9 },
+      ];
+      thread.forEach((p) => pins.add(p));
+      cells = [...cells.slice(0, k0), ...thread, ...cells.slice(k1 + 1)];
+    }
+    // pull the corners tight: from each leg's start, reach as far ahead as is
+    // clear (never past a pin)
+    const legs = [];
+    let at = { x: from.x, z: from.z };
+    let k = 0;
+    while (k < cells.length) {
+      let far = k;
+      let stop = cells.length - 1;
+      for (let q = k; q < cells.length; q++) if (pins.has(cells[q])) { stop = q; break; }
+      for (let q = stop; q > k; q--) if (pins.has(cells[q]) ? clearLine(at, cells[q]) || q === k + 1 : clearLine(at, cells[q])) { far = q; break; }
+      legs.push(cells[far]);
+      at = cells[far];
+      k = far + 1;
+    }
+    legs.push({ x: to.x, z: to.z });
+    return legs;
+  }
+
   async function beginVoyage(destId, fromId) {
     const dest = STOPS[destId];
     const from = STOPS[fromId];
@@ -557,14 +705,16 @@ export function createBoats(player) {
     storyIdx[destId] = storyIdx[destId] || 0;
     const story = lines[storyIdx[destId]++ % lines.length];
     plop();
+    const path = planPath(from.sea, dest.sea);
+    const first = path?.find((p) => Math.hypot(p.x - from.sea.x, p.z - from.sea.z) > 4) || dest.sea;
     await ui.fadeSwap(() => {
-      const heading = Math.atan2(dest.sea.x - from.sea.x, dest.sea.z - from.sea.z);
+      const heading = Math.atan2(first.x - from.sea.x, first.z - from.sea.z);
       tug.position.set(from.sea.x, WATER_Y + 0.35, from.sea.z);
       tug.rotation.y = heading;
       player.riding = true;
       return zones.go('sea', { x: from.sea.x, z: from.sea.z, rotY: heading });
     });
-    voyage = { dest, destId, story, speed: 0, elapsed: 0, storyFired: false, landing: false, via: routeVia(from.sea, dest.sea) };
+    voyage = { dest, destId, story, speed: 0, elapsed: 0, storyFired: false, landing: false, path, via: path ? [] : routeVia(from.sea, dest.sea) };
     ui.toast('The Persistent clears her throat and gets going.', '⛴️');
   }
 
@@ -578,7 +728,8 @@ export function createBoats(player) {
       : 'The Persistent putters off home. Ring a buoy when you want a lift.', '⛴️');
     if (v.destId !== 'home') {
       // she sees herself home, trailing smoke over the horizon
-      voyage = { dest: STOPS.home, destId: 'home', ghost: true, speed: 4, elapsed: 0, via: routeVia(v.dest.sea, STOPS.home.sea) };
+      const path = planPath(v.dest.sea, STOPS.home.sea);
+      voyage = { dest: STOPS.home, destId: 'home', ghost: true, speed: 4, elapsed: 0, path, via: path ? [] : routeVia(v.dest.sea, STOPS.home.sea) };
     } else {
       tug.position.set(tx, WATER_Y + 0.35, tz);
       tug.rotation.y = outA + 0.9;
@@ -801,6 +952,7 @@ export function createBoats(player) {
   });
 
   function update(dt, t, playerPos) {
+    if (!chart) buildChart(); // (once, on the first frame: every module's piers and walls exist by then)
     for (const u of updates) u(dt, t, playerPos);
     updateRowboatOars(dt, playerPos);
     // idle boats bob at their moorings
@@ -819,16 +971,35 @@ export function createBoats(player) {
     if (voyage) {
       const v = voyage;
       v.elapsed += dt;
+      if (v.path) {
+        // sailing the plan: leg by leg, easing off into the sharp turns
+        while (v.path.length > 1 && Math.hypot(v.path[0].x - tug.position.x, v.path[0].z - tug.position.z) < 4) v.path.shift();
+        const aim = v.path[0];
+        const dx = aim.x - tug.position.x, dz = aim.z - tug.position.z;
+        const dist = v.path.length > 1 ? 99 : Math.hypot(dx, dz);
+        const want = Math.atan2(dx, dz);
+        let off = want - tug.rotation.y;
+        off = Math.abs(Math.atan2(Math.sin(off), Math.cos(off)));
+        tug.rotation.y = turnToward(tug.rotation.y, want, dt, dist < 12 ? 0.6 : 1.1);
+        const cruise = v.ghost ? 6 : 6.5;
+        const targetSpeed = dist < 12 ? Math.max(0.6, dist * 0.2) : off > 0.9 ? 1.6 : off > 0.4 ? 3.2 : cruise;
+        v.speed += (targetSpeed - v.speed) * Math.min(1, dt * (targetSpeed < v.speed ? 2.0 : 0.8));
+        tug.position.x += Math.sin(tug.rotation.y) * v.speed * dt;
+        tug.position.z += Math.cos(tug.rotation.y) * v.speed * dt;
+        v.dist = dist;
+      }
       // threading a gate? steer for it first (and don't dodge the gate's walls)
       while (v.via?.length && Math.hypot(v.via[0].x - tug.position.x, v.via[0].z - tug.position.z) < 3) v.via.shift();
       const aim = v.via?.length ? v.via[0] : v.dest.sea;
       const dx = aim.x - tug.position.x;
       const dz = aim.z - tug.position.z;
-      const dist = v.via?.length ? 99 : Math.hypot(dx, dz);
-      // steer for the anchorage; the shallows get a respectful berth
+      const dist = v.path ? v.dist : v.via?.length ? 99 : Math.hypot(dx, dz);
+      // (no plan? the old way: steer for the anchorage; the shallows get a respectful berth)
       let want = Math.atan2(dx, dz);
       let dodging = false;
-      if (dist > 14) {
+      if (v.path) {
+        // (steered above)
+      } else if (dist > 14) {
         if (shallowAhead(0, 13) || shallowAhead(0, 8)) {
           dodging = true;
           want = tug.rotation.y + (shallowAhead(0.5, 10) && !shallowAhead(-0.5, 10) ? -1.0 : 1.0);
@@ -846,11 +1017,13 @@ export function createBoats(player) {
       }
       // (close in, she turns gently — she used to pirouette round the
       // anchorage, sweeping her stern through the dock)
-      tug.rotation.y = turnToward(tug.rotation.y, want, dt, dodging ? 1.7 : dist < 12 ? 0.45 : 1.0);
-      const targetSpeed = v.ghost ? 6 : dist < 12 ? Math.max(0.6, dist * 0.2) : 6.5;
-      v.speed += (targetSpeed - v.speed) * Math.min(1, dt * 0.8);
-      tug.position.x += Math.sin(tug.rotation.y) * v.speed * dt;
-      tug.position.z += Math.cos(tug.rotation.y) * v.speed * dt;
+      if (!v.path) {
+        tug.rotation.y = turnToward(tug.rotation.y, want, dt, dodging ? 1.7 : dist < 12 ? 0.45 : 1.0);
+        const targetSpeed = v.ghost ? 6 : dist < 12 ? Math.max(0.6, dist * 0.2) : 6.5;
+        v.speed += (targetSpeed - v.speed) * Math.min(1, dt * 0.8);
+        tug.position.x += Math.sin(tug.rotation.y) * v.speed * dt;
+        tug.position.z += Math.cos(tug.rotation.y) * v.speed * dt;
+      }
 
       if (!v.ghost) {
         // you, on deck, enjoying the spray
@@ -936,5 +1109,20 @@ export function createBoats(player) {
     return true;
   }
 
-  return { group, update, resumeRowing };
+  // debug (shots/probe_tug.mjs): sail her, empty, from one stop to another —
+  // the same run as her ghost trip home — and report where she is
+  const debug = {
+    stops: () => Object.keys(STOPS),
+    sail(destId, fromId) {
+      const dest = STOPS[destId], from = STOPS[fromId];
+      const path = planPath(from.sea, dest.sea);
+      const first = path?.find((p) => Math.hypot(p.x - from.sea.x, p.z - from.sea.z) > 4) || dest.sea;
+      tug.position.set(from.sea.x, WATER_Y + 0.35, from.sea.z);
+      tug.rotation.y = Math.atan2(first.x - from.sea.x, first.z - from.sea.z);
+      voyage = { dest, destId, ghost: true, speed: 4, elapsed: 0, path, via: path ? [] : routeVia(from.sea, dest.sea) };
+    },
+    state: () => (voyage ? { x: tug.position.x, z: tug.position.z, ry: tug.rotation.y, elapsed: voyage.elapsed } : null),
+    dest: (id) => STOPS[id].sea,
+  };
+  return { group, update, resumeRowing, debug };
 }
