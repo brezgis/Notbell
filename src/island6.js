@@ -19,6 +19,7 @@ import { HOLIDAY, isNight } from './calendar.js';
 import { currentWeather, setSpaceFade } from './almanac.js';
 import { setLaunchNight } from './sky.js';
 import { makeCeilingTube } from './buildings.js';
+import { glowWindow } from './nightglow.js';
 
 function mat(color, rough = 0.9) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -935,11 +936,11 @@ export function createIsland6(player) {
       b.add(body);
       // the glass door (front) and side windows, a little proud of the walls
       const glassMat = new THREE.MeshStandardMaterial({ color: 0xcfe8ef, roughness: 0.2, flatShading: true });
-      const door = new THREE.Mesh(new THREE.BoxGeometry(0.78, 1.5, 0.04), glassMat);
+      const door = glowWindow(new THREE.Mesh(new THREE.BoxGeometry(0.78, 1.5, 0.04), glassMat)); // (a lit phone booth at night)
       door.position.set(0, 1.12, 0.59);
       b.add(door);
       for (const sx of [-1, 1]) {
-        const win = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.6), glassMat);
+        const win = glowWindow(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.6), glassMat));
         win.position.set(sx * 0.59, 1.45, 0);
         b.add(win);
       }

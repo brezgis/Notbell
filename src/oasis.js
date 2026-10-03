@@ -1107,7 +1107,7 @@ export function createOasis(player) {
     put(makeWindow(0.45), u + 1.4, v + d / 2 + 0.01, 1.2);
     // the drive-thru: a window on the east wall, a menu board, one car,
     // idling since before anyone can remember, by nobody
-    put(box(0.1, 0.9, 1.1, 0xbfe6f2), u + w / 2 + 0.02, v - 0.3, 1.3);
+    put(glowWindow(box(0.1, 0.9, 1.1, 0xbfe6f2)), u + w / 2 + 0.02, v - 0.3, 1.3);
     const menu = sign(['ORDER HERE', 'NUGGETS · SANDWICH · WAFFLE FRIES', 'LEMONADE · IT’S OUR PLEASURE'], { w: 1.4, h: 1.2, bg: '#2a2a2e', fg: '#ffdd88' });
     put(menu, u + w / 2 + 1.6, v + 2.4, 1.2, -Math.PI / 2);
     put(box(0.12, 0.6, 0.12, 0x2a2a2e), u + w / 2 + 1.6, v + 2.4, 0.3);

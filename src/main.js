@@ -39,6 +39,7 @@ import { createOasis } from './oasis.js';
 import * as mail from './mail.js';
 import { createCran } from './cran.js';
 import { createNorthEnd } from './northend.js';
+import { createLamps } from './lamps.js';
 import { createChuckee } from './chuckee.js';
 import { wireHatKey } from './hats.js';
 import { initTools, updateTools, play as playTool } from './tools.js';
@@ -228,7 +229,8 @@ const burrough = createBurrough(player, { molehill: labsGrounds.molehill }); // 
 const oasis = createOasis(player); // Oasis Estates came last, by appointment, and touches nothing
 const chuckee = createChuckee(player); // the strait: footbridge, highway, travel stop
 const cran = createCran(player); // the Isle of Cran (its village reserved its ground at module load, before the houses went up)
-const northEnd = createNorthEnd(player); // ...and its North End, and what's under it (last: its vault draws on the PRNG)
+const northEnd = createNorthEnd(player);
+const lamps = createLamps(); // after everything: lamps find open ground beside what's already built
 wireHatKey(player.group);
 initTools(player); // rod, net, shovel — in your paws when you use them
 initFieldGuide(player);
@@ -242,7 +244,7 @@ scene.add(
   buildings.group, cave.group, fishing.group, digging.group, tidePools.group,
   houses.group, bridge.group, island2.group, oceanLife.group,
   boats.group, volcano.group, island3.group, ghost.group, beachBall.group, texas.group, bulko.group,
-  island5.group, shells.group, starfall.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group, crown.group, labsGrounds.group, burrough.group, oasis.group, cran.group, chuckee.group, northEnd.group
+  island5.group, shells.group, starfall.group, northline.group, farline.group, island6.group, fold.group, farther.group, moon.group, crown.group, labsGrounds.group, burrough.group, oasis.group, cran.group, chuckee.group, northEnd.group, lamps.group
 );
 
 // name each module's root so debug probes (shots/clip_audit.mjs) can say
@@ -473,6 +475,7 @@ renderer.setAnimationLoop(() => {
     texas.update(dt, t, playerPos);
     northline.update(dt, t);
     farline.update(dt, t);
+    lamps.update(); // the street lamps come on with the windows
     labsGrounds.update(dt, t, playerPos);
   }
   bulko.update(dt, t, playerPos);

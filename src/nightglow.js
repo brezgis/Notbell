@@ -7,7 +7,7 @@
 // reflection is preserved. And it does not pulse — it just glows.
 
 import * as THREE from 'three';
-import { isNight } from './calendar.js';
+import { dayFactor } from './calendar.js';
 import { currentWeather } from './almanac.js';
 
 const panes = [];
@@ -34,7 +34,9 @@ export function glowLevel() {
 }
 
 export function updateNightGlow(dt) {
-  const on = isNight() || currentWeather() !== 'clear';
+  // (from dusk, not full dark: the lamps go on when the light starts to go —
+  // they used to wait for true night, and the town sat dim through the evening)
+  const on = dayFactor() < 0.26 || currentWeather() !== 'clear';
   const k = Math.min(1, dt * 1.5);
   level += ((on ? 1 : 0) - level) * k;
   for (const p of panes) {
