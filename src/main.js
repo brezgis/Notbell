@@ -454,7 +454,7 @@ renderer.setAnimationLoop(() => {
   player.update(dt, t, camYaw);
   updateTools(dt);
   animals.update(dt, t, playerPos);
-  idleAll(t);
+  idleAll(t, playerPos); // (and anyone near you looks your way)
   if (outdoors) {
     // the open world only spends effort when you can see it
     ocean.update(t);

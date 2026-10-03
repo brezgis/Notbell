@@ -1646,6 +1646,7 @@ export function createBurrough(player, { molehill = null } = {}) {
       { kind: 'mole', body: 0x6a5a50, x: -4.6, z: 5.4 },
     ].map((c) => {
       const cr = buildAnimal(c.kind, { body: c.body, head: c.body });
+      cr.userData.noLook = true; // (the head-shake is scripted)
       if (c.kind === 'mole') cr.scale.setScalar(0.85);
       stand(cr, c.x, c.z, Math.atan2(-6.5 - c.x, 3.2 - c.z));
       return cr;

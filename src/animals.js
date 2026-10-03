@@ -1464,7 +1464,12 @@ export function buildAnimal(kind, colors = {}) {
 // touches what the walk cycle drives (leg swing, bob heights), so it layers
 // quietly on top of any other animation.
 const BUILT = [];
-export function idleAll(t) {
+// Anyone standing near you notices you: the head (and the face and hat that
+// ride on it) turns your way, within a comfortable neck's reach, and eases
+// back when you go. Bodies are left to whoever drives them. Opt out with
+// userData.noLook (statues, the dead-on-purpose, heads with their own script).
+const LOOK_R = 5.5, LOOK_MAX = 0.95;
+export function idleAll(t, playerPos) {
   for (const g of BUILT) {
     if (!g.parent) continue;
     const p = g.userData.parts;
@@ -1489,6 +1494,20 @@ export function idleAll(t) {
     // a glance: drift a touch to one side and back, every ten seconds or so
     const gl = Math.max(0, Math.sin(u * 0.55)) ** 6 * Math.sign(Math.sin(u * 0.13 + 1)) * 0.05;
     p.head.position.x = d.headX + gl;
+    if (playerPos && !g.userData.noLook && !g.userData.noFidget && p.head.visible) {
+      const m = g.matrixWorld.elements;
+      const dx = playerPos.x - m[12], dz = playerPos.z - m[14];
+      let want = 0;
+      if (dx * dx + dz * dz < LOOK_R * LOOK_R && dx * dx + dz * dz > 0.01) {
+        let rel = Math.atan2(dx, dz) - Math.atan2(m[8], m[10]);
+        rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+        if (Math.abs(rel) < 2.4) want = Math.max(-LOOK_MAX, Math.min(LOOK_MAX, rel));
+      }
+      const ldt = d.lookT === undefined ? 0 : Math.min(0.1, Math.max(0, t - d.lookT));
+      d.lookT = t;
+      d.look = (d.look ?? 0) + (want - (d.look ?? 0)) * Math.min(1, ldt * 4);
+      p.head.rotation.y = d.look;
+    }
     p.eyes.forEach((e, i) => {
       e.scale.y = d.eyeSY[i] * (shut ? 0.12 : 1);
       if (e.parent !== p.head) e.position.x = d.eyeX[i] + gl; // (on the head, they glance with it)
