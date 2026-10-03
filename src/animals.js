@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { terrainHeight, clearOfSites, SITES, ISLAND_RADIUS, ISLAND2, ISLAND3, ISLAND5, ISLAND9, VOLCANO_SHELF, WATER_Y } from './terrain.js';
 import { islandCanWalk, islandCanStand, islandGroundHeight, solidAt, islandOf, findRoute } from './zones.js';
 import { rand, pick, turnToward } from './utils.js';
+import { isBusy } from './ui.js';
 
 function mat(color) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 });
@@ -1772,7 +1773,13 @@ export function createAnimals() {
       // (they have somewhere to be; they'd nod if we'd modeled nodding).
       // Set { x, z, r?, done?, fail? } on any animal; movement respects the
       // same rules as wandering, with a few sidestep angles for shrubbery.
-      if (a.busy) {
+      // mid-conversation with you: stop where they are and face you until
+      // the dialogue closes (they used to wander off mid-sentence, errands
+      // and all). villagers.js stamps a.talking when you start talking.
+      if (a.talking && !isBusy() && performance.now() - a.talking > 600) a.talking = 0;
+      if (a.talking) {
+        g.rotation.y = turnToward(g.rotation.y, Math.atan2(dxp, dzp), dt, 6);
+      } else if (a.busy) {
         // fishing, bug-hunting: feet planted, attention elsewhere — but a
         // passing visitor still gets a glance
         if (distP < 3.4) g.rotation.y = turnToward(g.rotation.y, Math.atan2(dxp, dzp), dt, 3);

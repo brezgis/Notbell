@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { register } from './interact.js';
 import * as zones from './zones.js';
 import * as ui from './ui.js';
-import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7, ISLAND8, ISLAND9, ISLET_CH } from './terrain.js';
+import { SITES, terrainHeight, ISLAND2, ISLAND3, ISLAND5, ISLAND7, ISLAND8, ISLAND9, ISLET_CH, CRAN_NORTH, CRAN_CREEK } from './terrain.js';
 import { rand, pick } from './utils.js';
 import { FRIENDS } from './villagers.js';
 import * as doors from './doors.js';
@@ -159,6 +159,164 @@ const VENUES = [
       [['g', 'What a cloud. What a CLOUD.']],
     ],
   },
+  // ---- every island's doors (Oct '26: errands go archipelago-wide now —
+  // a villager will cross a bridge or take the train for the right shop)
+  {
+    id: 'grocery', zone: 'grocery',
+    guest: { x: 298.5, z: 899.9, rotY: Math.PI },
+    keeper: { x: 297.5, z: 896.1 },
+    guestLine: 'Just looking at the turnips. They look back.',
+    chats: [
+      [['g', 'How much for the sunfruit?'], ['k', 'One and a half times what you’d think.'], ['g', 'Why?'], ['k', 'Family.']],
+      [['g', 'Is your cousin well?'], ['k', 'Which cousin.'], ['g', '…The one at BULKO.'], ['k', 'We don’t discuss the tank.']],
+    ],
+  },
+  {
+    id: 'library', zone: 'library',
+    guest: { x: 298.5, z: 1061.8, rotY: -2.24 },
+    keeper: { x: 296, z: 1059.8 },
+    guestLine: '(whispering) I’m reading.',
+    chats: [
+      [['g', '(whisper) Anything about the bell?'], ['k', '(whisper) Everything here is a little about the bell.']],
+      [['g', '(whisper) I’d like to return this.'], ['k', '(whisper) It’s three years late.'], ['g', '(whisper) It was a long book.']],
+    ],
+  },
+  {
+    id: 'clinic', zone: 'clinic',
+    guest: { x: 300, z: 1140.4, rotY: 2.56 },
+    keeper: { x: 302.5, z: 1136.6 },
+    guestLine: 'Just here for a lollipop. Medically.',
+    chats: [
+      [['g', 'I think I’m sick.'], ['k', 'Say “ah.”'], ['g', 'Ahh.'], ['k', 'Perfectly well. Lollipop?']],
+      [['g', 'Is anyone ever sick here?'], ['k', 'Not yet! I’m ready, though.']],
+    ],
+  },
+  {
+    id: 'manor', zone: 'manor',
+    guest: { x: 298.5, z: 1383.4, rotY: 2.75 },
+    keeper: { x: 299.9, z: 1380 },
+    guestLine: 'I was invited. Probably.',
+    chats: [
+      [['g', 'Is the Baron in?'], ['k', 'The Baron is always in, madam. It is a question of whether he is receiving.']],
+      [['g', 'Did that portrait just wink?'], ['k', 'The household does not comment on the portrait.']],
+    ],
+  },
+  {
+    id: 'general', zone: 'general',
+    guest: { x: 298.5, z: 1940.8, rotY: -2.79 },
+    keeper: { x: 296.8, z: 1936.1 },
+    guestLine: 'Shopping for the third bean.',
+    chats: [
+      [['g', 'Do you have rope?'], ['k', 'We have it.'], ['g', 'Where?'], ['k', 'The pouch knows.']],
+      [['g', 'Do you have a ladder?'], ['k', 'Come back Thursday. The tide usually brings one in.']],
+    ],
+  },
+  {
+    id: 'post', zone: 'post',
+    guest: { x: 301.5, z: 2100.5, rotY: -2.52 },
+    keeper: { x: 299.5, z: 2097.7 },
+    guestLine: 'Mailing a letter. To a friend. On purpose.',
+    chats: [
+      [['g', 'Anything for me?'], ['k', 'Not today. Tomorrow, possibly. Letters keep their own hours.']],
+      [['g', 'How much to send it to the Far Isle?'], ['k', 'A stamp, and patience. Penny supplies the rest.']],
+    ],
+  },
+  {
+    id: 'labs', zone: 'labs',
+    guest: { x: 300, z: 1707.6, rotY: 1.66 },
+    keeper: { x: 303.2, z: 1707.3 },
+    guestLine: 'I’m just here to look at the rocket. Respectfully.',
+    chats: [
+      [['g', 'Did you hear it yet?'], ['k', 'Not yet. We are listening harder. The machines are listening bigger.']],
+      [['g', 'Can I touch a button?'], ['k', 'Which one?'], ['g', 'Any of them.'], ['k', 'Visitors may touch the visitor button. It does nothing. It is very popular.']],
+    ],
+  },
+  {
+    id: 'kirk', zone: 'kirk',
+    guest: { x: 300, z: 1861.4, rotY: 2.97 },
+    keeper: { x: 300.9, z: 1856.1 },
+    guestLine: '(sitting quietly, near the cod)',
+    chats: [
+      [['g', 'Is there a service today?'], ['k', 'If the weather says so.'], ['g', 'Does it?'], ['k', 'It’s thinking about it.']],
+      [['g', 'The cod looks well.'], ['k', 'The Cod provides. Mostly on Tuesdays.']],
+    ],
+  },
+  {
+    id: 'cran_ink', zone: 'cran_ink',
+    guest: { x: -297, z: 1600.8, rotY: -2.31 },
+    keeper: { x: -299.4, z: 1598.6 },
+    guestLine: 'Just thinking about it. A small one. Maybe.',
+    chats: [
+      [['g', 'Does it hurt?'], ['k', 'Everything hurts. That’s how you know it’s real. Also, it doesn’t, much.']],
+      [['g', 'Could you do a bell?'], ['k', 'No bells. They never come out right.']],
+    ],
+  },
+  {
+    id: 'cran_olive', zone: 'cran_olive',
+    guest: { x: -298.5, z: 1924.3, rotY: 2.09 },
+    keeper: { x: -297.1, z: 1923.5 },
+    guestLine: 'Shh. Breadsticks.',
+    chats: [
+      [['g', 'Could I get some parm?'], ['k', 'Say when.'], ['g', '…'], ['k', '…'], ['g', 'When.'], ['k', 'Grazie.']],
+      [['g', 'Who’s the booth for?'], ['k', 'Whoever it’s for. Next question.']],
+    ],
+  },
+  {
+    id: 'cran_caffe', zone: 'cran_caffe',
+    guest: { x: -298.5, z: 1998.8, rotY: -2.5 },
+    keeper: { x: -300, z: 1996.8 },
+    guestLine: 'One sip. Then I go live my life.',
+    chats: [
+      [['g', 'Un caffè, please.'], ['k', 'Standing?'], ['g', 'Standing.'], ['k', 'Good.']],
+      [['g', 'A cappuccino?'], ['k', 'What time is it?'], ['g', '…Never mind.']],
+    ],
+  },
+  {
+    id: 'cran_dolci', zone: 'cran_dolci',
+    guest: { x: -298.5, z: 2080.3, rotY: -2.78 },
+    keeper: { x: -299.7, z: 2077.1 },
+    guestLine: 'I’m in line. I’m happy in line.',
+    chats: [
+      [['g', 'Two cannoli.'], ['k', 'Filled now, in front of you, like a promise.']],
+      [['g', 'Is there lobster in the lobster tail?'], ['k', 'There is NO lobster in the lobster tail.']],
+    ],
+  },
+  {
+    id: 'chuckee', zone: 'chuckee',
+    guest: { x: -297, z: 1840.8, rotY: 2.75 },
+    keeper: { x: -295, z: 1835.9 },
+    guestLine: 'Brisket. And one of those little woodchucks.',
+    chats: [
+      [['g', 'How much wood would a—'], ['k', '(beaming) Go on. Go ON.']],
+      [['g', 'How many nuggets in a bag?'], ['k', 'Counting! … Never enough!']],
+    ],
+  },
+  // and the open air: a gazebo, a bocce court, a grotto to throw a button into
+  {
+    id: 'gazebo', zone: 'island',
+    guest: () => ({ x: ISLAND9.x - 8.4, z: ISLAND9.z + 0.6, rotY: 0.5 }),
+    keeper: null,
+    guestLine: 'It’s a gazebo. It’s exactly as nice as a gazebo is supposed to be.',
+    chats: [[['g', 'What a gazebo.']], [['g', '(rearranging one flower pot, very slightly)']]],
+  },
+  {
+    // (the North End's spots, from CRAN_NORTH like northend.js lays them out)
+    id: 'bocce', zone: 'island',
+    guest: () => ({ x: CRAN_NORTH.x + 7.4, z: CRAN_NORTH.z + 3, rotY: Math.PI / 2 }),
+    keeper: null,
+    guestLine: 'That one was closer. Don’t tell them I said.',
+    chats: [[['g', 'Closer!']], [['g', 'Not closer.']], [['g', '(watching, extremely seriously)']]],
+  },
+  {
+    id: 'grotto', zone: 'island',
+    guest: () => {
+      const sx = ISLAND9.x + CRAN_CREEK[0][0], sz = ISLAND9.z + CRAN_CREEK[0][1] - 2.7; // the grotto, at the spring
+      return { x: sx + 2.7, z: sz + 2.2, rotY: Math.atan2(-2.7, -2.2) };
+    },
+    keeper: null,
+    guestLine: 'I made a wish. I’m not telling.',
+    chats: [[['g', '(plink)']], [['g', 'Hello, Nonno Aldo.']]],
+  },
 ];
 
 // ------------------------------------------------------------ logic ----
@@ -291,14 +449,26 @@ export function createAmbient(animals, scene) {
     m.bubble = bubble;
   }
 
+  // Who can get to that door? Anyone on the same island, within a walk;
+  // anyone who isn't anchored to their place, if there's a way there
+  // (bridges, the arch, the causeway, the trains) and it isn't an odyssey.
+  function errandReach(a, door) {
+    const d = Math.hypot(a.g.position.x - door.x, a.g.position.z - door.z);
+    const here = zones.islandOf(a.g.position.x, a.g.position.z), there = zones.islandOf(door.x, door.z);
+    if (there === null && door.x !== undefined && Math.abs(door.x) < 260) return d < 45; // (an outdoor spot between islands)
+    if (here && here === there) return d < 70;
+    if (a.anchored || d > 190) return false;
+    return !!zones.findRoute(here, there);
+  }
+
   // Errands are journeys now: walk to the door, go in, stay a while, come
   // out the same door, and stroll home. Nobody blinks in or out of the world.
   function startErrand(a, venue) {
     const spot = typeof venue.guest === 'function' ? venue.guest() : venue.guest;
     const door = venue.zone === 'island' ? spot : zones.doorOf(venue.zone);
     if (!door) return false;
-    // walkers go where their legs can take them — no swimming the strait
-    if (Math.hypot(a.g.position.x - door.x, a.g.position.z - door.z) > 40) return false;
+    // walkers go where their legs (and the bridges and trains) take them
+    if (!errandReach(a, door)) return false;
     const e = {
       venue, spot, door, phase: 'going',
       until: rand(120, 260),
@@ -319,7 +489,7 @@ export function createAmbient(animals, scene) {
           e.phase = 'inside';
           setAway(a);
           a.g.position.set(spot.x,
-            venue.zone === 'island' ? terrainHeight(spot.x, spot.z) : (spot.y ?? 0), spot.z);
+            venue.zone === 'island' ? zones.islandGroundHeight(spot.x, spot.z) : (spot.y ?? 0), spot.z);
           a.g.rotation.y = spot.rotY ?? 0;
         };
         // through the front door, if it's one that opens
@@ -566,16 +736,20 @@ export function createAmbient(animals, scene) {
         const door = venue && (venue.zone === 'island'
           ? (typeof venue.guest === 'function' ? venue.guest() : venue.guest)
           : zones.doorOf(venue.zone));
-        // someone already nearby — errands are walks, not expeditions
-        const candidates = door ? animals.filter((a) =>
-          a.identity && !a.home && !a.errand && !a.meeting && !a.swims &&
-          !a.goal && !a.riding && !a.away && !a.pastime &&
-          Math.hypot(a.g.position.x - door.x, a.g.position.z - door.z) < 40) : [];
-        if (candidates.length) startErrand(pick(candidates), venue);
+        // who could go? neighbors first (a walk), then travelers (a trip)
+        const errandsOut = animals.filter((a) => a.errand).length;
+        const candidates = door && errandsOut < 6 ? animals.filter((a) =>
+          a.identity && !a.home && !a.bedtime && !a.errand && !a.meeting && !a.swims &&
+          !a.goal && !a.riding && !a.away && !a.pastime && !a.queued && errandReach(a, door)) : [];
+        const there = door && zones.islandOf(door.x, door.z);
+        const locals = candidates.filter((a) => zones.islandOf(a.g.position.x, a.g.position.z) === there);
+        if (candidates.length) startErrand(pick(locals.length && Math.random() < 0.7 ? locals : candidates), venue);
       }
       // and friends find each other
-      if (Math.random() < 0.35 && meetings.length < 2) {
-        startMeeting(pick(FRIENDS));
+      // (a few tries: most days somebody's busy — an errand, a hobby, a
+      // train — and one roll at one pair used to mean nobody ever met)
+      if (Math.random() < 0.5 && meetings.length < 3) {
+        for (let k = 0; k < 4 && !startMeeting(pick(FRIENDS)); k++);
       }
     }
 

@@ -629,12 +629,103 @@ export const FRIENDS = [
       Mabel: 'We’re planning something. I don’t know what. She does. HONK.',
     },
   },
+  // ---- more friendships (Oct '26): nobody should be without at least one
+  {
+    a: 'Tusk', b: 'Howell',
+    chats: [
+      [['b', 'Tusk. Did you hear it last night? The bell?'], ['a', '*snrrf*'], ['b', 'EXACTLY. Wolf ears and boar ears. Two witnesses.'], ['a', 'Hrmf.']],
+      [['a', '*sniff sniff*'], ['b', 'What? What do you smell?'], ['a', '…'], ['b', 'Truffles? Danger? Fog?'], ['a', 'Lunch.']],
+    ],
+    meetLines: {
+      Tusk: '*snrrf.* (tips his head at Howell, approvingly)',
+      Howell: 'Tusk and I are pack. A pack of two. Very exclusive. Wolves and boars only.',
+    },
+  },
+  {
+    a: 'Tusk', b: 'Bramble',
+    chats: [
+      [['b', '…'], ['a', '…'], ['b', 'Good moss this year.'], ['a', 'Hrm.']],
+      [['a', '*rooting noises*'], ['b', 'Found anything?'], ['a', '(holds up a mushroom)'], ['b', 'That one’s for the collection. There is no collection.']],
+    ],
+    meetLines: {
+      Tusk: 'Hrmf. (nods at Bramble, who nods back)',
+      Bramble: 'We don’t talk much. That’s the friendship. It’s the best one I have.',
+    },
+  },
+  {
+    a: 'Marigold', b: 'Saffron',
+    chats: [
+      [['a', 'I ran the whole bridge this morning.'], ['b', 'Before the train?'], ['a', 'Beside it. We had a race. I let it win.'], ['b', 'Generous.']],
+      [['b', 'The quiet flowers came up.'], ['a', 'Did they show off?'], ['b', 'Very softly.'], ['a', 'Good. Good for them.']],
+    ],
+    meetLines: {
+      Marigold: 'We’re talking about the garden. She grows things. I run past them encouragingly.',
+      Saffron: 'Marigold is the only one who listens to me about soil. She listens at a canter, but she listens.',
+    },
+  },
+  {
+    a: 'Mochi', b: 'Sol',
+    chats: [
+      [['a', 'Mm. May I lean?'], ['b', 'You may always lean.'], ['a', 'Mm.'], ['b', '(holding very, very still, so as not to spoil it)']],
+      [['b', 'They think I’m menacing.'], ['a', 'Mm. You are a pillow with teeth.'], ['b', 'Ssssh. Don’t tell them.']],
+    ],
+    meetLines: {
+      Mochi: 'Mm. We are being still together. It is better than being still apart.',
+      Sol: 'The capybara leans. I hold. Thisss is my whole purpose and I accept it gladly.',
+    },
+  },
+  {
+    a: 'Pondo', b: 'Brook',
+    chats: [
+      [['a', '…'], ['b', '…'], ['a', 'Nice.'], ['b', 'Nice.']],
+      [['b', 'Sol and Mochi are talking again.'], ['a', 'Mm. They’re the talkers.'], ['b', 'We’re the agreers.'], ['a', 'Mm.']],
+    ],
+    meetLines: {
+      Pondo: 'Mm. Brook and I agree about everything. We don’t always say what.',
+      Brook: 'Between us, we’ve said maybe twelve words. All of them good ones.',
+    },
+  },
+  {
+    a: 'Puddle', b: 'Clover',
+    chats: [
+      [['b', 'I counted the clouds! Thirteen!'], ['a', 'Lucky?'], ['b', 'SO lucky.'], ['a', 'I swam under four of them!']],
+      [['a', 'Is a puddle lucky?'], ['b', 'A puddle is the luckiest. It’s a small sea that decided to stay.'], ['a', 'That’s me!! I’m the small sea!']],
+    ],
+    meetLines: {
+      Puddle: 'Clover is teaching me which things are lucky! (All of them. The lesson is: all of them.)',
+      Clover: 'Puddle is the luckiest duck. I’ve checked. Thoroughly.',
+    },
+  },
+  {
+    a: 'Null', b: 'Ruth',
+    chats: [
+      [['b', 'I knitted you a cozy, dear. For the laptop.'], ['a', 'It… has a turtle on it.'], ['b', 'It’s Barb.'], ['a', '…I’ll never take it off.']],
+      [['a', 'Ruth, your scarf’s on my server log. Twelve meters so far.'], ['b', 'Oh, it’s much longer than that.']],
+    ],
+    meetLines: {
+      Null: 'Ruth is the only one who asks how my computer is feeling. It’s feeling cozy. She knitted it something.',
+      Ruth: 'The cat explains the internet to me, and I explain cables to her. Mine are yarn.',
+    },
+  },
+  {
+    a: 'Barb', b: 'Mabel',
+    chats: [
+      [['b', 'HONK.'], ['a', 'Hrm.'], ['b', 'HONK.'], ['a', 'Get off my rock.'], ['b', '(stays exactly where she is)']],
+      [['a', 'Rain coming.'], ['b', 'Saving me the rock?'], ['a', '…Hrm. Fine.']],
+    ],
+    meetLines: {
+      Barb: 'We’re enemies. Best ones. Hrm. Don’t make it a thing.',
+      Mabel: 'Barb and I are FEUDING. It’s going GREAT. HONK.',
+    },
+  },
 ];
 
+// (each villager's parcel friend is their FIRST pair — later friendships
+// don't reroute the parcels, or the asks below would name the wrong friend)
 export const FRIEND_OF = {};
 for (const f of FRIENDS) {
-  FRIEND_OF[f.a] = f.b;
-  FRIEND_OF[f.b] = f.a;
+  FRIEND_OF[f.a] ??= f.b;
+  FRIEND_OF[f.b] ??= f.a;
 }
 
 // what the sender says when they hand the parcel over
@@ -693,6 +784,7 @@ export function nameVillagers(animals) {
       enabled: () => !a.away, // when they're home, houses.js hosts the chat
       label: `talk to ${id.name}`,
       use: async () => {
+        a.talking = performance.now(); // (they stop and face you; animals.js lets go when the talk ends)
         // a birthday outranks everything, including the holiday calendar
         if (await birthdayTalk(id.name, id.voice)) return;
         // mid-hobby? they'll say so (and keep at it)
