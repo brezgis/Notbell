@@ -180,6 +180,7 @@ zones.addKeepout(HOLLOW_OAK.x, HOLLOW_OAK.z, 1.6); // (just the trunk's ground: 
 const VOICE = {
   don: 140, rospo: 105, val: 660, nonna: 400, benny: 580, sal: 540, eddie: 300, vinnie: 240,
   orso: 190, gufo: 330, tortoise: 230, heron: 470, mole: 270, hog: 360,
+  pia: 450, nello: 260, tullio: 180,
 };
 const said = {};
 function nextLine(key, lines) {
@@ -187,6 +188,22 @@ function nextLine(key, lines) {
   said[key] = (i + 1) % lines.length;
   return lines[i];
 }
+// the Olive Burrow's regulars, at their tables
+const PIA = [
+  'The gnocchi here is like a little cloud. A little cloud that fights back.',
+  'We come every Thursday. Today is Tuesday. We got confused, and then we got gnocchi.',
+  'Benny calls me “bella.” He calls everybody “bella.” I choose to believe it.',
+];
+const NELLO = [
+  'Nobody sits in the reserved booth. Why? … Nobody sits in the reserved booth.',
+  'Is it a front? It’s a restaurant. Eat the bread. Stop asking.',
+  'Nonna watches the door. Not for anything. She just likes the door.',
+];
+const TULLIO = [
+  'The breadsticks are free. They keep coming. I can’t stop them. I’ve stopped trying.',
+  'I ordered the lasagna in March. … No, it came. I just keep ordering it.',
+  'Table for one. Always. Me and the basket. We understand each other.',
+];
 const EDDIE_COLORS = { body: 0xa8a6a8, head: 0xf4f0ea };
 const hourIn = (a, b) => { const h = hourNow(); return a <= b ? h >= a && h < b : h >= a || h < b; };
 const heistOn = () => hourIn(0, 4);           // the night shift: BULKO, two-ish in the morning
@@ -1440,10 +1457,14 @@ export function createNorthEnd(player) {
         for (const s of [-1, 1]) chair(X(tx + s * 0.95), Z(tz), -s * Math.PI / 2);
         bl.push({ x: X(tx), z: Z(tz), w: 2.6, d: 1.5 });
       }
-      folk('capybara', { body: 0xa8784e }, X(-7.45), 0.3, Z(1.8), Math.PI / 2, { scale: 0.85 });
-      folk('capybara', { body: 0x9a6a44 }, X(-5.55), 0.3, Z(1.8), -Math.PI / 2, { scale: 0.85 });
+      const pia = folk('capybara', { body: 0xa8784e }, X(-7.45), 0.3, Z(1.8), Math.PI / 2, { scale: 0.85 });
+      const nello = folk('capybara', { body: 0x9a6a44 }, X(-5.55), 0.3, Z(1.8), -Math.PI / 2, { scale: 0.85 });
       const bearD = folk('bear', { body: 0x7a5a3e }, X(-2.55), 0.3, Z(3.4), Math.PI / 2, { scale: 0.8 });
-      void bearD;
+      // (the regulars talk, between mouthfuls)
+      for (const [a, key, name, lines] of [[pia, 'pia', 'Pia', PIA], [nello, 'nello', 'Nello', NELLO], [bearD, 'tullio', 'Tullio', TULLIO]]) {
+        things.push({ getPos: () => a.position, r: 1.6, label: `talk to ${name}`,
+          use: () => ui.say(nextLine(key, lines), { speaker: name, voice: VOICE[key] }) });
+      }
       things.push({ pos: new THREE.Vector3(X(-6.5), 0, Z(6.0)), r: 1.4, label: 'have a breadstick',
         use: async () => {
           bread++;

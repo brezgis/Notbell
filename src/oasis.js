@@ -150,6 +150,7 @@ const VOICE = {
   todd: 280, tiffany: 600, mildred: 360, phyllis: 400, bunny: 440, walt: 230,
   mango: 520, pico: 760, deb: 340, echo: 560, tanner: 300, paloma: 640, rico: 700,
   reggie: 540, sal: 480, auntie: 300, sunny: 580, chad: 290, madison: 470, dale: 170,
+  darlene: 350, skye: 640, ron: 220, lorraine: 380, bix: 680, wes: 600, hank: 240,
 };
 
 // who's talking, and what they say next: everybody works through their
@@ -352,6 +353,42 @@ const WALKERS = [
   [['Mildred', 'We’ve walked past Hot Tropic four thousand times. We’ve never gone in.'], ['Phyllis', 'We’re not ready.'], ['Bunny', 'We’ll never be ready.']],
   [['Mildred', 'Eleven laps is a mile, dear. We do forty. Join us! Keep up! Or don’t — we’ll come round again.']],
   [['Phyllis', 'Rico asked me if I have hands again.'], ['Bunny', 'What did you say?'], ['Phyllis', 'I said, “Not for you, Rico.”'], ['Mildred', 'Every day, girls. Every single day.']],
+];
+// the folk who are just out and about: shoppers, regulars, the undecided
+const DARLENE = [
+  'I came in for one thing. I can’t remember what. I’ve bought four other things, so it doesn’t matter.',
+  'Dromedeals had a sign that said COMPARE AT. So I compared. I won.',
+  'Don’t tell Beverly about the bag. The bag is a color. Bags are supposed to be beige.',
+];
+const SKYE = [
+  'I’m not shopping. I’m walking around with a bag. It’s different.',
+  'Hot Tropic is open. Like, spiritually. The grille is a vibe.',
+  'I wished on the fountain for a ferry to anywhere else. It’s probably pending approval.',
+];
+const RON = [
+  'My wife’s in Polly’s. I’m in here. We meet at the fountain at four. It’s a system.',
+  'I don’t buy anything. I like the air conditioning. And the bench. Mostly the bench.',
+  'The mall walkers lapped me twice this morning. I wasn’t walking.',
+];
+const LORRAINE = [
+  'Pico says “brrring” every time somebody comes in. I’ve come in nine times today. Just for that.',
+  'The frozen dumplings are back. There are four bags. I have three. Do not tell Phyllis.',
+  'I read every label. Every one. Nobody else does, so somebody has to.',
+];
+const BIX = [
+  'Is it a bargain if you didn’t need it? Asking for me.',
+  'The Captain gave me a free sample of the mango thing. I’ve come back for the mango thing six times. Still a sample.',
+  'I’m pricing things. For later. For a later me with more buttons.',
+];
+const WES = [
+  'The usual, please. … Oh. You don’t work here. Habit.',
+  'Echo knows my order. I don’t. I say “the usual” and trust the process.',
+  'Third coffee. Maybe fourth. That’s the Mirage: you think you’ve reached the bottom of the cup, and then — refill.',
+];
+const HANK = [
+  'Nuggets. Sandwich. Nuggets. … I’ve been deciding for twenty minutes. It’s always nuggets.',
+  'They say “my pleasure” here. I never know what to say back. Yesterday I said “mine too.” It was weird.',
+  'The waffle fries are the reason I moved here. The schools were the other reason. There aren’t any schools.',
 ];
 const BAND_VOICE = { Kiwi: 620, Junior: 200, Dakota: 380 };
 
@@ -1045,6 +1082,7 @@ export function createOasis(player) {
     put(cow, u + 1.2, v - 0.9, h + 1.3, -0.15);
     const cowBody = buildAnimal('cow', { body: 0xf2ead8, head: 0xf2ead8 });
     cowBody.scale.setScalar(0.7);
+    cowBody.userData.noFidget = cowBody.userData.noLook = true; // (a cutout: no breathing, no watching)
     put(cowBody, u + 1.2, v - 0.5, h + 0.55, -0.15);
     solidBox(u, v, w, d);
     doorway('cluck', u - 1.2, v + d / 2, 0, 'go into Cluck & Co.');
@@ -2716,9 +2754,10 @@ export function createOasis(player) {
         pico.position.z = Z(2.0);
         attend(pico, 'polly');
         // shoppers, working the aisles
-        for (const [c, lx, lz] of [[{ body: 0xe0c8a0, humps: 1 }, 7, -0.2], [{ body: 0x3a9ad8, head: 0x3a9ad8, wing: 0xf2cf5b, tail: 0xd8342c }, -7, -3.5]]) {
+        for (const [c, lx, lz, who] of [[{ body: 0xe0c8a0, humps: 1 }, 7, -0.2, ['lorraine', 'Lorraine', LORRAINE]], [{ body: 0x3a9ad8, head: 0x3a9ad8, wing: 0xf2cf5b, tail: 0xd8342c }, -7, -3.5, ['bix', 'Bix', BIX]]]) {
           const shopper = folk(c.humps ? 'camel' : 'parrot', c, X(lx), 0, Z(lz), 0, c.humps ? { shirt: 0xd8b8c8 } : {});
           wanderer(shopper, 'polly', { x0: X(-7.4), x1: X(7.4), z0: Z(-4.2), z1: Z(1.2) });
+          things.push({ getPos: () => shopper.position, r: 2.0, label: `talk to ${who[1]}`, use: talk(...who) });
         }
         // the Captain, by the flowers, in the shirt
         const mango = folk('parrot', { body: 0xd8342c, head: 0xd8342c, wing: 0x2a6fd0, tail: 0xf2cf5b }, X(3.2), 0, Z(2.2), -0.4, { floral: ['#3fb8a8', '#f2cf5b', '#f28fb0', '#ffffff'], fidget: true });
@@ -2927,6 +2966,7 @@ export function createOasis(player) {
         {
           const regular = folk('parrot', { body: 0x5cbf4a, head: 0x5cbf4a, wing: 0xf2cf5b, tail: 0xd8342c }, X(1.0), 0, Z(0.5), 0, { shirt: 0x6a5a8a });
           wanderer(regular, 'mirage', { x0: X(-5.2), x1: X(5.2), z0: Z(-1.2), z1: Z(3.8) }, { speed: 0.8, pause: [3, 8] });
+          things.push({ getPos: () => regular.position, r: 2.0, label: 'talk to Wes', use: talk('wes', 'Wes', WES) });
         }
         // tables: a laptop camel "working remotely"; a quiet corner
         table(X(-3.8), Z(1.4), 1.1, 0.8, 0x3a3a3e);
@@ -3008,6 +3048,7 @@ export function createOasis(player) {
         {
           const hungry = folk('camel', { body: CAMEL_DK, humps: 2 }, X(1.5), 0, Z(1.0), 0, { cap: 0x3a7dd8 });
           wanderer(hungry, 'cluck', { x0: X(-5.2), x1: X(3.0), z0: Z(-1.2), z1: Z(3.8) }, { speed: 0.8, pause: [3, 7] });
+          things.push({ getPos: () => hungry.position, r: 2.0, label: 'talk to Hank', use: talk('hank', 'Hank', HANK) });
           const kid = folk('parrot', { body: 0xf2cf5b, head: 0xf2cf5b, wing: 0x3a7dd8, tail: 0xd8342c }, X(4.3), 0.25, Z(2.6), 0.4, { scale: 0.5 });
           (inside.cluck ??= []).push((dt, t) => { kid.position.y = 0.25 + Math.abs(Math.sin(t * 3.1)) * 0.35; kid.rotation.y += dt * 0.8; }); // the ball pit: bouncing
         }
@@ -3401,20 +3442,28 @@ export function createOasis(player) {
               animateGait(w.a, t, moving ? 1 : 0, 9);
             }
           });
-          things.push({ getPos: () => walkers[1].a.position, r: 2.8, label: 'walk with the mall walkers',
+          // (the three of them are spread round the court: you can join at whoever's nearest)
+          const nearestWalker = () => {
+            const pp = player.group.position;
+            let best = walkers[1].a;
+            for (const w of walkers) if (w.a.visible && pp.distanceToSquared(w.a.position) < pp.distanceToSquared(best.position)) best = w.a;
+            return best.position;
+          };
+          things.push({ getPos: nearestWalker, r: 2.8, label: 'walk with the mall walkers',
             use: () => ui.say(nextLine('walkers', WALKERS).map(([sp, text]) => ({ speaker: sp, voice: VOICE[sp.toLowerCase()] ?? 400, text }))) });
         }
         // shoppers, bags in paw, going nowhere in particular
-        for (const [kind, c, lx, lz] of [
-          ['camel', { body: 0xe8d0a8, humps: 1 }, -6, 5],
-          ['parrot', { body: 0xe86a9a, head: 0xe86a9a, wing: 0x3fb8a8, tail: 0xf2cf5b }, 6, 7],
-          ['camel', { body: 0xc49a66, humps: 2 }, -2, 6.5],
+        for (const [kind, c, lx, lz, who] of [
+          ['camel', { body: 0xe8d0a8, humps: 1 }, -6, 5, ['darlene', 'Darlene', DARLENE]],
+          ['parrot', { body: 0xe86a9a, head: 0xe86a9a, wing: 0x3fb8a8, tail: 0xf2cf5b }, 6, 7, ['skye', 'Skye', SKYE]],
+          ['camel', { body: 0xc49a66, humps: 2 }, -2, 6.5, ['ron', 'Ron', RON]],
         ]) {
           const sh = folk(kind, c, X(lx), 0, Z(lz), 0, kind === 'camel' ? { shirt: [0x3fb8a8, 0xf28fb0][Math.abs(lx) % 2] } : {});
           const bag = box(0.3, 0.35, 0.12, [0xffffff, 0x111111, 0xf2cf5b][Math.abs(lz | 0) % 3]);
           bag.position.set(0.45, 0.5, 0.1);
           sh.userData.parts.body.add(bag);
           wanderer(sh, 'mall', { x0: X(-14), x1: X(14), z0: Z(-5.4), z1: Z(9) }, { speed: 1.0, pause: [2, 6] });
+          things.push({ getPos: () => sh.position, r: 2.0, label: `talk to ${who[1]}`, use: talk(...who) });
         }
         // the entrance mat
         rug(X(0), Z(D0 / 2 - 0.9), 3.2, 1.2, 0x3fb8a8);

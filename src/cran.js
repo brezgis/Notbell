@@ -154,7 +154,7 @@ zones.addLink({
   ],
 });
 
-const VOICE = { spike: 220, sloane: 160, lily: 620, dabble: 420, coco: 520 };
+const VOICE = { spike: 220, sloane: 160, lily: 620, dabble: 420, coco: 520, wendell: 300 };
 const said = {};
 function nextLine(key, lines) {
   const i = said[key] ?? 0;
@@ -184,6 +184,11 @@ const DABBLE = [
   'Watercolor is just water, with opinions. Let it go where it wants. Then say you meant it.',
   'Ruth paints the bog every week. It comes out a pink smudge. It is the most accurate painting in the room.',
   'There are no mistakes in watercolor. There are only happy puddles.',
+];
+const WENDELL = [
+  'Shh. I’m waiting for the light. … No. Still waiting.',
+  'Nine years I’ve painted the bog. Every one comes out a pink smudge. I’m starting to think the bog is a pink smudge.',
+  'Don’t tell Miss Dabble, but at home I paint by numbers. It’s restful. Somebody else decides.',
 ];
 const CHOC = [
   [['Coco', 'Welcome back, everyone. Who’d like to share?'], ['a mouse', 'Hi. I’m Pim. It’s been three days since my last truffle.'], ['everyone', 'Hi, Pim.'], ['Coco', 'Thank you, Pim. Three days is three days.']],
@@ -1104,6 +1109,8 @@ export function createCran(player) {
         const dabble = folk('otter', { body: 0x8a6a48, head: 0x8a6a48 }, X(0.2), 0, Z(-4.4), 0, { fidget: true });
         attend(dabble, 'cran_cc', 4);
         const painter = folk('heron', { body: 0x9fb3c8 }, X(-1.8), 0, Z(-0.6), Math.PI, {});
+        things.push({ pos: new THREE.Vector3(X(-1.8), 0, Z(0.6)), r: 1.3, label: 'talk to Wendell',
+          use: () => ui.say(nextLine('wendell', WENDELL), { speaker: 'Wendell', voice: VOICE.wendell }) });
         void painter;
         things.push({ getPos: () => dabble.position, r: 2.4, label: 'paint a watercolor',
           use: async () => {

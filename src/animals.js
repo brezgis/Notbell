@@ -1465,11 +1465,22 @@ export function buildAnimal(kind, colors = {}) {
 // touches what the walk cycle drives (leg swing, bob heights), so it layers
 // quietly on top of any other animation.
 const BUILT = [];
-// Anyone standing near you notices you: the head (and the face and hat that
-// ride on it) turns your way, within a comfortable neck's reach, and eases
-// back when you go. Bodies are left to whoever drives them. Opt out with
-// userData.noLook (statues, the dead-on-purpose, heads with their own script).
-const LOOK_R = 5.5, LOOK_MAX = 0.95;
+// Anyone near you notices you: the head (and the face and hat that ride on
+// it) turns your way, within a comfortable neck's reach, and eases back when
+// you go. Someone who's been standing at their post a while — a shopkeeper
+// behind the counter, a guard at a door — notices from further off and turns
+// to face you properly: the body comes round (as far as their post allows),
+// the head does the rest, and if you've been away a while there's a little
+// hop of hello. Opt out with userData.noLook (statues, the dead-on-purpose,
+// heads with their own script); userData.noFidget keeps them stock-still.
+//
+// Everything here is layered on: what the figure's owner sets (its heading,
+// its height, a scripted head tilt) is respected, and the moment an owner
+// starts steering — a walk, an errand, two friends turning to chat — the
+// owner wins and the idle eases out of the way.
+const LOOK_R = 5.5, LOOK_MAX = 0.95; // walkers: just the head, close by
+const POST_R = 9, BODY_MAX = 1.15; // at a post: the whole body, from further off
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 export function idleAll(t, playerPos) {
   for (const g of BUILT) {
     if (!g.parent) continue;
@@ -1481,10 +1492,20 @@ export function idleAll(t, playerPos) {
         headX: p.head.position.x,
         eyeSY: p.eyes.map((e) => e.scale.y),
         eyeX: p.eyes.map((e) => e.position.x),
+        turn: 0, hop: 0, tilt: 0, body: 0, look: 0, att: 0, away: 99, wasAway: 99, steeredT: -99,
       };
     }
     const d = p.idle, u = t + d.seed;
-    p.body.scale.y = d.bodySY * (1 + Math.sin(u * 1.7) * 0.025);
+    const dt = d.lastT === undefined ? 0 : Math.min(0.1, Math.max(0, t - d.lastT));
+    d.lastT = t;
+    // what the owner set, with our own layer taken back off (if they've
+    // written a fresh value since our last frame, that's their new base)
+    const ownTurn = d.ry !== undefined && g.rotation.y !== d.ry;
+    const baseY = ownTurn ? g.rotation.y : g.rotation.y - d.turn;
+    const basePosY = d.py !== undefined && g.position.y !== d.py ? g.position.y : g.position.y - d.hop;
+    if (ownTurn) d.steeredT = t;
+
+    p.body.scale.y = d.bodySY * (1 + Math.sin(u * 1.7) * 0.035); // breathing
     if (p.wings) {
       // a slow open-and-settle, and now and then a quick flutter
       const fl = (u % 9) < 0.8 ? Math.sin(u * 22) * 0.25 : 0;
@@ -1495,53 +1516,80 @@ export function idleAll(t, playerPos) {
     // a glance: drift a touch to one side and back, every ten seconds or so
     const gl = Math.max(0, Math.sin(u * 0.55)) ** 6 * Math.sign(Math.sin(u * 0.13 + 1)) * 0.05;
     p.head.position.x = d.headX + gl;
-    if (playerPos && !g.userData.noLook && !g.userData.noFidget && p.head.visible) {
-      const m = g.matrixWorld.elements;
-      const dx = playerPos.x - m[12], dz = playerPos.z - m[14];
-      let want = 0;
-      if (dx * dx + dz * dz < LOOK_R * LOOK_R && dx * dx + dz * dz > 0.01) {
-        let rel = Math.atan2(dx, dz) - Math.atan2(m[8], m[10]);
-        rel = Math.atan2(Math.sin(rel), Math.cos(rel));
-        if (Math.abs(rel) < 2.4) want = Math.max(-LOOK_MAX, Math.min(LOOK_MAX, rel));
-      }
-      const ldt = d.lookT === undefined ? 0 : Math.min(0.1, Math.max(0, t - d.lookT));
-      d.lookT = t;
-      d.look = (d.look ?? 0) + (want - (d.look ?? 0)) * Math.min(1, ldt * 4);
-      p.head.rotation.y = d.look;
-    }
     p.eyes.forEach((e, i) => {
       e.scale.y = d.eyeSY[i] * (shut ? 0.12 : 1);
       if (e.parent !== p.head) e.position.x = d.eyeX[i] + gl; // (on the head, they glance with it)
     });
-    // anyone who's been standing in one spot a while — a shopkeeper at the
-    // counter, a camper by the fire, a heron at the door — shifts about:
-    // looks this way and that, rocks their weight, shuffles a foot. (It stops
-    // the moment they walk: whatever moves them owns them then.)
-    const dt = d.lastT === undefined ? 0 : Math.min(0.1, Math.max(0, t - d.lastT));
-    d.lastT = t;
+
+    // standing still a while (or told to man a post) = at a post
     const moved = d.px === undefined || Math.abs(g.position.x - d.px) + Math.abs(g.position.z - d.pz) > 0.002;
     d.px = g.position.x;
     d.pz = g.position.z;
     d.still = moved ? 0 : (d.still || 0) + dt;
-    const fidget = !g.userData.noFidget && (g.userData.fidget || d.still > 3);
-    const k = fidget ? Math.min(1, (d.still > 3 ? d.still - 3 : 1)) : 0;
-    const turn = k * (Math.sin(u * 0.35) * 0.22 + Math.sin(u * 0.9) * 0.06);
-    g.rotation.y += turn - (d.turn || 0);
+    const atPost = !g.userData.noFidget && (g.userData.fidget || d.still > 1.5);
+    const k = atPost ? Math.min(1, g.userData.fidget ? 1 : d.still - 1.5) : 0;
+    // (turning the body is the owner's while they're steering — a walk, an
+    // attend() that faces you itself, two friends turning to chat)
+    const calm = t - d.steeredT > 1.5;
+
+    // where are you, relative to the way they'd face on their own?
+    let rel = 0, near = false;
+    if (playerPos && !g.userData.noLook && !g.userData.noFidget && p.head.visible) {
+      const m = g.matrixWorld.elements;
+      const dx = playerPos.x - m[12], dz = playerPos.z - m[14];
+      const r2 = dx * dx + dz * dz, R = atPost ? POST_R : LOOK_R;
+      if (r2 < R * R && r2 > 0.01) {
+        rel = wrap(Math.atan2(dx, dz) - (Math.atan2(m[8], m[10]) - d.turn));
+        near = Math.abs(rel) < 2.6; // (not someone standing right behind them)
+      }
+    }
+    const ease = Math.min(1, dt * 3.5);
+    d.att += ((near ? 1 : 0) - d.att) * ease;
+    // the body comes round first (only at a post), the head takes the rest
+    const bodyWant = near && atPost && calm ? Math.max(-BODY_MAX, Math.min(BODY_MAX, rel)) * k : 0;
+    d.body += (bodyWant - d.body) * Math.min(1, dt * 2.5);
+    const headWant = near ? Math.max(-LOOK_MAX, Math.min(LOOK_MAX, rel - d.body)) : 0;
+    d.look += (headWant - d.look) * Math.min(1, dt * 5);
+    if (!g.userData.noLook && !g.userData.noFidget) p.head.rotation.y = d.look;
+
+    // left to themselves: shift about — look this way and that, rock their
+    // weight, tilt the head, shuffle a foot
+    const idleK = k * (1 - d.att);
+    const sway = calm ? idleK * (Math.sin(u * 0.35) * 0.3 + Math.sin(u * 0.9) * 0.08) : 0;
+    const turn = d.body + sway;
+    g.rotation.y = baseY + turn;
     d.turn = turn;
-    p.body.rotation.z = k * Math.sin(u * 0.8) * 0.05;
-    if (fidget && p.legs.length) {
+    d.ry = g.rotation.y;
+    p.body.rotation.z = k * Math.sin(u * 0.8) * 0.06;
+    // a curious head tilt every so often (unless a script owns the tilt)
+    if (p.head.rotation.z === d.tilt) {
+      const tp = u % 13;
+      d.tilt = k * (tp < 1.6 ? Math.sin((tp / 1.6) * Math.PI) * 0.16 * Math.sign(Math.sin(d.seed)) : 0);
+      p.head.rotation.z = d.tilt;
+    }
+    if (atPost && p.legs.length) {
       // a foot shuffle now and then
       const sh = u % 7;
       const lift = sh < 0.4 ? Math.sin((sh / 0.4) * Math.PI) * 0.35 : 0;
-      p.legs[0].rotation.x = lift;
+      p.legs[0].rotation.x = lift * idleK;
     }
-    if (g.userData.fidget) {
-      // the ones who man a post all day get an occasional bounce, too
+    // hello! — a small hop when you walk up after a while away; and the ones
+    // who man a post all day bounce now and then anyway
+    d.away = near ? 0 : d.away + dt;
+    if (near && atPost && d.hiT === undefined && d.wasAway > 12) d.hiT = 0;
+    if (!near) d.wasAway = d.away;
+    let hop = 0;
+    if (d.hiT !== undefined) {
+      d.hiT += dt;
+      hop = d.hiT < 0.32 ? Math.sin((d.hiT / 0.32) * Math.PI) * 0.16 : 0;
+      if (d.hiT > 0.5) { d.hiT = undefined; d.wasAway = 0; }
+    } else if (g.userData.fidget) {
       const ph = u % 11;
-      const hop = ph < 0.5 ? Math.sin((ph / 0.5) * Math.PI) * 0.1 : 0;
-      g.position.y += hop - (d.hop || 0);
-      d.hop = hop;
+      hop = ph < 0.5 ? Math.sin((ph / 0.5) * Math.PI) * 0.1 : 0;
     }
+    g.position.y = basePosY + hop;
+    d.hop = hop;
+    d.py = g.position.y;
   }
 }
 
