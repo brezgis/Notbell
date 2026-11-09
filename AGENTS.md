@@ -115,15 +115,19 @@ tour, and the clip audit afterward):
 ## Workflow
 
 - Work on a branch off `main` (`git switch -c <topic>`); commit in small,
-  reviewable steps with before/after screenshots checked. Anna reviews and
-  merges; `main` is what deploys. (The old one-worktree-per-Codex-lane setup
+  reviewable steps with before/after screenshots checked. `main` is what
+  deploys. An agent may merge and push `main` itself **when Anna says to ship
+  in that session** — after the smoke test, the canon tour (before/after),
+  and, for anything animated or merged, `merge_audit`; first `git fetch` and
+  bring in whatever landed on `origin/main` meanwhile (never force-push). (The old one-worktree-per-Codex-lane setup
   is retired — one person/agent at a time works better on this codebase.
   If you do run parallel worktrees, give each its own server port.)
 - The open-ideas list lives in `docs/BACKLOG.md` (tracked). The old
   `FIXES_PLAN.md` / `CODEX_TASKS.md` trackers are local-only history.
 - Deploy: GitHub Pages serves `main` straight from the repo root (no
   workflow, no build; `.nojekyll` keeps GitHub from processing the files,
-  `CNAME` holds the domain). Merging to `main` IS the deploy — Anna merges.
+  `CNAME` holds the domain). Merging to `main` IS the deploy — so it happens only on Anna's go
+  (see above), and the live site gets a look afterward.
   Everything tracked is publicly reachable on the site, so nothing private
   goes in the repo.
 
