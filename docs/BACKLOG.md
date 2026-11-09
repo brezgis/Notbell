@@ -40,6 +40,14 @@ fixes, the "new" rounds, routines, and the ambitious ideas)._
   writing. Also open: villagers from the Circle as
   wanderers, the ice cream truck (silent), and No Outlet actually getting
   out of this town, someday.
+- **Leftovers from the 2026-11 perf pass** (branch `fast`). The Post and the
+  Fold's first cottage room both live at (300, 2100) in the elsewhere —
+  harmless while only one room shows at a time, but give one a free slot.
+  `attend()` in cran.js, northend.js and oasis.js now duplicates idleAll's
+  face-you (it works; it could become a `userData` flag). `zfight_audit`
+  still lists ~80 small pairs, mostly inside Burrough and North End rooms
+  (their room helpers butt boxes flush). Chuckee's DRIVE-THRU sign tucks
+  under its own roof edge.
 
 ## Parked — needs Anna's call
 
