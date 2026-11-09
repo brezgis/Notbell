@@ -416,6 +416,7 @@ export function createRailway(line, opts) {
       }
     }
     obj.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    obj.userData.dynamic = true; // (it runs: mergeStatic leaves it be)
     group.add(obj);
     return { ...spec, obj };
   });

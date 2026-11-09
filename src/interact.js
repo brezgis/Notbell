@@ -62,3 +62,6 @@ export function debugList() {
     label: typeof it.label === 'function' ? it.label() : it.label,
   }));
 }
+
+// debug: the live entries themselves (shots/merge_audit.mjs presses each one)
+export const debugRaw = () => interactables;

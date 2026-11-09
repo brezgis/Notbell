@@ -587,6 +587,7 @@ export function createLabsGrounds() {
       }
       c.position.set(Math.cos(a) * 1.25, 0.24, Math.sin(a) * 1.25);
       c.rotation.y = -a + Math.PI / 2;
+      c.userData.dynamic = true; // (it rocks)
       g.add(c);
       cradles.push(c);
       const cp = at(c.position.x, c.position.z);
@@ -664,6 +665,7 @@ export function createLabsGrounds() {
         const a = hash(i * 20 + b, 5) * Math.PI * 2;
         const berry = new THREE.Mesh(new THREE.IcosahedronGeometry(0.07, 0), berryMat);
         berry.position.set(Math.cos(a) * 0.55, 0.3 + hash(i * 20 + b, 6) * 0.4, Math.sin(a) * 0.55);
+        berry.userData.dynamic = true; // (picked and regrown)
         g.add(berry);
         berries.push(berry);
       }
@@ -701,24 +703,24 @@ export function createLabsGrounds() {
     // stall had her standing half through its back wall)
     const k = new THREE.Group();
     const BLUE = 0x3f6ab0, WHITE = 0xf3efe2;
-    const floor = box(2.6, 0.12, 2.0, 0xa97c50);
+    const floor = box(2.5, 0.12, 1.96, 0xa97c50);
     floor.position.y = 0.06;
     k.add(floor);
     const backW = box(2.6, 2.5, 0.14, WHITE);
     backW.position.set(0, 1.25, -0.93);
     k.add(backW);
     for (const sx of [-1.23, 1.23]) {
-      const side = box(0.14, 2.5, 2.0, WHITE);
+      const side = box(0.14, 2.5, 1.96, WHITE);
       side.position.set(sx, 1.25, 0);
       k.add(side);
     }
-    const front = box(2.6, 1.05, 0.14, BLUE);
+    const front = box(2.62, 1.05, 0.14, BLUE);
     front.position.set(0, 0.52, 0.93);
     k.add(front);
     const counterTop = box(2.7, 0.08, 0.5, 0xa97c50);
     counterTop.position.set(0, 1.08, 0.93);
     k.add(counterTop);
-    const header = box(2.6, 0.5, 0.14, BLUE);
+    const header = box(2.62, 0.5, 0.14, BLUE);
     header.position.set(0, 2.3, 0.93);
     k.add(header);
     const roof = box(2.95, 0.14, 2.35, BLUE);

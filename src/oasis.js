@@ -32,6 +32,7 @@ import { glowWindow } from './nightglow.js';
 import { isNight, hourNow } from './calendar.js';
 import { ITEMS } from './catalog.js';
 import { makeWindow, makeHangingLamp } from './buildings.js';
+import { mergeStatic } from './merge.js';
 
 function mat(color, rough = 0.88) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -112,80 +113,6 @@ function sign(lines, { w = 3.4, h = 0.8, d = 0.08, bg = '#fffaf0', fg = '#5b4a32
   return m;
 }
 
-// ------------------------------------------------------ static merging ----
-// A whole island of one-off meshes costs a draw call each (and another in
-// the shadow pass). Once an island is built, mergeStatic bakes everything
-// that never moves into one mesh per look (color, roughness, shadow flags),
-// and stops tiny things casting shadows the 1024 shadow map can't show.
-// Left alone: anything under a node marked userData.dynamic (it moves) or
-// userData.noMerge (an interior room), anyone built by buildAnimal, glowing
-// panes (they own an emissive material), textures, transparency, instanced
-// meshes, and wall-sized boxes (main.js fades those when they're between
-// you and the camera — they have to stay their own mesh). Cran and the
-// strait import this too.
-export function mergeStatic(root) {
-  if (globalThis.__NOTBELL_NO_MERGE) return; // (the clip audit wants every mesh as built)
-  root.updateMatrixWorld(true);
-  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
-  const buckets = new Map();
-  const take = [];
-  const walk = (o, frozen) => {
-    if (o.userData.dynamic || o.userData.noMerge || o.userData.parts) frozen = true;
-    if (o.isMesh && !o.isInstancedMesh) {
-      const g = o.geometry;
-      g.computeBoundingSphere?.();
-      const sc = o.getWorldScale(new THREE.Vector3());
-      const r = (g.boundingSphere?.radius || 0) * Math.max(sc.x, sc.y, sc.z);
-      if (r < 0.25) o.castShadow = false; // too small to cast a readable shadow
-      const m = o.material;
-      const wall = g.type === 'BoxGeometry' && g.parameters.height >= 2.2 && Math.max(g.parameters.width, g.parameters.depth) * g.parameters.height >= 12;
-      const plain = m && m.isMeshStandardMaterial && !m.map && !m.transparent && m.opacity >= 1 &&
-        (!m.emissive || m.emissive.getHex() === 0) && g.attributes.position && g.attributes.normal;
-      if (!frozen && plain && !wall && !o.userData.occlude) {
-        const key = `${m.color.getHex()}|${m.roughness}|${m.flatShading}|${m.side}|${o.castShadow}|${o.receiveShadow}`;
-        if (!buckets.has(key)) buckets.set(key, { mat: m, cast: o.castShadow, recv: o.receiveShadow, parts: [] });
-        buckets.get(key).parts.push(o);
-        take.push(o);
-      }
-    }
-    for (const c of o.children) walk(c, frozen);
-  };
-  walk(root, false);
-  const mtx = new THREE.Matrix4(), nm = new THREE.Matrix3();
-  for (const b of buckets.values()) {
-    if (b.parts.length < 2) continue;
-    let count = 0;
-    const geos = b.parts.map((o) => {
-      const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry;
-      count += g.attributes.position.count;
-      return { g, o };
-    });
-    const pos = new Float32Array(count * 3), nor = new Float32Array(count * 3);
-    let at = 0;
-    const v = new THREE.Vector3();
-    for (const { g, o } of geos) {
-      mtx.multiplyMatrices(inv, o.matrixWorld);
-      nm.getNormalMatrix(mtx);
-      const P = g.attributes.position, N = g.attributes.normal;
-      for (let i = 0; i < P.count; i++, at++) {
-        v.fromBufferAttribute(P, i).applyMatrix4(mtx);
-        pos[at * 3] = v.x; pos[at * 3 + 1] = v.y; pos[at * 3 + 2] = v.z;
-        v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize();
-        nor[at * 3] = v.x; nor[at * 3 + 1] = v.y; nor[at * 3 + 2] = v.z;
-      }
-      o.parent.remove(o);
-    }
-    const merged = new THREE.BufferGeometry();
-    merged.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    merged.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-    merged.computeBoundingSphere();
-    const mesh = new THREE.Mesh(merged, b.mat);
-    mesh.castShadow = b.cast;
-    mesh.receiveShadow = b.recv;
-    mesh.userData.merged = b.parts.length;
-    root.add(mesh);
-  }
-}
 
 // ------------------------------------------------------------ the layout ----
 const O = OASIS_PAD;
@@ -498,7 +425,7 @@ export function createOasis(player) {
   {
     const cu = (LOT.u0 + LOT.u1) / 2, cv = (LOT.v0 + LOT.v1) / 2;
     slab(cu, cv, LOT.u1 - LOT.u0, LOT.v1 - LOT.v0, ASPHALT);
-    slab(cu, LOT.v0 + 0.5, LOT.u1 - LOT.u0, 1.0, CONCRETE, 0.05); // the walk along the shopfronts
+    slab(cu, LOT.v0 + 0.51, LOT.u1 - LOT.u0 - 0.02, 0.98, CONCRETE, 0.05); // the walk along the shopfronts (a hair inside the lot's edges)
     for (let u = LOT.u0 + 1.5; u < LOT.u1 - 1; u += 2.6) {
       if (Math.abs(u - (-4)) < 1.5) continue; // the aisle down the middle
       slab(u, LOT.v0 + 2.9, 0.12, 2.6, PAINT, 0.065);
@@ -558,7 +485,7 @@ export function createOasis(player) {
       const gfloor = box(2.6, 0.12, HD - 0.4, 0xa8a49a);
       gfloor.position.set(2.3, 0.06, -0.1);
       g.add(gfloor);
-      const ceil = box(2.8, 0.1, HD - 0.2, 0xe8e0cc);
+      const ceil = box(2.76, 0.1, HD - 0.22, 0xe8e0cc);
       ceil.position.set(2.3, 2.2, -0.1);
       g.add(ceil);
     } else {
@@ -2724,7 +2651,7 @@ export function createOasis(player) {
     back.position.y = 0.9;
     g.add(back);
     for (const ly of [0.1, 0.65, 1.2, 1.75]) {
-      const plank = box(w, 0.05, 0.55, 0xe0d8c8);
+      const plank = box(w - 0.02, 0.05, 0.55, 0xe0d8c8);
       plank.position.set(0, ly, 0.22);
       g.add(plank);
       if (ly > 1.7) continue;

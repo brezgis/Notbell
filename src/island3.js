@@ -238,7 +238,7 @@ export function createIsland3() {
       const ceil = tunnelCeil(d);
       // the walking stone: a cap slab (moss on top of it, sometimes)
       const cap = box(TOP_W + rand(-0.2, 0.3), 0.7, SL + 0.35, STONES[i % 4]);
-      cap.position.set(px, deck - 0.35, pz);
+      cap.position.set(px, deck - 0.35 + (i % 2) * 0.012, pz); // (alternate stones a hair apart: overlapping at one height, they flickered)
       cap.rotation.y = heading + rand(-0.03, 0.03);
       cap.receiveShadow = true;
       group.add(cap);
@@ -257,7 +257,7 @@ export function createIsland3() {
         }
         geo.computeVertexNormals();
         const rock = new THREE.Mesh(geo, mat(STONES[(i + 1) % 4], 0.95));
-        rock.position.set(px + perp.x * rand(-0.15, 0.15), (top + bot) / 2, pz + perp.z * rand(-0.15, 0.15));
+        rock.position.set(px + perp.x * rand(-0.15, 0.15), (top + bot) / 2 + (i % 2) * 0.012, pz + perp.z * rand(-0.15, 0.15));
         rock.rotation.y = heading + rand(-0.05, 0.05);
         rock.castShadow = true;
         rock.receiveShadow = true;
@@ -815,7 +815,7 @@ export function createIsland3() {
     const bed = box(3.4, 0.3, 1.8, 0x8a5a3a);
     bed.position.y = 0.75;
     wagon.add(bed);
-    for (const [sx, sz] of [[-1.2, 0.8], [1.2, 0.8], [-1.2, -0.8], [1.2, -0.8]]) {
+    for (const [sx, sz] of [[-1.2, 0.82], [1.2, 0.82], [-1.2, -0.82], [1.2, -0.82]]) { // (wheels just proud of the bed's sides)
       const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 9), mat(0x55483a));
       wheel.rotation.x = Math.PI / 2;
       wheel.position.set(sx, 0.45, sz);
@@ -1009,6 +1009,7 @@ export function createIsland3() {
     // a hull is a wall, as far as rowboats and swimmers are concerned
     zones.addSeaWall({ contains: (x, z) => Math.hypot(x - bx, z - bz) < 3.0 });
     boat.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    boat.userData.dynamic = true; // (it bobs)
     group.add(boat);
     updates.push((dt, t) => {
       boat.position.y = WATER_Y + 0.25 + Math.sin(t * 0.9) * 0.05;

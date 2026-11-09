@@ -215,8 +215,14 @@ without moving the player — `shots/views.mjs` is built on it).
   go; anyone not `anchored` may cross by bridge or train (`findRoute`).
 - **Talking** stamps `a.talking` (villagers.js); animals.js stops them and
   turns them to face you until the dialogue closes.
-- **Heads**: `idleAll(t, playerPos)` turns any `buildAnimal` head toward a
-  nearby player; `userData.noLook` (or `noFidget`) opts out.
+- **Heads and bodies**: `idleAll(t, playerPos)` turns any `buildAnimal` head
+  toward a nearby player (5.5). Anyone at a post — still >1.5 s, or
+  `userData.fidget` — notices from 9, turns the **body** to face you (up to
+  ~65° off their resting heading; the head does the rest), and hops hello if
+  you've been away 12 s+. Everything is layered on the owner's values: if
+  the owner writes `rotation.y` (a walk, an `attend()`, a chat), the body
+  turn stands down for 1.5 s; the breathing/tilt/shuffle carry on.
+  `userData.noLook` (statues, cutouts, scripted heads) or `noFidget` opts out.
 - **The Persistent** plans each voyage on a sea chart (boats.js
   `buildChart`/`planPath`: depth, sea walls, low piers, a hull's margin,
   A*, then corner-pulling; gates are threaded square). The chart is built
@@ -254,7 +260,29 @@ without moving the player — `shots/views.mjs` is built on it).
    `matrixAutoUpdate = false` and `matrixWorldNeedsUpdate = true`; and to
    read where a hidden thing is, use `getWorldPosition()` (it updates the
    chain) rather than its `matrixWorld`.
-10. Touch controls dispatch **real synthetic KeyboardEvents** (controls.js) —
+10. **Baked meshes** (`merge.js`): after everything is built, main.js runs
+   `mergeStatic` over every module's group: plain, opaque, untextured,
+   non-emissive meshes that aren't wall-sized become one vertex-colored mesh
+   per surface (roughness/metalness in 0.05 steps, flat, side, shadow flags)
+   per 100-unit patch. **Anything that moves, hides, recolors or gets
+   re-added later must sit under `userData.dynamic = true`** (a whole
+   creature/vehicle group, or the fruit on a tree); a material the game
+   keeps changing (lamp glass) can be `userData.live` instead. Hidden-at-build
+   branches (rooms, worlds) and `buildAnimal` figures are left alone; the
+   Crown, the sea, the sky and you aren't merged at all. A baked mesh leaves
+   the children list but keeps its `.parent`, so `getWorldPosition()` on it
+   still works. **After adding anything animated, run `shots/merge_audit.mjs`
+   (GPU=1, USE=1)** — it names the line that built whatever got baked by
+   mistake.
+11. **Offstage** (`cull.js`): each module group's direct children step out
+   of their parent's children list when the camera is farther than
+   `95 + 27·radius` (fog-deep, a few pixels) and step back as it nears. They
+   keep `.parent`; their owners' code runs on them unchanged; removing one
+   while it's offstage removes it for real (cull.js wraps `Object3D.remove`).
+   Hidden-at-build children (rooms, worlds) are never touched; opt out with
+   `userData.noCull`. Anything that walks the scene graph at runtime
+   (`scene.traverse`) won't see offstage things — use your own lists.
+12. Touch controls dispatch **real synthetic KeyboardEvents** (controls.js) —
    new features that listen for keys inherit mobile support for free; don't
    add pointer-only input paths.
 
@@ -279,7 +307,12 @@ without moving the player — `shots/views.mjs` is built on it).
 
 ## Performance budget
 
-pixelRatio ≤ 1.5 (≤ 1.25 on touch) · shadows: one 1024px PCF map in a box
+pixelRatio: native up to 2 (1.5 on touch), stepped down a quarter at a time
+by main.js's governor if frames run consistently slower than ~45 fps ·
+camera near plane 0.5 (depth precision; the camera never comes within 9) ·
+static meshes baked (`merge.js`), far small things offstage (`cull.js`) — the
+frame's CPU is mostly *walking the graph*, so object count is the budget that
+matters more than draw calls · shadows: one 2048px PCF map in a box
 that follows the sun target, re-rendered every frame only where that box
 covers you (`zones.sunShadowsHere()`; rooms draw it once on arrival) · outdoor point lights were culled 17→~6 once and
 must not creep back (interiors get brightness from their zone hemisphere

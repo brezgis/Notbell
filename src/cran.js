@@ -25,7 +25,7 @@ import { addIslandInfo, addZonePlace } from './fieldguide.js';
 import { glowWindow } from './nightglow.js';
 import { ITEMS } from './catalog.js';
 import { makeWindow, makeHangingLamp } from './buildings.js';
-import { mergeStatic } from './oasis.js';
+import { mergeStatic } from './merge.js';
 import { hourNow } from './calendar.js';
 import { waveAt } from './ocean.js';
 

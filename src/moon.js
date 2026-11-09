@@ -210,6 +210,7 @@ export function createMoon(player) {
     home.add(glint);
     home.traverse((o) => { o.material && (o.material.fog = false); });
     home.position.set(MOON.x - 30, 72, MOON.z - 185);
+    home.userData.dynamic = true; // (the Earth turns: mergeStatic leaves it be)
     group.add(home);
     updates.push((dt, t) => {
       home.rotation.y = t * 0.01; // home turns slowly, like it has all day
@@ -406,6 +407,7 @@ export function createMoon(player) {
     const bestRock = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 0), mat(0x9a9aa4, 0.95));
     bestRock.position.set(mx, my + 1.35, mz + 4.6);
     bestRock.castShadow = true;
+    bestRock.userData.dynamic = true;
     group.add(bestRock);
     addMoonBlocker(mx, mz + 4.6, 0.7);
     updates.push((dt, t) => {
@@ -622,6 +624,7 @@ export function createMoon(player) {
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.07, 5, 12),
         new THREE.MeshStandardMaterial({ color: 0x55555e, flatShading: true, roughness: 1 }));
       ring.rotation.x = Math.PI / 2;
+      ring.userData.dynamic = true; // (the dimples wander)
       group.add(ring);
       const d = { m: ring, x: 0, z: 0, phase: rand(0, 6) };
       moveDimple(d);
@@ -720,6 +723,7 @@ export function createMoon(player) {
       const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.22, 0.34), 0), mat(0x8e8e98, 0.95));
       rock.position.set(x, moonHeight(x, z) + 0.15, z);
       rock.castShadow = true;
+      rock.userData.dynamic = true; // (picked up and regrown)
       group.add(rock);
       const spot = { rock, regrow: 0 };
       spots.push(spot);

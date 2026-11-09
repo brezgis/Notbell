@@ -20,7 +20,7 @@ import { SITES, ISLAND4, ISLAND8, ISLAND9, CRAN_NORTH, terrainHeight } from './t
 import * as zones from './zones.js';
 import { debugList } from './interact.js';
 import { glowLevel } from './nightglow.js';
-import { mergeStatic } from './oasis.js';
+import { mergeStatic } from './merge.js';
 
 function mat(color, rough = 0.85) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -36,6 +36,7 @@ const GLASS = new THREE.MeshStandardMaterial({ color: 0xfff2cc, flatShading: tru
 const GLASS_MAX = 1.25;
 const CANDLE = new THREE.MeshStandardMaterial({ color: 0xffe2a8, flatShading: true, roughness: 0.5 });
 const CANDLE_MAX = 0.75;
+GLASS.userData.live = CANDLE.userData.live = true; // (mergeStatic keeps them: they warm at dusk)
 
 // ------------------------------------------------------------- the kinds ----
 const KINDS = {

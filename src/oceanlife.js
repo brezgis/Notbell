@@ -144,6 +144,7 @@ export function createOceanLife() {
     shark.traverse((o) => { if (o.isMesh && !o.material.isMeshBasicMaterial) o.castShadow = true; });
     shark.userData = { orbit, a: rand(0, Math.PI * 2), speed: rand(0.1, 0.16), heart, tail, heartT: 0, shy: 0 };
     sharks.push(shark);
+    shark.userData.dynamic = true;
     group.add(shark);
     register({
       getPos: () => shark.position, r: 3.6,
@@ -324,6 +325,7 @@ export function createOceanLife() {
       phase: rand(0, Math.PI * 2),
     };
     mantas.push(manta);
+    manta.userData.dynamic = true;
     group.add(manta);
   }
 

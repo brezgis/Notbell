@@ -813,7 +813,7 @@ export function createFarther() {
         s.add(side);
       }
       for (const ly of [0.5, 1.0, 1.5]) {
-        const plank = box(3.0, 0.06, 0.46, 0x96703f);
+        const plank = box(2.98, 0.06, 0.46, 0x96703f);
         plank.position.set(0, ly, 0);
         s.add(plank);
         for (let i = 0; i < 5; i++) {
@@ -1739,6 +1739,7 @@ export function createFarther() {
     }
     if (ring.length > 4) {
       const kayak = new THREE.Group();
+      kayak.userData.dynamic = true;
       kayak.add(makeKayak(0xe8743a));
       const paddler = buildAnimal('fox', { body: 0x8a6a48 });
       paddler.position.y = -0.2;

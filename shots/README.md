@@ -42,6 +42,21 @@ plinths you sink through, trunks you ghost past. Bounding boxes flatter
 round things, so triage its list by eye; the top of the list is what
 matters.
 
+`merge_audit.mjs` (run with `GPU=1`; `USE=1` also presses every outdoor
+and other-world interactable) boots with every baked mesh watched, tours
+the archipelago by day, night and in every weather, and reports anything
+the game later moved, hid or recolored — with the source line that built it
+and the line that hung it on whatever moved. Each hit wants a
+`userData.dynamic` (see ARCHITECTURE invariant 10). Run it after adding
+anything animated.
+
+`zfight_audit.mjs` hashes every triangle in the world (as built, rooms
+included) by plane and reports same-facing, overlapping faces of different
+colors from different meshes — the ones that flicker — ranked by visible
+area, grouped by the two source lines. Fix at the source: lift the top
+thing a centimetre, or make one part a hair narrower than the other.
+`MIN_AREA` (0.01) and `GAP` (0.004) tune it.
+
 `roof_audit.mjs` samples every roofed wall's top edges and reports any
 that poke out through the roof (the classic: a prism roof whose eaves sit
 below the wall top).

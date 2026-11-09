@@ -40,7 +40,7 @@ import { addIslandInfo, addZonePlace } from './fieldguide.js';
 import { glowWindow } from './nightglow.js';
 import { ITEMS } from './catalog.js';
 import { makeWindow, makeHangingLamp } from './buildings.js';
-import { mergeStatic } from './oasis.js';
+import { mergeStatic } from './merge.js';
 import { hourNow } from './calendar.js';
 import { applyHat } from './hats.js';
 
@@ -567,7 +567,7 @@ export function createNorthEnd(player) {
     const cup = new THREE.Group();
     const c = cyl(0.75, 0.55, 0.9, 10, 0xfbf6ee);
     const coffee = cyl(0.68, 0.68, 0.06, 10, 0x4a2a1a);
-    coffee.position.y = 0.42;
+    coffee.position.y = 0.4; // (just under the rim)
     const handle = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.08, 5, 10), mat(0xfbf6ee));
     handle.position.set(0.82, 0.05, 0);
     const saucer = cyl(1.1, 1.0, 0.1, 12, 0xfbf6ee);

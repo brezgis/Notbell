@@ -276,6 +276,7 @@ export function createFold() {
     ext.add(vanePost);
     const vane = makeCod(0.75, 0xc9b99a);
     vane.position.set(0, 7.05, 0);
+    vane.userData.dynamic = true;
     ext.add(vane);
     updates.push((dt) => { vane.rotation.y += dt * 0.22; }); // a very patient wind
     // two square windows a side, candle-warm after dark

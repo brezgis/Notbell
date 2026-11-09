@@ -42,8 +42,11 @@ export async function boot({
   const browser = await puppeteer.launch({
     executablePath: '/usr/bin/google-chrome', headless: 'new',
     protocolTimeout: 900_000, // probe_reach's one long in-page flood fill outlasts the 180s default
-    args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader',
-      '--enable-unsafe-swiftshader', '--window-size=1280,720', '--mute-audio'],
+    // GPU=1: the real graphics card (game time runs at speed — the merge
+    // audit and perf probes want that); default swiftshader works anywhere
+    args: ['--no-sandbox', '--window-size=1280,720', '--mute-audio', ...(process.env.GPU === '1'
+      ? ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=vulkan', '--enable-features=Vulkan']
+      : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])],
   });
   const page = await browser.newPage();
   // index.html's CSP (rightly) refuses inline scripts; probes that inject one
@@ -55,6 +58,7 @@ export async function boot({
   page.on('pageerror', (e) => console.log('PAGE ERROR:', e.message));
 
   if (process.env.NO_MERGE) await page.evaluateOnNewDocument(() => { window.__NOTBELL_NO_MERGE = true; }); // (clip_audit: every mesh as built)
+  if (process.env.MERGE_AUDIT) await page.evaluateOnNewDocument(() => { window.__NOTBELL_MERGE_AUDIT = true; }); // (merge_audit: remember what got baked)
   await page.evaluateOnNewDocument((h, nm, doSeed) => {
     // pin the clock so shots don't depend on when they're taken
     const RealDate = Date;

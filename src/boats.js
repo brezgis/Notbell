@@ -155,6 +155,7 @@ export function createBoats(player) {
       boat.position.set(saved.x, WATER_Y + 0.12, saved.z);
       boat.rotation.y = saved.rotY || 0;
     }
+    boat.userData.dynamic = true; // (you row it)
     group.add(boat);
     const data = { boat, i, inUse: false, oarPhase: 0, oarPower: 0 };
     boats.push(data);
@@ -312,6 +313,7 @@ export function createBoats(player) {
   const tz = D.z + oz * 10.5 + pz * 4.5;
   tug.position.set(tx, WATER_Y + 0.35, tz);
   tug.rotation.y = outA + 0.9;
+  tug.userData.dynamic = true; // (it bobs, and sails)
   group.add(tug);
   updates.push((dt, t) => {
     tug.position.y = WATER_Y + 0.35 + Math.sin(t * 0.8) * 0.06;
@@ -870,6 +872,7 @@ export function createBoats(player) {
   hook.rotation.z = Math.PI * 0.8;
   hookGroup.add(hook);
   hookGroup.position.y = 12.25; // just under the cap
+  hookGroup.userData.dynamic = true;
   lh.add(hookGroup);
   let hookBell = 0;
   updates.push((dt, t, playerPos) => {

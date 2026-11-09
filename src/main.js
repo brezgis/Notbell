@@ -40,6 +40,8 @@ import * as mail from './mail.js';
 import { createCran } from './cran.js';
 import { createNorthEnd } from './northend.js';
 import { createLamps } from './lamps.js';
+import { mergeStatic } from './merge.js';
+import { initCull, updateCull, cullStats } from './cull.js';
 import { createChuckee } from './chuckee.js';
 import { wireHatKey } from './hats.js';
 import { initTools, updateTools, play as playTool } from './tools.js';
@@ -61,10 +63,14 @@ S.load(); // the island remembers
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
-// capped below native retina: visually near-identical, dramatically cheaper
-// (phones get a slightly lower cap; their pixels are small and their
-// batteries have feelings)
-renderer.setPixelRatio(Math.min(devicePixelRatio, isTouchDevice() ? 1.25 : 1.5));
+// crisp: native resolution, up to 2× (a retina screen at full sharpness —
+// the frame got cheap enough). Phones stop at 1.5: their pixels are small
+// and their batteries have feelings. If frames start running long, the
+// governor in the loop steps the resolution down a notch (never below 1×,
+// never back above the cap), so a slow machine gets smooth before sharp.
+const PR_CAP = Math.min(devicePixelRatio, isTouchDevice() ? 1.5 : 2);
+let pixelRatio = PR_CAP;
+renderer.setPixelRatio(pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 document.body.appendChild(renderer.domElement);
@@ -73,7 +79,10 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9fdcf7);
 scene.fog = new THREE.Fog(0x9fdcf7, 95, 230);
 
-const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 600);
+// (near 0.5, not 0.1: the camera never comes within 9 of you, and depth
+// precision scales with the near plane — five times finer everywhere, so
+// surfaces a hair apart stop flickering against each other far off)
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.5, 600);
 
 // bright cartoon noon: warm sun + cool sky fill
 const hemi = new THREE.HemisphereLight(0xcfeeff, 0x7ca16a, 1.3);
@@ -82,7 +91,7 @@ scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff3d6, 2.4);
 sun.position.set(45, 70, 30);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.mapSize.set(2048, 2048); // (crisp edges: affordable since the 2026-11 perf pass)
 sun.shadow.camera.left = -65;
 sun.shadow.camera.right = 65;
 sun.shadow.camera.top = 65;
@@ -259,7 +268,18 @@ player.group.name = 'player';
 camera.position.copy(player.group.position).add(camOffset);
 ui.updateHUD();
 
-// ---- tiny things don't cast shadows: a pebble's shadow on a 1024 shadow map
+// ---- bake what never moves: every island's static meshes, merged into a
+// few per surface per patch of ground (merge.js; userData.dynamic opts a
+// branch out, and shots/merge_audit.mjs catches anything that should have).
+// The sea, the sky, the villagers and you are all motion, so they're skipped —
+// and so is the Crown: a living reef, where nearly everything sways or swims.
+for (const m of [
+  nature, buildings, cave, fishing, digging, tidePools, houses, bridge, island2, oceanLife,
+  boats, volcano, island3, ghost, beachBall, texas, bulko, island5, shells, starfall, northline,
+  farline, island6, fold, farther, moon, labsGrounds, burrough, oasis, cran, chuckee, northEnd, lamps,
+]) mergeStatic(m.group);
+
+// ---- tiny things don't cast shadows: a pebble's shadow on the shadow map
 // is a smudge, and each caster is another draw in the shadow pass
 {
   const sc = new THREE.Vector3();
@@ -288,6 +308,28 @@ scene.traverse((o) => {
     occluders.push(o);
   }
 });
+// ---- sharp signs: every texture gets anisotropic filtering, so lettering
+// stays legible at the camera's steep angle instead of smearing
+{
+  const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const seen = new Set();
+  scene.traverse((o) => {
+    for (const m of [o.material].flat()) {
+      if (!m || seen.has(m)) continue;
+      seen.add(m);
+      for (const k of ['map', 'emissiveMap']) if (m[k]) m[k].anisotropy = aniso;
+    }
+  });
+}
+
+// ---- far small things wait offstage until the camera comes near (cull.js):
+// the islands' props, the villagers on their errands, whole far-off rooms
+initCull([
+  nature, buildings, cave, fishing, digging, tidePools, houses, bridge, island2, oceanLife,
+  boats, volcano, island3, ghost, beachBall, texas, bulko, island5, shells, starfall, northline,
+  farline, island6, fold, farther, moon, crown, labsGrounds, burrough, oasis, cran, chuckee, northEnd, lamps, animals,
+].map((m) => m.group));
+
 const occRay = new THREE.Raycaster();
 const occDir = new THREE.Vector3();
 const occTarget = new THREE.Vector3();
@@ -374,6 +416,25 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
+// ---- the resolution governor: frames consistently slower than ~45 fps (over
+// a couple of seconds, not counting hitches like a door's fade) drop the
+// pixel ratio a quarter step. Smooth beats sharp; it doesn't climb back
+// mid-session (a refresh starts sharp again).
+const gov = { t: 0, n: 0, slow: 0 };
+function governResolution(rawDt) {
+  if (rawDt > 0.25) return; // (a tab switch, a load: not a frame)
+  gov.t += rawDt;
+  gov.n++;
+  if (rawDt > 1 / 45) gov.slow++;
+  if (gov.t < 2.5) return;
+  const mostlySlow = gov.slow > gov.n * 0.6;
+  gov.t = gov.n = gov.slow = 0;
+  if (mostlySlow && pixelRatio > 1) {
+    pixelRatio = Math.max(1, pixelRatio - 0.25);
+    renderer.setPixelRatio(pixelRatio);
+  }
+}
+
 const clock = new THREE.Clock();
 let shadowZone = null;
 let moodT = 0;
@@ -441,7 +502,9 @@ addEventListener('beforeunload', () => {
 });
 
 renderer.setAnimationLoop(() => {
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const rawDt = clock.getDelta();
+  governResolution(rawDt);
+  const dt = Math.min(rawDt, 0.05);
   const t = clock.elapsedTime;
   const playerPos = player.group.position;
 
@@ -560,6 +623,7 @@ renderer.setAnimationLoop(() => {
   lookGoal.copy(focus);
   lookGoal.y += 1.2;
   camera.lookAt(lookGoal);
+  updateCull(camera.position); // (far small things step offstage; near ones come back)
   updateMoved(scene, false); // (before the occlusion ray: a room just shown needs its walls placed)
   updateOcclusion();
 
@@ -593,7 +657,7 @@ const cam = {
   },
   get: () => ({ yaw: camYaw, pitch: camPitch, dist: camDist }),
 };
-window.__notbell = { ui, cam, boats, interact, playTool, zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline, farline };
+window.__notbell = { renderer, scene, camera, cullStats, ui, cam, boats, interact, playTool, zones, player, S, SITES, ISLAND2, terrainHeight, digging, almanac, houses, ambient, animals, fishing, bridge, northline, farline };
 
 // a small welcome the first time — and everyone gets to choose who they are
 (async () => {

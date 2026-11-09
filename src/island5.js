@@ -151,6 +151,7 @@ export function createIsland5(player) {
         const a = (f / 4) * Math.PI * 2 + rand(-0.3, 0.3);
         const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.17, 0), mat(0xff9430, 0.6));
         onCrown(fruit, a, 2.2 + rand(0, 0.6), 1.5, 2.4, 0.9);
+        fruit.userData.dynamic = true; // (picked and regrown)
         tree.add(fruit);
         oranges.push(fruit);
       }
@@ -1145,6 +1146,7 @@ export function createIsland5(player) {
     const pool = springPools[i % springPools.length];
     const orange = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), mat(0xff9430, 0.6));
     orange.userData = { pool, a: rand(0, Math.PI * 2), rr: rand(0.35, 0.7), sp: rand(0.08, 0.2), ph: rand(0, 9) };
+    orange.userData.dynamic = true; // (it bobs)
     group.add(orange);
     springOranges.push(orange);
   }
@@ -1212,6 +1214,7 @@ export function createIsland5(player) {
       const fa = (f / 5) * Math.PI * 2 + rand(-0.2, 0.2);
       const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.21, 0), mat(0xff9430, 0.55));
       onCrown(fruit, fa, 2.1 + rand(0, 0.7), 1.45, 2.35, 1);
+      fruit.userData.dynamic = true; // (picked and regrown)
       tree.add(fruit);
       fruits.push(fruit);
     }
@@ -1318,6 +1321,7 @@ export function createIsland5(player) {
         const fruit = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 0),
           mat(peachy ? 0xffb38a : 0xff9430, 0.55));
         onCrown(fruit, a, 2.15 + rand(0, 0.8), 1.6, 2.5, 0.9);
+        fruit.userData.dynamic = true; // (picked and regrown)
         tree.add(fruit);
         fruits.push(fruit);
       }

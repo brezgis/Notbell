@@ -155,6 +155,7 @@ export function buildRover(bodyColor = 0xdfe2e6) {
   g.add(antenna);
   g.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
   g.userData = { wheels, head: headG };
+  g.userData.dynamic = true; // (rovers rove: mergeStatic leaves them be)
   return g;
 }
 
@@ -512,6 +513,7 @@ export function createIsland6(player) {
     bowlG.rotation.x = -0.7; // aimed up and out to sea
     dish.add(bowlG);
     dish.position.set(dx, dy, dz);
+    dish.userData.dynamic = true; // (it tracks the sky)
     dish.traverse((o) => { if (solidShadowCaster(o)) o.castShadow = true; });
     group.add(dish);
     zones.addBlocker(dx, dz, 2.8); // the bowl sweeps at head height — give it room

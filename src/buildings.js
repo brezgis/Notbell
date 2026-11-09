@@ -483,14 +483,17 @@ export function createBuildings() {
   crankGrip.position.set(0.1, 0.34, 0);
   crank.add(crankArm, crankGrip);
   crank.position.set(1.08, 1.85, 0);
+  crank.userData.dynamic = true; // (it turns: mergeStatic leaves it be — and the rope and bucket below)
   well.add(crank);
   const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 4), mat(0xd9c49a, 0.9));
+  rope.userData.dynamic = true;
   well.add(rope);
   const bucket = new THREE.Group();
   const pail = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.26, 7), mat(0x9a6a3e));
   const bands = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.04, 7), mat(0x6a7078, 0.4));
   bands.position.y = 0.06;
   bucket.add(pail, bands);
+  bucket.userData.dynamic = true;
   well.add(bucket);
   // ripples when the bucket touches the water, and the odd glint of a
   // button down below

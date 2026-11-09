@@ -345,6 +345,7 @@ export function scatterNature() {
       zones.addBlocker(spot.x, spot.z, 0.45, 'tree'); // trunks are solid
       if (tree.userData.fruits) {
         const ft = { fruits: tree.userData.fruits, regrow: 0 };
+        for (const f of ft.fruits) f.userData.dynamic = true; // (picked and regrown)
         fruitTrees.push(ft);
         register({
           pos: { x: spot.x, z: spot.z },
@@ -432,6 +433,7 @@ export function scatterNature() {
     };
     crab.position.set(data.home.x, data.home.h, data.home.z);
     beachCrabs.push(data);
+    crab.userData.dynamic = true; // (it scuttles: mergeStatic leaves it be — same for every critter below)
     group.add(crab);
     register({
       getPos: () => crab.position,
@@ -487,6 +489,7 @@ export function scatterNature() {
     b.userData.prev = new THREE.Vector3();
     b.userData.respawn = 0;
     butterflies.push(b);
+    b.userData.dynamic = true;
     group.add(b);
 
     register({
@@ -534,6 +537,7 @@ export function scatterNature() {
     perch(pick(treeSpots));
     data.perch = perch;
     beetles.push(data);
+    beetle.userData.dynamic = true;
     group.add(beetle);
 
     register({
@@ -586,6 +590,7 @@ export function scatterNature() {
     perch();
     data.perch = perch;
     perchers.push(data);
+    mesh.userData.dynamic = true;
     group.add(mesh);
     register({
       getPos: () => mesh.position,
@@ -662,6 +667,7 @@ export function scatterNature() {
     d.userData.prev = new THREE.Vector3();
     d.userData.respawn = 0;
     dragonflies.push(d);
+    d.userData.dynamic = true;
     group.add(d);
     register({
       getPos: () => d.position,
@@ -708,6 +714,7 @@ export function scatterNature() {
     };
     f.visible = false;
     fireflies.push(f);
+    f.userData.dynamic = true;
     group.add(f);
     register({
       getPos: () => f.position,

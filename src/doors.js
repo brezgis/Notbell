@@ -22,6 +22,7 @@ export function hinge(key, door, ...extras) {
   if (!parent || !door.geometry?.parameters) return;
   const { width: w, height: h, depth: d } = door.geometry.parameters;
   const pivot = new THREE.Group();
+  pivot.userData.dynamic = true; // (it swings: mergeStatic leaves it be)
   pivot.position.set(door.position.x - w / 2, 0, door.position.z);
   parent.add(pivot);
   for (const m of [door, ...extras]) {

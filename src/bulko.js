@@ -722,7 +722,7 @@ export function createBulko(player) {
     sign.position.set(0, 5.6, 5.11);
     ext.add(sign);
     const doors = box(4.2, 3.2, 0.3, 0x3a4a5c);
-    doors.position.set(-3, 1.6, 5.05);
+    doors.position.set(-3, 1.6, 5.07);
     ext.add(doors);
     const doorSplit = box(0.12, 3.2, 0.34, 0x9aa0a6);
     doorSplit.position.set(-3, 1.6, 5.06);
@@ -730,7 +730,7 @@ export function createBulko(player) {
     // the staff entrance, on the dock side — which is the side everyone
     // actually arrives from, so it gets a sign too
     const backDoors = box(3.6, 3.0, 0.3, 0x3a4a5c);
-    backDoors.position.set(2, 1.5, -5.05);
+    backDoors.position.set(2, 1.5, -5.07);
     ext.add(backDoors);
     const backSign = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 1.35),
       textPanel([['BULKO  ·  STAFF ENTRANCE', 64, 38]], 640, 128, '#c2452c', '#fffaf0'));
@@ -1132,7 +1132,7 @@ export function createBulko(player) {
         group.add(sh);
       }
       for (const x of [-9.5, -5.7, -1.9, 1.9, 5.7, 9.5]) {
-        const up = box(0.12, 4.0, 1.1, 0x7a8a94);
+        const up = box(0.12, 4.0, 1.12, 0x7a8a94);
         up.position.set(MC.x + x, 2.0, WZ);
         group.add(up);
       }
@@ -1502,7 +1502,7 @@ export function createBulko(player) {
       backC.position.set(0, 0.95, -0.38);
       couch.add(backC);
       for (const sx of [-1.18, 1.18]) {
-        const arm = box(0.25, 0.7, 1.0, [0x4a76ac, 0x744a74, 0x417a58][i]);
+        const arm = box(0.25, 0.7, 1.04, [0x4a76ac, 0x744a74, 0x417a58][i]);
         arm.position.set(sx, 0.65, 0);
         couch.add(arm);
       }

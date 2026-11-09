@@ -577,7 +577,7 @@ function buildVillagerInterior(group, B, name, style) {
       group.add(pail);
     }
     const fieldFrame = box(1.6, 1.1, 0.1, 0x8a5a3a);
-    fieldFrame.position.set(B.x + 1, 2.1, B.z - 4.35);
+    fieldFrame.position.set(B.x + 1, 2.1, B.z - 4.33); // (proud of the wall, not flush in it)
     group.add(fieldFrame);
     const fieldArt = new THREE.Mesh(new THREE.PlaneGeometry(1.35, 0.85),
       new THREE.MeshBasicMaterial({ color: 0x6ec45a }));

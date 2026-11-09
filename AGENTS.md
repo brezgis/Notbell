@@ -68,7 +68,7 @@ outlines into the screenshots.
    ground on their lowest corner.
 10. **Respect the performance budget.** No new `PointLight`s in the outdoor
     world — glow is emissive material, not light (see VISUAL_CANON). One
-    1024px shadow map. Outdoor systems only update when the player is
+    2048px shadow map. Outdoor systems only update when the player is
     outdoors; interiors gate themselves by zone.
 11. **Persistence must survive old saves.** Extend `state.js` via the existing
     defaults-then-merge pattern in `load()`; never rename or repurpose saved

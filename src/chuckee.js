@@ -24,7 +24,7 @@ import { glowWindow } from './nightglow.js';
 import { ITEMS } from './catalog.js';
 import { makeWindow } from './buildings.js';
 import { turnToward } from './utils.js';
-import { mergeStatic } from './oasis.js';
+import { mergeStatic } from './merge.js';
 
 function mat(color, rough = 0.88) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: rough });
@@ -412,8 +412,8 @@ export function createChuckee(player) {
   {
     const SU = 1.0, SW = 3.6, SD = 7.0; // the store: between the walk and the highway
     const g = new THREE.Group();
-    const plinth = box(SW + 0.3, 0.6, SD + 0.3, 0x8a8478);
-    plinth.position.y = 0.6;
+    const plinth = box(SW + 0.3, 0.64, SD + 0.3, 0x8a8478);
+    plinth.position.y = 0.6; // (top at 0.92: flush with the islet's 0.9 it flickered)
     const body = box(SW, 2.8, SD, 0xf4e8c8);
     body.position.y = 2.3;
     const band = box(SW + 0.05, 0.5, SD + 0.05, 0xd8342c);

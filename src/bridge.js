@@ -105,7 +105,7 @@ export function createBridge(player, animals = []) {
     const t = i / nPlanks;
     const p = pointAt(t);
     const plank = box(DECK_HALF_W * 2 + 0.3, 0.18, plankDepth, i % 7 === 3 ? 0x96703f : 0xa97c50);
-    plank.position.set(p.x, deckY(t), p.z);
+    plank.position.set(p.x, deckY(t) + (i % 3) * 0.008, p.z); // (planks a hair apart in threes: overlapping at one height they flickered)
     plank.rotation.y = Math.atan2(along.x, along.z);
     plank.receiveShadow = true;
     group.add(plank);
